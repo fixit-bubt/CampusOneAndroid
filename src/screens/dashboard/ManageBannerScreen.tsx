@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,19 +13,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Radius, Accent } from '../../theme';
+import { FontFamily, Layout, Radius } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import {
   fetchAdminBannerPool,
   saveBannerOrder,
   updateAnnouncementBannerStatus,
+  updateClubBannerStatus,
   type BannerSlide,
 } from '../../services/announcementService';
-import { resolveBannerSource } from '../../utils/bannerUrl';
+import { BANNERS_MAP, resolveBannerSource } from '../../utils/bannerUrl';
 
 export function ManageBannerScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
@@ -36,9 +38,10 @@ export function ManageBannerScreen({ navigation }: any) {
   const [activeSlides, setActiveSlides] = useState<BannerSlide[]>([]);
   const [availableAnnouncements, setAvailableAnnouncements] = useState<any[]>([]);
   const [availableEvents, setAvailableEvents] = useState<any[]>([]);
+  const [availableClubs, setAvailableClubs] = useState<any[]>([]);
   const [previewIdx, setPreviewIdx] = useState(0);
   const [search, setSearch] = useState('');
-  const [candidateTab, setCandidateTab] = useState<'all' | 'manual' | 'scraped' | 'events'>('all');
+  const [candidateTab, setCandidateTab] = useState<'all' | 'announcements' | 'events' | 'clubs'>('all');
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
@@ -51,6 +54,7 @@ export function ManageBannerScreen({ navigation }: any) {
         setActiveSlides(pool.activeSlides);
         setAvailableAnnouncements(pool.availableAnnouncements);
         setAvailableEvents(pool.availableEvents);
+        setAvailableClubs(pool.availableClubs || []);
       }
     } finally {
       setLoading(false);
@@ -86,7 +90,7 @@ export function ManageBannerScreen({ navigation }: any) {
 
     const payload = updated.map((item, idx) => ({
       id: item.sourceId,
-      type: (item.type === 'Event' ? 'event' : 'announcement') as 'announcement' | 'event',
+      type: (item.type === 'Event' ? 'event' : item.type === 'Club' ? 'club' : 'announcement') as 'announcement' | 'event' | 'club',
       order: idx + 1,
     }));
 
@@ -111,10 +115,13 @@ export function ManageBannerScreen({ navigation }: any) {
       if (slide.type === 'Notice') {
         const res = await updateAnnouncementBannerStatus(slide.sourceId, false);
         if (!res.success) throw new Error(res.error);
+      } else if (slide.type === 'Club') {
+        const res = await updateClubBannerStatus(slide.sourceId, false);
+        if (!res.success) throw new Error(res.error);
       } else {
         const payload = nextSlides.map((item, idx) => ({
           id: item.sourceId,
-          type: (item.type === 'Event' ? 'event' : 'announcement') as 'announcement' | 'event',
+          type: (item.type === 'Event' ? 'event' : item.type === 'Club' ? 'club' : 'announcement') as 'announcement' | 'event' | 'club',
           order: idx + 1,
         }));
         const res = await saveBannerOrder(payload);
@@ -124,7 +131,7 @@ export function ManageBannerScreen({ navigation }: any) {
       toast({
         type: 'success',
         title: 'Removed from Banner',
-        message: `"${slide.title.slice(0, 28)}..." is no longer in the student banner.`,
+        message: `"${slide.title.slice(0, 28)}..." removed from banner.`,
       });
     } catch (err: any) {
       toast({ type: 'error', title: 'Update Failed', message: err.message });
@@ -134,7 +141,14 @@ export function ManageBannerScreen({ navigation }: any) {
     }
   };
 
-  const handleAddAnnouncement = async (ann: any) => {
+  const handleAddCandidate = async (candidate: {
+    id: string;
+    title: string;
+    subtitle: string;
+    type: 'Notice' | 'Event' | 'Club';
+    image?: string | null;
+    raw: any;
+  }) => {
     if (activeSlides.length >= 6) {
       Alert.alert(
         'Banner Limit Reached',
@@ -144,35 +158,76 @@ export function ManageBannerScreen({ navigation }: any) {
       return;
     }
 
-    setSavingId(ann.id);
+    setSavingId(candidate.id);
     const nextOrder = activeSlides.length + 1;
-    const img = ann.banner_image_url || ann.image_url ||
-      (ann.attachment_url && /\.(jpg|jpeg|png|webp|gif)$/i.test(ann.attachment_url) ? ann.attachment_url : null);
 
-    const newSlide: BannerSlide = {
-      id: `ann-${ann.id}`,
-      sourceId: ann.id,
-      type: 'Notice',
-      title: ann.title,
-      subtitle: ann.department ? `${ann.department} Department` : 'BUBT Notice',
-      imageUri: img,
-      route: 'AnnouncementDetail',
-      params: { announcementId: ann.id },
-      bannerOrder: nextOrder,
-      inBanner: true,
-    };
+    let newSlide: BannerSlide;
+    if (candidate.type === 'Notice') {
+      newSlide = {
+        id: `ann-${candidate.id}`,
+        sourceId: candidate.id,
+        type: 'Notice',
+        title: candidate.title,
+        subtitle: candidate.raw.department ? `${candidate.raw.department} Department` : 'BUBT Notice',
+        imageUri: candidate.image || undefined,
+        route: 'AnnouncementDetail',
+        params: { announcementId: candidate.id },
+        bannerOrder: nextOrder,
+        inBanner: true,
+      };
+    } else if (candidate.type === 'Event') {
+      newSlide = {
+        id: `ev-${candidate.id}`,
+        sourceId: candidate.id,
+        type: 'Event',
+        title: candidate.title,
+        subtitle: `${candidate.raw.venue || 'Campus'}${candidate.raw.time ? ` · ${candidate.raw.time}` : ''}`,
+        imageUri: candidate.image || undefined,
+        route: 'EventDetail',
+        params: { eventId: candidate.id },
+        bannerOrder: nextOrder,
+        inBanner: true,
+      };
+    } else {
+      newSlide = {
+        id: `club-${candidate.id}`,
+        sourceId: candidate.id,
+        type: 'Club',
+        title: candidate.title,
+        subtitle: `${candidate.raw.category || 'Official Club'} · BUBT`,
+        imageUri: candidate.image || undefined,
+        route: 'ClubDetail',
+        params: { clubId: candidate.id },
+        bannerOrder: nextOrder,
+        inBanner: true,
+      };
+    }
 
     const nextSlides = [...activeSlides, newSlide];
     setActiveSlides(nextSlides);
     setPreviewIdx(nextSlides.length - 1);
 
     try {
-      const res = await updateAnnouncementBannerStatus(ann.id, true, nextOrder);
-      if (!res.success) throw new Error(res.error);
+      if (candidate.type === 'Notice') {
+        const res = await updateAnnouncementBannerStatus(candidate.id, true, nextOrder);
+        if (!res.success) throw new Error(res.error);
+      } else if (candidate.type === 'Club') {
+        const res = await updateClubBannerStatus(candidate.id, true, nextOrder);
+        if (!res.success) throw new Error(res.error);
+      } else {
+        const payload = nextSlides.map((s, idx) => ({
+          id: s.sourceId,
+          type: (s.type === 'Event' ? 'event' : s.type === 'Club' ? 'club' : 'announcement') as 'announcement' | 'event' | 'club',
+          order: idx + 1,
+        }));
+        const res = await saveBannerOrder(payload);
+        if (!res.success) throw new Error(res.error);
+      }
+
       toast({
         type: 'success',
         title: 'Added to Banner',
-        message: `"${ann.title.slice(0, 28)}..." added to position #${nextOrder}.`,
+        message: `"${candidate.title.slice(0, 28)}..." added to position #${nextOrder}.`,
       });
     } catch (err: any) {
       toast({ type: 'error', title: 'Add Failed', message: err.message });
@@ -182,23 +237,33 @@ export function ManageBannerScreen({ navigation }: any) {
     }
   };
 
+  const candidateCounts = useMemo(() => {
+    const annCount = availableAnnouncements.filter((a) => !activeSourceIds.has(a.id)).length;
+    const evCount = availableEvents.filter((e) => !activeSourceIds.has(e.id)).length;
+    const clCount = availableClubs.filter((c) => !activeSourceIds.has(c.id)).length;
+    return {
+      all: annCount + evCount + clCount,
+      announcements: annCount,
+      events: evCount,
+      clubs: clCount,
+    };
+  }, [availableAnnouncements, availableEvents, availableClubs, activeSourceIds]);
+
   const filteredCandidates = useMemo(() => {
     const q = search.trim().toLowerCase();
     const result: Array<{
       id: string;
       title: string;
       subtitle: string;
-      type: 'Notice' | 'Event';
+      type: 'Notice' | 'Event' | 'Club';
       priority?: string;
       image?: string | null;
       raw: any;
     }> = [];
 
-    if (candidateTab !== 'events') {
+    if (candidateTab === 'all' || candidateTab === 'announcements') {
       availableAnnouncements.forEach((a) => {
         if (activeSourceIds.has(a.id)) return;
-        if (candidateTab === 'manual' && a.source !== 'manual') return;
-        if (candidateTab === 'scraped' && a.source === 'manual') return;
 
         const img = a.banner_image_url || a.image_url ||
           (a.attachment_url && /\.(jpg|jpeg|png|webp|gif)$/i.test(a.attachment_url) ? a.attachment_url : null);
@@ -242,11 +307,40 @@ export function ManageBannerScreen({ navigation }: any) {
       });
     }
 
+    if (candidateTab === 'all' || candidateTab === 'clubs') {
+      availableClubs.forEach((c) => {
+        if (activeSourceIds.has(c.id)) return;
+        if (q) {
+          const matchName = (c.name || '').toLowerCase().includes(q);
+          const matchCat = (c.category || '').toLowerCase().includes(q);
+          if (!matchName && !matchCat) return;
+        }
+        result.push({
+          id: c.id,
+          title: c.name,
+          subtitle: `${c.category || 'Official Club'} · BUBT`,
+          type: 'Club',
+          priority: c.category,
+          image: c.cover_url || c.logo_url || null,
+          raw: c,
+        });
+      });
+    }
+
     return result;
-  }, [availableAnnouncements, availableEvents, activeSourceIds, search, candidateTab]);
+  }, [availableAnnouncements, availableEvents, availableClubs, activeSourceIds, search, candidateTab]);
 
   const activePreview = activeSlides[previewIdx] || activeSlides[0] || null;
-  const previewSource = activePreview ? resolveBannerSource(activePreview.imageUri, activePreview.localImage) : null;
+  const resolvedPreviewSource = activePreview ? resolveBannerSource(activePreview.imageUri, activePreview.localImage) : null;
+  const previewSource = resolvedPreviewSource || (
+    activePreview
+      ? (activePreview.type === 'Event'
+          ? BANNERS_MAP['hackathon-2026.jpg']
+          : activePreview.type === 'Club'
+          ? BANNERS_MAP['blood-drive.jpg']
+          : BANNERS_MAP['convocation-2026.jpg'])
+      : null
+  );
 
   if (profile?.role !== 'admin') {
     return (
@@ -262,6 +356,13 @@ export function ManageBannerScreen({ navigation }: any) {
       </SafeAreaView>
     );
   }
+
+  const candidateTabs = [
+    { key: 'all', label: 'All', count: candidateCounts.all },
+    { key: 'announcements', label: 'Announcements', count: candidateCounts.announcements },
+    { key: 'events', label: 'Events', count: candidateCounts.events },
+    { key: 'clubs', label: 'Clubs', count: candidateCounts.clubs },
+  ] as const;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -292,8 +393,8 @@ export function ManageBannerScreen({ navigation }: any) {
         <View style={[styles.previewWrapper, { borderColor: C.border, backgroundColor: C.surface }]}>
           <View style={styles.previewHeaderRow}>
             <View style={styles.previewTagPill}>
-              <Feather name="eye" size={13} color={C.brand} />
-              <Text style={[styles.previewTagTxt, { color: C.brand }]}>Student Home Preview</Text>
+              <Feather name="eye" size={14} color={C.textMuted} />
+              <Text style={[styles.previewTagTxt, { color: C.text }]}>Student Home Preview</Text>
             </View>
             <Text style={[styles.previewCountTxt, { color: C.textMuted }]}>
               {activeSlides.length}/6 Active Slides
@@ -302,16 +403,17 @@ export function ManageBannerScreen({ navigation }: any) {
 
           {activePreview ? (
             <View style={styles.previewCard}>
-              {previewSource ? (
+              {previewSource && (
                 <Image source={previewSource} style={styles.previewImage} resizeMode="cover" />
-              ) : (
-                <View style={[styles.previewPlaceholder, { backgroundColor: C.surface2 }]}>
-                  <Feather name="image" size={32} color={C.textMuted} />
-                </View>
               )}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.20)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']}
+                locations={[0, 0.45, 1]}
+                style={StyleSheet.absoluteFill}
+              />
               <View style={styles.previewScrim}>
                 <View style={styles.previewBadgeRow}>
-                  <View style={[styles.typeBadge, { backgroundColor: activePreview.type === 'Event' ? Accent.purple : C.brand }]}>
+                  <View style={[styles.typeBadge, { backgroundColor: isDark ? '#27272a' : '#18181b', borderColor: isDark ? '#3f3f46' : '#27272a' }]}>
                     <Text style={styles.typeBadgeTxt}>Slot #{previewIdx + 1} · {activePreview.type}</Text>
                   </View>
                 </View>
@@ -328,6 +430,35 @@ export function ManageBannerScreen({ navigation }: any) {
             </View>
           )}
 
+          {/* Pagination Line Indicators matching HomeHeroBanner */}
+          {activeSlides.length > 1 && (
+            <View style={styles.indicatorRow}>
+              {activeSlides.map((_, idx) => {
+                const isActive = previewIdx === idx;
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    onPress={() => setPreviewIdx(idx)}
+                    hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                    style={[
+                      styles.indicatorBar,
+                      isActive
+                        ? [styles.indicatorActive, { backgroundColor: isDark ? '#ffffff' : '#18181b' }]
+                        : [
+                            styles.indicatorInactive,
+                            {
+                              backgroundColor: isDark
+                                ? 'rgba(255, 255, 255, 0.35)'
+                                : 'rgba(15, 26, 46, 0.22)',
+                            },
+                          ],
+                    ]}
+                  />
+                );
+              })}
+            </View>
+          )}
+
           {/* Quick Slot Selector */}
           {activeSlides.length > 0 && (
             <View style={styles.slotRow}>
@@ -338,8 +469,8 @@ export function ManageBannerScreen({ navigation }: any) {
                   style={[
                     styles.slotPill,
                     {
-                      backgroundColor: previewIdx === idx ? C.brand : C.surface2,
-                      borderColor: previewIdx === idx ? C.brand : C.border,
+                      backgroundColor: previewIdx === idx ? (isDark ? '#27272a' : '#18181b') : C.surface2,
+                      borderColor: previewIdx === idx ? (isDark ? '#3f3f46' : '#27272a') : C.border,
                     },
                   ]}
                   hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
@@ -369,13 +500,19 @@ export function ManageBannerScreen({ navigation }: any) {
             <Feather name="layers" size={28} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text }]}>No Curated Slides</Text>
             <Text style={[styles.emptySub, { color: C.textMuted }]}>
-              Add circulars or events from the candidates list below to feature them on the student home banner.
+              Add announcements, events, or clubs from below to feature them on the student home banner.
             </Text>
           </View>
         ) : (
           <View style={styles.activeListContainer}>
             {activeSlides.map((slide, index) => {
-              const src = resolveBannerSource(slide.imageUri, slide.localImage);
+              const src = resolveBannerSource(slide.imageUri, slide.localImage) || (
+                slide.type === 'Event'
+                  ? BANNERS_MAP['hackathon-2026.jpg']
+                  : slide.type === 'Club'
+                  ? BANNERS_MAP['blood-drive.jpg']
+                  : BANNERS_MAP['convocation-2026.jpg']
+              );
               const isFirst = index === 0;
               const isLast = index === activeSlides.length - 1;
               const isBusy = savingId === slide.id;
@@ -385,7 +522,10 @@ export function ManageBannerScreen({ navigation }: any) {
                   key={slide.id}
                   style={[
                     styles.activeSlideCard,
-                    { backgroundColor: C.surface, borderColor: previewIdx === index ? C.brand : C.border },
+                    {
+                      backgroundColor: C.surface,
+                      borderColor: previewIdx === index ? (isDark ? '#52525b' : '#a1a1aa') : C.border,
+                    },
                   ]}
                 >
                   <TouchableOpacity
@@ -400,7 +540,7 @@ export function ManageBannerScreen({ navigation }: any) {
                         <Feather name="image" size={16} color={C.textMuted} />
                       </View>
                     )}
-                    <View style={[styles.orderIndexTag, { backgroundColor: C.brand }]}>
+                    <View style={[styles.orderIndexTag, { backgroundColor: isDark ? '#27272a' : '#18181b', borderColor: isDark ? '#3f3f46' : '#27272a' }]}>
                       <Text style={styles.orderIndexTxt}>#{index + 1}</Text>
                     </View>
                   </TouchableOpacity>
@@ -446,9 +586,9 @@ export function ManageBannerScreen({ navigation }: any) {
                       hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                     >
                       {isBusy ? (
-                        <ActivityIndicator size="small" color={C.danger} />
+                        <ActivityIndicator size="small" color={C.textMuted} />
                       ) : (
-                        <Feather name="trash-2" size={16} color={C.danger} />
+                        <Feather name="trash-2" size={16} color={C.textMuted} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -460,9 +600,9 @@ export function ManageBannerScreen({ navigation }: any) {
 
         {/* Section 2: Candidate Pool */}
         <View style={styles.candidateSection}>
-          <Text style={[styles.sectionTitle, { color: C.text }]}>Add Announcements & Events</Text>
+          <Text style={[styles.sectionTitle, { color: C.text }]}>Add Announcements, Events & Clubs</Text>
           <Text style={[styles.sectionHint, { color: C.textMuted }]}>
-            Select circulars or upcoming events to display on the banner
+            Select items to display on the student home banner
           </Text>
 
           {/* Search Bar */}
@@ -472,7 +612,7 @@ export function ManageBannerScreen({ navigation }: any) {
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
               value={search}
               onChangeText={setSearch}
-              placeholder="Search by title or department..."
+              placeholder="Search by title, department, or venue..."
               placeholderTextColor={C.textMuted}
             />
             {search.length > 0 && (
@@ -482,27 +622,19 @@ export function ManageBannerScreen({ navigation }: any) {
             )}
           </View>
 
-          {/* Filter Pills */}
+          {/* Candidate Filter Tabs: All, Announcements, Events, Clubs */}
           <View style={styles.filterRow}>
-            {(['all', 'manual', 'scraped', 'events'] as const).map((tab) => {
-              const isActive = candidateTab === tab;
-              const label =
-                tab === 'all'
-                  ? 'All Candidates'
-                  : tab === 'manual'
-                  ? 'Manual Broadcasts'
-                  : tab === 'scraped'
-                  ? 'BUBT Scraped'
-                  : 'Campus Events';
+            {candidateTabs.map((tab) => {
+              const isActive = candidateTab === tab.key;
               return (
                 <TouchableOpacity
-                  key={tab}
-                  onPress={() => setCandidateTab(tab)}
+                  key={tab.key}
+                  onPress={() => setCandidateTab(tab.key)}
                   style={[
                     styles.filterTabPill,
                     {
-                      backgroundColor: isActive ? C.brand : C.surface,
-                      borderColor: isActive ? C.brand : C.border,
+                      backgroundColor: isActive ? (isDark ? '#27272a' : '#18181b') : C.surface,
+                      borderColor: isActive ? (isDark ? '#3f3f46' : '#27272a') : C.border,
                     },
                   ]}
                   activeOpacity={0.8}
@@ -510,10 +642,13 @@ export function ManageBannerScreen({ navigation }: any) {
                   <Text
                     style={[
                       styles.filterTabTxt,
-                      { color: isActive ? '#ffffff' : C.textMuted, fontFamily: FontFamily.jakartaBold },
+                      {
+                        color: isActive ? '#ffffff' : C.textMuted,
+                        fontFamily: FontFamily.jakartaBold,
+                      },
                     ]}
                   >
-                    {label}
+                    {tab.label} ({tab.count})
                   </Text>
                 </TouchableOpacity>
               );
@@ -525,18 +660,24 @@ export function ManageBannerScreen({ navigation }: any) {
             <View style={[styles.emptyPoolCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Feather name="info" size={20} color={C.textMuted} />
               <Text style={[styles.emptyPoolTxt, { color: C.textMuted }]}>
-                No candidate notices or events found matching your filter.
+                No candidate items found matching your filter.
               </Text>
             </View>
           ) : (
             filteredCandidates.map((item) => {
               const isFull = activeSlides.length >= 6;
               const isBusy = savingId === item.id;
-              const src = resolveBannerSource(item.image);
+              const src = resolveBannerSource(item.image) || (
+                item.type === 'Event'
+                  ? BANNERS_MAP['hackathon-2026.jpg']
+                  : item.type === 'Club'
+                  ? BANNERS_MAP['blood-drive.jpg']
+                  : null
+              );
 
               return (
                 <View
-                  key={item.id}
+                  key={`${item.type}-${item.id}`}
                   style={[styles.candidateCard, { backgroundColor: C.surface, borderColor: C.border }]}
                 >
                   <View style={styles.candidateThumbWrap}>
@@ -544,7 +685,11 @@ export function ManageBannerScreen({ navigation }: any) {
                       <Image source={src} style={styles.candidateThumb} resizeMode="cover" />
                     ) : (
                       <View style={[styles.candidateThumb, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
-                        <Feather name="file-text" size={18} color={C.textMuted} />
+                        <Feather
+                          name={item.type === 'Notice' ? 'file-text' : item.type === 'Event' ? 'calendar' : 'users'}
+                          size={18}
+                          color={C.textMuted}
+                        />
                       </View>
                     )}
                   </View>
@@ -572,11 +717,13 @@ export function ManageBannerScreen({ navigation }: any) {
                     style={[
                       styles.addBtn,
                       {
-                        backgroundColor: isFull ? C.surface2 : C.brand,
+                        backgroundColor: isFull ? C.surface2 : (isDark ? '#27272a' : '#18181b'),
+                        borderColor: isFull ? C.border : (isDark ? '#3f3f46' : '#27272a'),
+                        borderWidth: 1,
                         opacity: isFull || isBusy ? 0.6 : 1,
                       },
                     ]}
-                    onPress={() => handleAddAnnouncement(item.raw)}
+                    onPress={() => handleAddCandidate(item)}
                     disabled={isFull || isBusy}
                     activeOpacity={0.8}
                   >
@@ -584,7 +731,7 @@ export function ManageBannerScreen({ navigation }: any) {
                       <ActivityIndicator size="small" color="#ffffff" />
                     ) : (
                       <>
-                        <Feather name="plus" size={14} color="#ffffff" />
+                        <Feather name="plus" size={13} color="#ffffff" />
                         <Text style={styles.addBtnTxt}>Add</Text>
                       </>
                     )}
@@ -647,15 +794,15 @@ const styles = StyleSheet.create({
   },
   previewTagTxt: {
     fontFamily: FontFamily.jakartaBold,
-    fontSize: 12,
+    fontSize: 12.5,
   },
   previewCountTxt: {
     fontFamily: FontFamily.jakartaMedium,
     fontSize: 12,
   },
   previewCard: {
-    height: 140,
-    borderRadius: Radius.md,
+    height: 156,
+    borderRadius: 14,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: '#000000',
@@ -666,14 +813,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  previewPlaceholder: {
-    ...StyleSheet.absoluteFill as any,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   previewScrim: {
-    padding: 12,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    padding: 14,
+    zIndex: 10,
   },
   previewBadgeRow: {
     marginBottom: 4,
@@ -681,8 +823,9 @@ const styles = StyleSheet.create({
   typeBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 4,
+    borderWidth: 1,
   },
   typeBadgeTxt: {
     color: '#ffffff',
@@ -692,17 +835,17 @@ const styles = StyleSheet.create({
   previewTitle: {
     color: '#ffffff',
     fontFamily: FontFamily.jakartaBold,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 14.5,
+    lineHeight: 19,
   },
   previewSub: {
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.85)',
     fontFamily: FontFamily.jakartaRegular,
-    fontSize: 11.5,
-    marginTop: 2,
+    fontSize: 12,
+    marginTop: 3,
   },
   emptyPreviewCard: {
-    height: 100,
+    height: 110,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderStyle: 'dashed',
@@ -715,6 +858,23 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.jakartaMedium,
     fontSize: 12,
     textAlign: 'center',
+  },
+  indicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  indicatorBar: {
+    height: 3,
+    borderRadius: 2,
+  },
+  indicatorActive: {
+    width: 24,
+  },
+  indicatorInactive: {
+    width: 12,
   },
   slotRow: {
     flexDirection: 'row',
@@ -776,6 +936,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 3,
+    borderWidth: 1,
   },
   orderIndexTxt: {
     color: '#ffffff',
@@ -852,7 +1013,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     paddingHorizontal: 12,
-    height: 44,
+    height: 48,
     marginTop: 10,
     gap: 8,
   },
@@ -926,8 +1087,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: Radius.sm,
   },
   addBtnTxt: {

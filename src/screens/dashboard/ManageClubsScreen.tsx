@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, RefreshControl, ActivityIndicator, KeyboardAvoidingView, Alert,
-  Platform, type ViewStyle, type TextStyle,
+  FlatList, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -23,15 +23,7 @@ type CategoryFilter = typeof CATEGORY_LIST[number];
 const FORM_CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
 type FormCategory = typeof FORM_CATEGORIES[number];
 
-const CL_CATS: Record<string, string> = {
-  Tech: Accent.purple,
-  Cultural: Accent.pink,
-  Sports: Accent.teal,
-  Professional: Accent.blue,
-  Social: Accent.amber,
-  other: Accent.slate,
-};
-
+// Standard human-designed vector icons (Lucide / Feather from 21st.dev style)
 const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   All: 'layers',
   Tech: 'cpu',
@@ -41,6 +33,25 @@ const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   Social: 'users',
 };
 
+interface DepartmentOption {
+  id: string;
+  code: string;
+  name: string;
+  icon: keyof typeof Feather.glyphMap;
+}
+
+const DEPARTMENTS: DepartmentOption[] = [
+  { id: 'All', code: 'All', name: 'All Departments', icon: 'globe' },
+  { id: 'CSE', code: 'CSE', name: 'Computer Science & Engineering', icon: 'cpu' },
+  { id: 'EEE', code: 'EEE', name: 'Electrical & Electronic Engineering', icon: 'zap' },
+  { id: 'BBA', code: 'BBA', name: 'Business Administration', icon: 'briefcase' },
+  { id: 'Law', code: 'Law', name: 'Department of Law', icon: 'shield' },
+  { id: 'English', code: 'English', name: 'Department of English', icon: 'book-open' },
+  { id: 'Civil', code: 'Civil', name: 'Civil Engineering', icon: 'compass' },
+  { id: 'Textile', code: 'Textile', name: 'Textile Engineering', icon: 'layers' },
+  { id: 'Economics', code: 'Economics', name: 'Department of Economics', icon: 'trending-up' },
+];
+
 interface ClubRow {
   id: string;
   name: string;
@@ -49,6 +60,16 @@ interface ClubRow {
   is_active: boolean;
   president_name?: string | null;
   member_count?: number;
+}
+
+interface StudentItem {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  department: string | null;
+  intake: string | null;
+  student_id: string | null;
+  email: string | null;
 }
 
 export function ManageClubsScreen({ navigation }: any) {
@@ -74,10 +95,13 @@ export function ManageClubsScreen({ navigation }: any) {
   const [createCategoryModalVisible, setCreateCategoryModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // Assign President Sheet state
+  // Full-page Appoint President state
   const [presTarget, setPresTarget] = useState<ClubRow | null>(null);
   const [studentQuery, setStudentQuery] = useState('');
-  const [studentResults, setStudentResults] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
+  const [selectedDept, setSelectedDept] = useState<string>('All');
+  const [deptModalVisible, setDeptModalVisible] = useState(false);
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const [assigning, setAssigning] = useState(false);
 
   const load = useCallback(async () => {
@@ -102,24 +126,27 @@ export function ManageClubsScreen({ navigation }: any) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  // Debounced search for student directory in President Assignment sheet
+  // Load students when Appoint President full page opens
   useEffect(() => {
-    const q = studentQuery.trim();
-    if (!presTarget || q.length < 2) {
-      setStudentResults([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
+    if (!presTarget) return;
+    let isCancelled = false;
+    (async () => {
+      setStudentsLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url')
-        .ilike('full_name', `%${q}%`)
+        .select('id, full_name, avatar_url, department, intake, student_id, email')
         .eq('role', 'student')
-        .limit(12);
-      if (data) setStudentResults(data as any[]);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [studentQuery, presTarget]);
+        .order('full_name', { ascending: true })
+        .limit(500);
+
+      if (!isCancelled && data) {
+        setStudents(data as StudentItem[]);
+      }
+      if (!isCancelled) setStudentsLoading(false);
+    })();
+
+    return () => { isCancelled = true; };
+  }, [presTarget]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -151,52 +178,7 @@ export function ManageClubsScreen({ navigation }: any) {
     await load();
   }
 
-  function handleToggleActive(c: ClubRow) {
-    if (c.is_active) {
-      Alert.alert(
-        'Deactivate Club?',
-        `Are you sure you want to deactivate "${c.name}"? It will be hidden from student browsing. All posts, members, and history will remain safely preserved.`,
-        [
-          { text: t.common.cancel, style: 'cancel' },
-          {
-            text: t.clubs.deactivate,
-            style: 'destructive',
-            onPress: async () => {
-              const { error } = await supabase.from('clubs').update({ is_active: false }).eq('id', c.id);
-              if (error) {
-                toast({ type: 'error', title: t.common.error, message: error.message });
-                return;
-              }
-              setClubs(prev => prev.map(x => (x.id === c.id ? { ...x, is_active: false } : x)));
-              toast({ type: 'info', title: 'Club Deactivated', message: `${c.name} is now hidden from students.` });
-            },
-          },
-        ]
-      );
-    } else {
-      Alert.alert(
-        'Reactivate Club?',
-        `Make "${c.name}" active and visible to all students in the campus directory?`,
-        [
-          { text: t.common.cancel, style: 'cancel' },
-          {
-            text: t.clubs.reactivate,
-            onPress: async () => {
-              const { error } = await supabase.from('clubs').update({ is_active: true }).eq('id', c.id);
-              if (error) {
-                toast({ type: 'error', title: t.common.error, message: error.message });
-                return;
-              }
-              setClubs(prev => prev.map(x => (x.id === c.id ? { ...x, is_active: true } : x)));
-              toast({ type: 'success', title: 'Club Reactivated', message: `${c.name} is now live.` });
-            },
-          },
-        ]
-      );
-    }
-  }
-
-  function confirmAssignPresident(student: { id: string; full_name: string }) {
+  function confirmAssignPresident(student: StudentItem) {
     if (!presTarget) return;
     Alert.alert(
       'Appoint President',
@@ -226,10 +208,11 @@ export function ManageClubsScreen({ navigation }: any) {
     toast({ type: 'success', title: 'President Appointed', message: `${studentName} is now President of ${presTarget.name}.` });
     setPresTarget(null);
     setStudentQuery('');
+    setSelectedDept('All');
     await load();
   }
 
-  // Filtered dataset
+  // Filtered dataset for clubs
   const filteredClubs = useMemo(() => {
     let result = clubs;
 
@@ -249,6 +232,31 @@ export function ManageClubsScreen({ navigation }: any) {
 
     return result;
   }, [clubs, categoryFilter, searchQuery]);
+
+  // Filtered dataset for students in President full-page modal
+  const filteredStudents = useMemo(() => {
+    let list = students;
+
+    if (selectedDept !== 'All') {
+      list = list.filter(s => s.department === selectedDept);
+    }
+
+    const q = studentQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(s =>
+        s.full_name.toLowerCase().includes(q) ||
+        (s.student_id && s.student_id.toLowerCase().includes(q)) ||
+        (s.department && s.department.toLowerCase().includes(q)) ||
+        (s.intake && s.intake.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [students, selectedDept, studentQuery]);
+
+  const activeDeptItem = useMemo(() => {
+    return DEPARTMENTS.find(d => d.id === selectedDept) ?? DEPARTMENTS[0];
+  }, [selectedDept]);
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -291,14 +299,14 @@ export function ManageClubsScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* 2. Standard 58dp Category Filter Dropdown Bar */}
+        {/* 2. Big 58dp Category Filter Dropdown Bar (Pure Monochrome) */}
         <TouchableOpacity
           style={[
             styles.bar58,
             styles.dropdownBar,
             {
-              backgroundColor: categoryFilter !== 'All' ? (isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff') : C.surface,
-              borderColor: categoryFilter !== 'All' ? C.brand : C.border,
+              backgroundColor: C.surface,
+              borderColor: C.border,
               marginBottom: 10,
             },
           ]}
@@ -308,33 +316,25 @@ export function ManageClubsScreen({ navigation }: any) {
           <View style={styles.barLeft}>
             <Feather
               name={CATEGORY_ICONS[categoryFilter] ?? 'layers'}
-              size={18}
-              color={categoryFilter !== 'All' ? C.brand : C.textMuted}
+              size={20}
+              color={C.text}
             />
-            <Text
-              style={[
-                styles.barTitle,
-                {
-                  color: categoryFilter !== 'All' ? C.brand : C.text,
-                  fontFamily: categoryFilter !== 'All' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                },
-              ]}
-            >
+            <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {categoryFilter === 'All' ? 'All Categories' : `Category: ${categoryFilter}`}
             </Text>
           </View>
-          <Feather name="chevron-down" size={18} color={categoryFilter !== 'All' ? C.brand : C.textMuted} />
+          <Feather name="chevron-down" size={18} color={C.textMuted} />
         </TouchableOpacity>
 
-        {/* 3. Standard 58dp Create New Club Bar */}
+        {/* 3. Standard 58dp Create New Club Trigger Bar */}
         <TouchableOpacity
           style={[
             styles.bar58,
             styles.dropdownBar,
             {
               backgroundColor: C.surface,
-              borderColor: C.brand,
-              borderLeftColor: C.brand,
+              borderColor: C.border,
+              borderLeftColor: C.text,
               borderLeftWidth: 4,
               marginBottom: 14,
             },
@@ -343,18 +343,18 @@ export function ManageClubsScreen({ navigation }: any) {
           activeOpacity={0.75}
         >
           <View style={styles.barLeft}>
-            <Feather name="plus-circle" size={20} color={C.brand} />
+            <Feather name="plus-circle" size={20} color={C.text} />
             <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.clubs.newClub}
             </Text>
           </View>
-          <Feather name="chevron-right" size={18} color={C.brand} />
+          <Feather name="chevron-right" size={18} color={C.textMuted} />
         </TouchableOpacity>
 
         {/* 4. Club Cards Listing */}
         {loading && clubs.length === 0 ? (
           <View style={styles.center}>
-            <ActivityIndicator color={C.brand} size="large" />
+            <ActivityIndicator color={C.text} size="large" />
           </View>
         ) : filteredClubs.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -377,7 +377,6 @@ export function ManageClubsScreen({ navigation }: any) {
         ) : (
           <View style={{ gap: 12 }}>
             {filteredClubs.map(c => {
-              const catColor = CL_CATS[c.category] ?? Accent.slate;
               return (
                 <View
                   key={c.id}
@@ -386,7 +385,6 @@ export function ManageClubsScreen({ navigation }: any) {
                     {
                       backgroundColor: C.surface,
                       borderColor: C.border,
-                      opacity: c.is_active ? 1 : 0.72,
                     },
                   ]}
                 >
@@ -400,17 +398,9 @@ export function ManageClubsScreen({ navigation }: any) {
                       <Icon name="clubs" size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <View style={styles.titleRow}>
-                        <Text style={[styles.clubName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                          {c.name}
-                        </Text>
-                        <View style={[styles.statusBadge, { backgroundColor: c.is_active ? C.successBg : C.surface2 }]}>
-                          <View style={[styles.statusDot, { backgroundColor: c.is_active ? C.success : C.textMuted }]} />
-                          <Text style={[styles.statusTxt, { color: c.is_active ? C.success : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                            {c.is_active ? t.clubs.active : t.clubs.inactive}
-                          </Text>
-                        </View>
-                      </View>
+                      <Text style={[styles.clubName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {c.name}
+                      </Text>
 
                       {c.tagline ? (
                         <Text style={[styles.tagline, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
@@ -419,8 +409,8 @@ export function ManageClubsScreen({ navigation }: any) {
                       ) : null}
 
                       <View style={styles.metaRow}>
-                        <View style={[styles.categoryPill, { backgroundColor: isDark ? `${catColor}24` : `${catColor}14` }]}>
-                          <Text style={[styles.categoryTxt, { color: catColor, fontFamily: FontFamily.jakartaBold }]}>
+                        <View style={[styles.categoryPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                          <Text style={[styles.categoryTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                             {c.category}
                           </Text>
                         </View>
@@ -431,8 +421,8 @@ export function ManageClubsScreen({ navigation }: any) {
 
                         {c.president_name ? (
                           <View style={styles.presRow}>
-                            <Feather name="award" size={12} color={Accent.amber} />
-                            <Text style={[styles.presidentTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
+                            <Feather name="award" size={13} color={C.text} />
+                            <Text style={[styles.presidentTxt, { color: C.text, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
                               {c.president_name}
                             </Text>
                           </View>
@@ -445,52 +435,27 @@ export function ManageClubsScreen({ navigation }: any) {
                     </View>
                   </TouchableOpacity>
 
-                  {/* 4 Standard Action Buttons */}
+                  {/* Symmetrical 2 Action Buttons (Covering Full Width) */}
                   <View style={[styles.actionRow, { borderTopColor: C.border }]}>
                     <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: C.surface2 }]}
+                      style={[styles.equalActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                       onPress={() => setPresTarget(c)}
                       activeOpacity={0.75}
                     >
-                      <Feather name="user-check" size={13} color={C.brand} />
-                      <Text style={[styles.actionBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                      <Feather name="user-check" size={15} color={C.text} />
+                      <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         President
                       </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: C.surface2 }]}
+                      style={[styles.equalActionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                       onPress={() => navigation.navigate('ClubManage', { clubId: c.id })}
                       activeOpacity={0.75}
                     >
-                      <Feather name="edit-2" size={13} color={C.text2} />
-                      <Text style={[styles.actionBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      <Feather name="edit-2" size={15} color={C.text} />
+                      <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         Edit
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: C.surface2 }]}
-                      onPress={() => navigation.navigate('ClubMembers', { clubId: c.id })}
-                      activeOpacity={0.75}
-                    >
-                      <Feather name="users" size={13} color={C.text2} />
-                      <Text style={[styles.actionBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        Roster
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.actionBtn,
-                        { backgroundColor: c.is_active ? C.dangerBg : C.successBg },
-                      ]}
-                      onPress={() => handleToggleActive(c)}
-                      activeOpacity={0.75}
-                    >
-                      <Feather name="power" size={13} color={c.is_active ? C.danger : C.success} />
-                      <Text style={[styles.actionBtnTxt, { color: c.is_active ? C.danger : C.success, fontFamily: FontFamily.jakartaBold }]}>
-                        {c.is_active ? t.clubs.deactivate : t.clubs.reactivate}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -503,7 +468,7 @@ export function ManageClubsScreen({ navigation }: any) {
       </ScrollView>
 
       {/* ─────────────────────────────────────────────────────────────
-          FULL-PAGE CREATE CLUB MODAL (All 58dp Standard Bars)
+          FULL-PAGE CREATE CLUB MODAL (All 58dp Standard Bars & Monochrome)
           ───────────────────────────────────────────────────────────── */}
       <Modal visible={createOpen} animationType="slide" onRequestClose={() => setCreateOpen(false)}>
         <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -550,7 +515,7 @@ export function ManageClubsScreen({ navigation }: any) {
                 placeholderTextColor={C.textMuted}
               />
 
-              {/* Field 3: Category Dropdown Bar (58dp) */}
+              {/* Field 3: Category Dropdown Bar (58dp, Monochrome with Vector Icon) */}
               <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginTop: 16 }]}>
                 CATEGORY
               </Text>
@@ -564,7 +529,7 @@ export function ManageClubsScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={styles.barLeft}>
-                  <View style={[styles.dot10, { backgroundColor: CL_CATS[newCategory] ?? C.brand }]} />
+                  <Feather name={CATEGORY_ICONS[newCategory] ?? 'layers'} size={20} color={C.text} />
                   <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {newCategory}
                   </Text>
@@ -597,7 +562,7 @@ export function ManageClubsScreen({ navigation }: any) {
       </Modal>
 
       {/* ─────────────────────────────────────────────────────────────
-          CREATE CATEGORY PICKER BOTTOM SHEET (58dp Bars)
+          CREATE CATEGORY PICKER BOTTOM SHEET (58dp Monochrome Bars)
           ───────────────────────────────────────────────────────────── */}
       <Modal
         visible={createCategoryModalVisible}
@@ -616,7 +581,6 @@ export function ManageClubsScreen({ navigation }: any) {
             <View style={{ gap: 8 }}>
               {FORM_CATEGORIES.map(cat => {
                 const isSelected = newCategory === cat;
-                const catColor = CL_CATS[cat] ?? C.brand;
                 return (
                   <TouchableOpacity
                     key={cat}
@@ -624,8 +588,8 @@ export function ManageClubsScreen({ navigation }: any) {
                       styles.bar58,
                       styles.dropdownBar,
                       {
-                        backgroundColor: isSelected ? (isDark ? `${catColor}20` : '#eff6ff') : C.bg,
-                        borderColor: isSelected ? catColor : C.border,
+                        backgroundColor: isSelected ? C.surface2 : C.bg,
+                        borderColor: isSelected ? C.text : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -635,12 +599,12 @@ export function ManageClubsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.barLeft}>
-                      <View style={[styles.dot10, { backgroundColor: catColor }]} />
+                      <Feather name={CATEGORY_ICONS[cat] ?? 'layers'} size={20} color={C.text} />
                       <Text
                         style={[
                           styles.barTitle,
                           {
-                            color: isSelected ? catColor : C.text,
+                            color: C.text,
                             fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
@@ -648,7 +612,7 @@ export function ManageClubsScreen({ navigation }: any) {
                         {cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={catColor} />}
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -658,7 +622,7 @@ export function ManageClubsScreen({ navigation }: any) {
       </Modal>
 
       {/* ─────────────────────────────────────────────────────────────
-          MAIN SCREEN CATEGORY FILTER BOTTOM SHEET (58dp Bars)
+          MAIN SCREEN CATEGORY FILTER BOTTOM SHEET (58dp Monochrome Bars)
           ───────────────────────────────────────────────────────────── */}
       <Modal
         visible={filterModalVisible}
@@ -677,7 +641,6 @@ export function ManageClubsScreen({ navigation }: any) {
             <View style={{ gap: 8 }}>
               {CATEGORY_LIST.map(cat => {
                 const isSelected = categoryFilter === cat;
-                const catColor = cat === 'All' ? C.brand : (CL_CATS[cat] ?? C.brand);
                 return (
                   <TouchableOpacity
                     key={cat}
@@ -685,8 +648,8 @@ export function ManageClubsScreen({ navigation }: any) {
                       styles.bar58,
                       styles.dropdownBar,
                       {
-                        backgroundColor: isSelected ? (isDark ? 'rgba(59, 130, 246, 0.18)' : '#eff6ff') : C.bg,
-                        borderColor: isSelected ? C.brand : C.border,
+                        backgroundColor: isSelected ? C.surface2 : C.bg,
+                        borderColor: isSelected ? C.text : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -698,14 +661,14 @@ export function ManageClubsScreen({ navigation }: any) {
                     <View style={styles.barLeft}>
                       <Feather
                         name={CATEGORY_ICONS[cat] ?? 'layers'}
-                        size={18}
-                        color={isSelected ? C.brand : C.textMuted}
+                        size={20}
+                        color={C.text}
                       />
                       <Text
                         style={[
                           styles.barTitle,
                           {
-                            color: isSelected ? C.brand : C.text,
+                            color: C.text,
                             fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
@@ -713,7 +676,7 @@ export function ManageClubsScreen({ navigation }: any) {
                         {cat === 'All' ? 'All Categories' : cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -723,29 +686,45 @@ export function ManageClubsScreen({ navigation }: any) {
       </Modal>
 
       {/* ─────────────────────────────────────────────────────────────
-          ASSIGN PRESIDENT SHEET (58dp Search & Student Selection)
+          FULL-PAGE APPOINT PRESIDENT VIEW (58dp Dept Bar & Student List)
           ───────────────────────────────────────────────────────────── */}
-      <Modal visible={!!presTarget} transparent animationType="slide" onRequestClose={() => setPresTarget(null)}>
-        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setPresTarget(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '82%' }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              Appoint President
-            </Text>
-            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {presTarget?.name}
-            </Text>
+      <Modal
+        visible={!!presTarget}
+        animationType="slide"
+        onRequestClose={() => { setPresTarget(null); setStudentQuery(''); setSelectedDept('All'); }}
+      >
+        <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+          <SubBar
+            title="Appoint President"
+            onBack={() => { setPresTarget(null); setStudentQuery(''); setSelectedDept('All'); }}
+          />
 
-            <View style={[styles.bar58, { backgroundColor: C.bg, borderColor: C.border, marginTop: 12, marginBottom: 8 }]}>
+          <View style={[styles.fullPageContent, { paddingHorizontal: Layout.screenPadding }]}>
+            {/* Club Target Banner */}
+            <View style={[styles.targetClubBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.thumb}>
+                <Icon name="clubs" size={32} color={C.text} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[styles.targetClubTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {presTarget?.name}
+                </Text>
+                <Text style={[styles.targetClubSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {presTarget?.president_name ? `Current: ${presTarget.president_name}` : 'No president currently assigned'}
+                </Text>
+              </View>
+            </View>
+
+            {/* 1. 58dp Student Search Bar */}
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginTop: 10, marginBottom: 10 }]}>
               <Icon name="search" size={20} color={C.textMuted} />
               <TextInput
                 style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder="Search registered students..."
+                placeholder="Search students by name, ID, intake..."
                 placeholderTextColor={C.textMuted}
                 value={studentQuery}
                 onChangeText={setStudentQuery}
-                autoFocus
+                autoCapitalize="none"
               />
               {studentQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setStudentQuery('')} hitSlop={8} activeOpacity={0.7}>
@@ -754,35 +733,161 @@ export function ManageClubsScreen({ navigation }: any) {
               )}
             </View>
 
-            <ScrollView style={{ maxHeight: 300, marginTop: 4 }} keyboardShouldPersistTaps="handled">
-              {assigning ? (
-                <ActivityIndicator color={C.brand} style={{ paddingVertical: 24 }} />
-              ) : studentResults.map(r => (
-                <TouchableOpacity
-                  key={r.id}
-                  style={[styles.studentResultCard, { backgroundColor: C.bg, borderColor: C.border }]}
-                  onPress={() => confirmAssignPresident(r)}
-                  activeOpacity={0.7}
+            {/* 2. 58dp Department Dropdown Bar */}
+            <TouchableOpacity
+              style={[
+                styles.bar58,
+                styles.dropdownBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: selectedDept !== 'All' ? C.text : C.border,
+                  marginBottom: 12,
+                },
+              ]}
+              onPress={() => setDeptModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.barLeft}>
+                <Feather name={activeDeptItem.icon} size={20} color={C.text} />
+                <Text
+                  style={[
+                    styles.barTitle,
+                    {
+                      color: C.text,
+                      fontFamily: selectedDept !== 'All' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                  numberOfLines={1}
                 >
-                  <Avatar uri={r.avatar_url} name={r.full_name} size="sm" />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[styles.studentResultName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {r.full_name}
-                    </Text>
-                  </View>
-                  <View style={[styles.appointPill, { backgroundColor: C.brand }]}>
-                    <Text style={[styles.appointTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                      Appoint
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-
-              {studentQuery.trim().length >= 2 && studentResults.length === 0 && (
-                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', paddingVertical: 24 }]}>
-                  {t.common.noResults}
+                  {selectedDept === 'All' ? 'All Departments' : activeDeptItem.name}
                 </Text>
-              )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {selectedDept !== 'All' && (
+                  <View style={[styles.countPill, { backgroundColor: C.surface2 }]}>
+                    <Text style={[styles.countPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      {filteredStudents.length}
+                    </Text>
+                  </View>
+                )}
+                <Feather name="chevron-down" size={18} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {/* 3. Students List */}
+            {studentsLoading ? (
+              <View style={styles.center}>
+                <ActivityIndicator color={C.brand} size="large" />
+                <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}>
+                  Loading students...
+                </Text>
+              </View>
+            ) : filteredStudents.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Feather name="users" size={32} color={C.textMuted} />
+                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {studentQuery ? 'No students match your search' : 'No students found in this department'}
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredStudents}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 30 }}
+                renderItem={({ item }) => {
+                  const metaParts: string[] = [];
+                  if (item.department) metaParts.push(item.department);
+                  if (item.intake) metaParts.push(`Intake ${item.intake}`);
+                  if (item.student_id) metaParts.push(item.student_id);
+                  const metaLine = metaParts.join(' · ') || item.email || 'Student';
+
+                  return (
+                    <TouchableOpacity
+                      style={[styles.studentBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                      onPress={() => confirmAssignPresident(item)}
+                      activeOpacity={0.75}
+                    >
+                      <Avatar uri={item.avatar_url} name={item.full_name} size="sm" />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[styles.studentName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {item.full_name}
+                        </Text>
+                        <Text style={[styles.studentMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                          {metaLine}
+                        </Text>
+                      </View>
+                      <View style={[styles.appointBtn, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                        <Text style={[styles.appointBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          Appoint
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* ─────────────────────────────────────────────────────────────
+          DEPARTMENT SELECTION BOTTOM SHEET (58dp Bars)
+          ───────────────────────────────────────────────────────────── */}
+      <Modal
+        visible={deptModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeptModalVisible(false)}
+      >
+        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setDeptModalVisible(false)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '80%' }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 14 }]}>
+              Select Department
+            </Text>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 20 }}>
+              {DEPARTMENTS.map(dept => {
+                const isSelected = selectedDept === dept.id;
+                return (
+                  <TouchableOpacity
+                    key={dept.id}
+                    style={[
+                      styles.bar58,
+                      styles.dropdownBar,
+                      {
+                        backgroundColor: isSelected ? C.surface2 : C.bg,
+                        borderColor: isSelected ? C.text : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedDept(dept.id);
+                      setDeptModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.barLeft}>
+                      <Feather name={dept.icon} size={20} color={C.text} />
+                      <Text
+                        style={[
+                          styles.barTitle,
+                          {
+                            color: C.text,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {dept.name}
+                      </Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -795,6 +900,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 24 } as ViewStyle,
+  fullPageContent: { flex: 1, paddingTop: 8 } as ViewStyle,
 
   // Universal 58dp Bar Standard
   bar58: {
@@ -831,11 +937,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.8,
   } as TextStyle,
-  dot10: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  } as ViewStyle,
 
   submitBtn58: {
     justifyContent: 'center',
@@ -852,11 +953,7 @@ const styles = StyleSheet.create({
   clubCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
   cardHeader: { flexDirection: 'row', gap: 12, padding: 14 } as ViewStyle,
   thumb: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 } as ViewStyle,
-  clubName: { fontSize: 15, flex: 1 } as TextStyle,
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 } as ViewStyle,
-  statusDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  statusTxt: { fontSize: 11 } as TextStyle,
+  clubName: { fontSize: 15 } as TextStyle,
   tagline: { fontSize: 12.5, marginTop: 3 } as TextStyle,
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 } as ViewStyle,
   categoryPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 } as ViewStyle,
@@ -868,21 +965,22 @@ const styles = StyleSheet.create({
 
   actionRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   } as ViewStyle,
-  actionBtn: {
+  equalActionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    height: 38,
-    borderRadius: 10,
+    gap: 6,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
   } as ViewStyle,
-  actionBtnTxt: { fontSize: 12 } as TextStyle,
+  actionBtnTxt: { fontSize: 13 } as TextStyle,
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' } as ViewStyle,
   sheet: {
@@ -894,19 +992,43 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   sheetHandle: { width: 38, height: 4, borderRadius: 2, backgroundColor: '#888', alignSelf: 'center', marginBottom: 16 } as ViewStyle,
   sheetTitle: { fontSize: 18 } as TextStyle,
-  sheetSub: { fontSize: 13, marginTop: 2, marginBottom: 8 } as TextStyle,
 
-  studentResultCard: {
+  // Appoint President Full Page Elements
+  targetClubBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
+    marginTop: 6,
+  } as ViewStyle,
+  targetClubTitle: { fontSize: 15 } as TextStyle,
+  targetClubSub: { fontSize: 12.5, marginTop: 2 } as TextStyle,
+
+  countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 } as ViewStyle,
+  countPillTxt: { fontSize: 11 } as TextStyle,
+  loadingTxt: { fontSize: 13 } as TextStyle,
+
+  studentBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginBottom: 8,
   } as ViewStyle,
-  studentResultName: { fontSize: 14 } as TextStyle,
-  appointPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 } as ViewStyle,
-  appointTxt: { fontSize: 12 } as TextStyle,
-  emptyTxt: { fontSize: 13 } as TextStyle,
+  studentName: { fontSize: 14 } as TextStyle,
+  studentMeta: { fontSize: 12, marginTop: 2 } as TextStyle,
+  appointBtn: {
+    paddingHorizontal: 12,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  appointBtnTxt: { fontSize: 12 } as TextStyle,
 });

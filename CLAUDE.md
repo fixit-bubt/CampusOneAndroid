@@ -3380,3 +3380,23 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 20s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 85. Dashboard Banner Admin Overhaul, Student Home Preview Fix & Clubs Hero Carousel Integration (`ManageBannerScreen.tsx`, `announcementService.ts`, `20261103030000_clubs_hero_banner_curation.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Student Home Preview Fix (`ManageBannerScreen.tsx`):**
+  - **Eliminated Pitch-Black Preview Bug:** When notices or candidates lacked uploaded images, the preview rendered as a pitch-black box. Resolved by integrating `expo-linear-gradient` (`['rgba(0,0,0,0.20)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']`) with intelligent varsity background fallbacks (`BANNERS_MAP['convocation-2026.jpg']` for Notices, `hackathon-2026.jpg` for Events, `blood-drive.jpg` for Clubs).
+  - **1:1 Visual Parity with Student Home Banner:** Overlaid title (14.5sp, bold, 2-line clamp), subtitle (12sp, regular), and slot indicator badge on top of the gradient. Added pagination line indicator bars below the preview matching `HomeHeroBanner.tsx`.
+- **Clubs Integration into Home Hero Banner Pool:**
+  - **Database Migration (`20261103030000_clubs_hero_banner_curation.sql`):** Added `in_banner` (boolean) and `banner_order` (integer) to `public.clubs`, partial index on active banner clubs, PostgreSQL RPC `set_club_banner(uuid, boolean, integer)`, and upgraded `reorder_banner_items(jsonb)` to support `'club'` alongside `'announcement'` and `'event'`.
+  - **Service Layer Expansion (`announcementService.ts`):** Expanded `BannerSlide.type` to `'Event' | 'Notice' | 'Club'`. Updated `fetchCuratedBannerSlides()` to fetch active curated clubs and navigate to `ClubDetail` with `{ clubId: c.id }`. Added `updateClubBannerStatus()`, and updated `saveBannerOrder()` and `fetchAdminBannerPool()`.
+- **Candidate Filter Refactoring & Anti-Clutter Zero-Color Standard:**
+  - **Student-Facing Candidate Tabs:** Replaced technical developer tabs (`manual`, `scraped`) with natural campus categories matching the student home page: `All`, `Announcements`, `Events`, and `Clubs` with live count badges.
+  - **Pure Monochrome Zinc Palette:** Eliminated all color clutter (blue borders, red icons, yellow pills). Active filter tabs, slot pills, and candidate `+ Add` buttons strictly use high-contrast monochrome Zinc (`#27272a` in dark mode, `#18181b` in light mode). Action controls and trash buttons use subtle monochrome icons (`C.textMuted`).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors (`tsc --noEmit`).
+  - Unit Tests: 18 test suites passed, 140 tests passed (`npm test`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
+  - Remote Database Push: Successfully pushed migration `20261103030000_clubs_hero_banner_curation.sql` to remote Supabase (`xhgpxvyqrufbbuivttmi`).

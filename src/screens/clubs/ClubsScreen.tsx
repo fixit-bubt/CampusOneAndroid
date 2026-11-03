@@ -11,7 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
@@ -19,15 +19,6 @@ import { useT } from '../../i18n';
 
 const CATEGORY_LIST = ['All', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
 type CategoryFilter = typeof CATEGORY_LIST[number];
-
-const CL_CATS: Record<string, string> = {
-  Tech: Accent.purple,
-  Cultural: Accent.pink,
-  Sports: Accent.teal,
-  Professional: Accent.blue,
-  Social: Accent.amber,
-  other: Accent.slate,
-};
 
 const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   All: 'layers',
@@ -49,7 +40,7 @@ interface Club {
 }
 
 export function ClubsScreen({ navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const t = useT();
   const { user } = useAuth();
 
@@ -171,14 +162,14 @@ export function ClubsScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* 2. Universal 58dp Category Dropdown Bar */}
+        {/* 2. Big 58dp Category Dropdown Bar (Clean Monochrome) */}
         <TouchableOpacity
           style={[
             styles.bar58,
             styles.dropdownBar,
             {
-              backgroundColor: categoryFilter !== 'All' ? (isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff') : C.surface,
-              borderColor: categoryFilter !== 'All' ? C.brand : C.border,
+              backgroundColor: C.surface,
+              borderColor: C.border,
               marginBottom: 14,
             },
           ]}
@@ -188,28 +179,20 @@ export function ClubsScreen({ navigation }: any) {
           <View style={styles.barLeft}>
             <Feather
               name={CATEGORY_ICONS[categoryFilter] ?? 'layers'}
-              size={18}
-              color={categoryFilter !== 'All' ? C.brand : C.textMuted}
+              size={20}
+              color={C.text}
             />
-            <Text
-              style={[
-                styles.barTitle,
-                {
-                  color: categoryFilter !== 'All' ? C.brand : C.text,
-                  fontFamily: categoryFilter !== 'All' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                },
-              ]}
-            >
+            <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {categoryFilter === 'All' ? 'All Club Categories' : `Category: ${categoryFilter}`}
             </Text>
           </View>
-          <Feather name="chevron-down" size={18} color={categoryFilter !== 'All' ? C.brand : C.textMuted} />
+          <Feather name="chevron-down" size={18} color={C.textMuted} />
         </TouchableOpacity>
 
         {/* 3. Club Cards List */}
         {loading && clubs.length === 0 ? (
           <View style={styles.center}>
-            <ActivityIndicator style={{ marginTop: 30 }} color={C.brand} size="large" />
+            <ActivityIndicator style={{ marginTop: 30 }} color={C.text} size="large" />
           </View>
         ) : loadErr && clubs.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -239,7 +222,6 @@ export function ClubsScreen({ navigation }: any) {
         ) : (
           <View style={{ gap: 10 }}>
             {filteredClubs.map(c => {
-              const catColor = CL_CATS[c.category] ?? Accent.slate;
               const role = c.user_role;
               return (
                 <TouchableOpacity
@@ -258,9 +240,8 @@ export function ClubsScreen({ navigation }: any) {
                         {c.name}
                       </Text>
                       {role && (
-                        <View style={[styles.rolePill, { backgroundColor: C.infoBg }]}>
-                          <View style={[styles.roleDot, { backgroundColor: C.info }]} />
-                          <Text style={[styles.roleTxt, { color: C.info, fontFamily: FontFamily.jakartaBold }]}>
+                        <View style={[styles.rolePill, { backgroundColor: C.surface2 }]}>
+                          <Text style={[styles.roleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                             {t.clubs.roleLabels[role] ?? role}
                           </Text>
                         </View>
@@ -274,8 +255,8 @@ export function ClubsScreen({ navigation }: any) {
                     ) : null}
 
                     <View style={styles.metaRow}>
-                      <View style={[styles.categoryPill, { backgroundColor: isDark ? `${catColor}24` : `${catColor}14` }]}>
-                        <Text style={[styles.categoryTxt, { color: catColor, fontFamily: FontFamily.jakartaBold }]}>
+                      <View style={[styles.categoryPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                        <Text style={[styles.categoryTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                           {c.category}
                         </Text>
                       </View>
@@ -296,7 +277,7 @@ export function ClubsScreen({ navigation }: any) {
       </ScrollView>
 
       {/* ─────────────────────────────────────────────────────────────
-          CATEGORY FILTER BOTTOM SHEET (58dp Option Bars)
+          CATEGORY FILTER BOTTOM SHEET (58dp Monochrome Option Bars)
           ───────────────────────────────────────────────────────────── */}
       <Modal
         visible={filterModalVisible}
@@ -315,7 +296,6 @@ export function ClubsScreen({ navigation }: any) {
             <View style={{ gap: 8 }}>
               {CATEGORY_LIST.map(cat => {
                 const isSelected = categoryFilter === cat;
-                const catColor = cat === 'All' ? C.brand : (CL_CATS[cat] ?? C.brand);
                 return (
                   <TouchableOpacity
                     key={cat}
@@ -323,8 +303,8 @@ export function ClubsScreen({ navigation }: any) {
                       styles.bar58,
                       styles.dropdownBar,
                       {
-                        backgroundColor: isSelected ? (isDark ? 'rgba(59, 130, 246, 0.18)' : '#eff6ff') : C.bg,
-                        borderColor: isSelected ? C.brand : C.border,
+                        backgroundColor: isSelected ? C.surface2 : C.bg,
+                        borderColor: isSelected ? C.text : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -336,14 +316,14 @@ export function ClubsScreen({ navigation }: any) {
                     <View style={styles.barLeft}>
                       <Feather
                         name={CATEGORY_ICONS[cat] ?? 'layers'}
-                        size={18}
-                        color={isSelected ? C.brand : C.textMuted}
+                        size={20}
+                        color={C.text}
                       />
                       <Text
                         style={[
                           styles.barTitle,
                           {
-                            color: isSelected ? C.brand : C.text,
+                            color: C.text,
                             fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
@@ -351,7 +331,7 @@ export function ClubsScreen({ navigation }: any) {
                         {cat === 'All' ? 'All Club Categories' : cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -444,17 +424,9 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   rolePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 12,
-  } as ViewStyle,
-  roleDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    borderRadius: 10,
   } as ViewStyle,
   roleTxt: {
     fontSize: 11,
