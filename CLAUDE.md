@@ -3123,3 +3123,35 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 50s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 76. Study Hub Admin Panel Deep Audit & Full 58dp Zero-Slop Architecture (`ManageStudyHubScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Section Expansion Race Condition & False Empty State Elimination:**
+  - Added dedicated `loadingSections: Record<string, boolean>` tracking to eliminate the jarring 500ms flash of false "No sections added yet" state when an intake was expanded.
+  - While sections are querying from Supabase, a sleek `ActivityIndicator` renders cleanly; empty messages only appear when query resolution confirms 0 sections.
+- **Intake Deletion Capability (`confirmDeleteIntake`):**
+  - Added a dedicated delete trash button (`intakeDeleteBtn`, size 44, `trash-2`, `C.danger`) to the intake bar row with confirmation dialog.
+  - Implemented safe cascade deletion via `study_intakes` mutation, optimistically removing the intake from state and purging cached sections.
+- **Optimistic Section Deletion:**
+  - Upgraded `confirmDeleteSection` to immediately filter out deleted sections from `sectionsByIntake` state before awaiting network completion, eliminating UI lag.
+- **Pending Request Department Sync Bug Fix:**
+  - Fixed an architectural desync bug in `handleApproveRequest`: when approving a section request for department X while viewing department Y, the system now selectively refreshes the relevant department and invalidates stale intake/section caches.
+- **Add Section Modal 58dp Zero-Slop Standard:**
+  - Upgraded from cramped 46dp inputs to standard **58dp input bar** (`inputBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 14`) with monochrome `#` vector icon (`size={28}`).
+  - Added dedicated target intake context pill (`deptContextPill`) displaying target department and intake number.
+  - Added circular touch-friendly `X` close button (`sheetCloseBtn`) and full-width 58dp primary submit button (`primaryBtn58`).
+  - Configured Android keyboard avoidance with `statusBarTranslucent`, `behavior="padding"`, and inner scroll containment with safe area bottom insets.
+- **Assign CR Modal 58dp Search & Student ID Support:**
+  - Upgraded to a standard **58dp Search Bar** with leading vector search icon (`size={24}`).
+  - Fixed student search query to support searching by both `full_name` and `student_id` via `.or('full_name.ilike.%q%,student_id.ilike.%q%')`.
+  - Displayed student ID directly in the results row metadata (`ID: {student_id} · {dept} · Intake {intake}`) with clean "Assign" pill.
+  - Added target section context card (`award` icon) and circular `X` close button.
+- **Reject Request Modal Polish:**
+  - Added circular `X` close button, requester context pill, clean 58dp confirmation button, and Android keyboard avoidance.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 50s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
