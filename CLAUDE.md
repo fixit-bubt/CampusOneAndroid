@@ -3744,3 +3744,17 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Unit Tests: 18 test suites passed, 140/140 tests passing (`npm test`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 48s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+
+---
+
+### 91. "My Clubs" Catalog Top Pinning & Direct Category Filter (`ClubsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Problem Solved:** Previously, all clubs were rendered in an alphabetical flat list under "All Club Categories". Students who joined or led clubs (such as the Club President of BUBT Civil Engineering Club) had their club buried down among 20 clubs at position #4, forcing users to search or scroll.
+- **Architectural & UI/UX Resolution:**
+  - **Dynamic "My Clubs" Pinned Section:** Computed `myClubs = clubs.filter(c => !!c.user_role)`. When viewing all clubs (`categoryFilter === 'All'` and no search query), any club the student is President, VP, or member of is pinned to the very top under a dedicated `MY CLUBS · <count>` section, followed by `ALL CAMPUS CLUBS`.
+  - **Direct "My Clubs" Dropdown Filter:** Added `'My Clubs'` to `CATEGORY_LIST` with a 28dp monochrome vector icon (`award`). Selecting it filters the catalog directly to the student's enrolled clubs.
+  - **Single Reusable Render Pipeline (`renderClubCard`):** Consolidated duplicate club card rendering logic into a single performant helper, ensuring consistent 32dp monochrome sector icons, bold titles, role badges (`President`), taglines, category pills, and member counts.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 54s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
