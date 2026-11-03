@@ -3546,3 +3546,24 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (	sc --noEmit).
   - Native Release APK: Locally compiled via Gradle (ssembleRelease) with local release keystore (BUILD SUCCESSFUL in 56s).
   - Direct ADB Deployment: Streamed install (db install -r) and launched on physical phone 8734b5da (Performing Streamed Install -> Success).
+
+
+---
+
+### 94. Enrolled Clubs Ambient Blue Glow, 58dp Dual Member Bar & Robust Post Photo Upload (`ClubsScreen.tsx`, `ClubDetailScreen.tsx`, `ClubPostScreen.tsx`, `ClubPostDetailScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Faded Blue Ambient Identity for Enrolled Clubs (`ClubsScreen.tsx`):**
+  - Clubs where the current student holds a role (President, VP, Editor, Member) now render with a subtle Electric Brand Blue border (`rgba(39, 94, 254, 0.45)`, 1.5dp) and an ambient blue background tint (`rgba(39, 94, 254, 0.08)` dark / `0.05` light).
+  - The sector vector icon dynamically shifts to `C.brand` and the role pill gains brand-tinted background (`rgba(39, 94, 254, 0.18)`), creating an instantaneous visual distinction for clubs the student belongs to without visual clutter.
+- **58dp Dual Action Member Bar (`ClubDetailScreen.tsx`):**
+  - Consolidated member actions into a single 58dp height container split into two balanced interactive halves (`styles.dualBar58`):
+    - Left Tab: `user-plus` icon + "Add Member" -> navigates directly to full-page student enrollment (`ClubAddMemberScreen`).
+    - Right Tab: `users` icon + "Manage" -> navigates directly to member roster & role management (`ClubMembersScreen`).
+  - Gated to President and VP (`canManageMembers`), preserving full ergonomics without pushing down feed content.
+- **Robust Photo Upload & Display Pipeline (`ClubPostScreen.tsx`, `ClubPostDetailScreen.tsx`):**
+  - **Decoupled Image Picking from Network Upload:** In `ClubPostScreen.tsx`, image selection now immediately previews the chosen photo locally and provides an overlay remove (`X`) button.
+  - **Submission-Time Upload:** Image compression and upload to `BUCKETS.photos` occurs upon tapping submit with explicit error reporting, preventing posts from being created with missing or null images.
+  - **Public URL Resolution:** In `ClubPostDetailScreen.tsx`, implemented `resolvePostImageUrl()` to gracefully handle both full `https://` public URLs and legacy relative storage paths from Supabase storage.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
