@@ -184,26 +184,15 @@ export function ManageMarketScreen({ navigation }: any) {
         title={t.market2.manageMarket ?? 'Marketplace Moderation'}
         onBack={() => navigation.goBack()}
         rightSlot={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <TouchableOpacity
-              style={styles.headerBtn}
-              onPress={() => navigation.navigate('Market')}
-              hitSlop={8}
-              activeOpacity={0.75}
-              accessibilityLabel="View student marketplace feed"
-            >
-              <Feather name="eye" size={18} color={C.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerBtn}
-              onPress={onRefresh}
-              hitSlop={8}
-              activeOpacity={0.75}
-              accessibilityLabel="Refresh listings"
-            >
-              <Feather name="refresh-cw" size={18} color={C.text} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={onRefresh}
+            hitSlop={8}
+            activeOpacity={0.75}
+            accessibilityLabel="Refresh listings"
+          >
+            <Feather name="refresh-cw" size={18} color={C.text} />
+          </TouchableOpacity>
         }
       />
 

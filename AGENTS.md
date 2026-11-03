@@ -3871,9 +3871,9 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Updated `targetRoute` logic in `ExploreScreen.tsx` so administrators tapping Marketplace (`s.id === 'market' && isAdmin`) route directly to the admin moderation dashboard (`ManageMarketScreen.tsx`).
   - Matches the established direct routing pattern used for `AllReports`, `ManageFaculty`, `ManageClubs`, and `ManageStudyHub`.
   - Preserved canonical student routing to `MarketScreen.tsx` (`SECTOR_ROUTE[s.id]`).
-- **Clean Student Feed & Admin Inspector Tool (`MarketScreen.tsx`, `ManageMarketScreen.tsx`):**
+- **Clean Student Feed & Zero-Bloat Admin View (`MarketScreen.tsx`, `ManageMarketScreen.tsx`):**
   - Completely removed the redundant top `adminBar72` strip from `MarketScreen.tsx`, eliminating visual clutter from the student marketplace feed.
-  - Added an eye button ("Student Feed") in `SubBar` header `rightSlot` of `ManageMarketScreen.tsx` so administrators can seamlessly inspect the live student feed whenever needed.
+  - Eliminated student preview toggles (eye button) from `ManageMarketScreen.tsx`, leaving a clean, single-purpose header with `refresh-cw` only, consistent with `AllReports`, `ManageFaculty`, `ManageClubs`, and `ManageStudyHub`.
 - **Strict 58dp Category Selection Bars (`MarketScreen.tsx`, `ManageMarketScreen.tsx`):**
   - Replaced cramped modal list rows with strict **58dp separate bars** (`categoryBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 16`, `marginBottom: 8`).
   - Standardized all category icons to high-contrast 28dp monochrome vector icons (`Feather` in transparent `iconSlot32`).
