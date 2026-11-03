@@ -431,50 +431,6 @@ export function MarketScreen({ navigation }: any) {
       <View style={{ flex: 1 }}>
         <OfflineBanner visible={isOffline} onRetry={load} />
 
-        {/* Admin Moderation 72dp Shortcut Strip */}
-        {isAdmin && (
-          <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 4 }}>
-            <TouchableOpacity
-              style={[
-                styles.adminBar72,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.brand + '45',
-                },
-              ]}
-              onPress={() => navigation.navigate('ManageMarket')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={t.market2.adminShortcutTitle ?? 'Admin: Marketplace Moderation'}
-            >
-              <View style={styles.adminIconSlot32}>
-                <Feather name="shield" size={32} color={C.brand} />
-              </View>
-              <View style={styles.adminBarTextCol}>
-                <Text
-                  style={[
-                    styles.adminBarTitle,
-                    { color: C.text, fontFamily: FontFamily.jakartaBold },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {t.market2.adminShortcutTitle ?? 'Admin: Marketplace Moderation'}
-                </Text>
-                <Text
-                  style={[
-                    styles.adminBarSubtitle,
-                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {t.market2.adminShortcutSub ?? 'Review listings, take down violations & manage student posts'}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={C.brand} />
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* 2. Prominent Emerald Hero Action Bar */}
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
           <TouchableOpacity
@@ -797,21 +753,18 @@ export function MarketScreen({ navigation }: any) {
               {CATEGORIES.map(c => {
                 const active = category.toLowerCase() === c.id.toLowerCase();
                 const count = categoryCounts[c.id] ?? (c.id === 'all' ? listings.length : 0);
-                const fg = c.fg;
-                const iconBg = isDark ? `${fg}24` : `${fg}15`;
                 const label = c.id === 'all' ? t.market2.allCategories : (t.market2 as any)[c.labelKey] ?? c.id;
-                const sub = (t.market2 as any)[c.subKey] ?? '';
 
                 return (
                   <TouchableOpacity
                     key={c.id}
                     style={[
-                      styles.modalItemCard,
+                      styles.categoryBar58,
                       {
                         backgroundColor: active
-                          ? (isDark ? 'rgba(255, 255, 255, 0.04)' : `${fg}08`)
+                          ? (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)')
                           : C.surface,
-                        borderColor: active ? fg : C.border,
+                        borderColor: active ? C.text : C.border,
                         borderWidth: active ? 1.5 : 1,
                       },
                     ]}
@@ -821,61 +774,50 @@ export function MarketScreen({ navigation }: any) {
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={styles.modalItemIconBox}>
-                      <Feather name={c.icon} size={32} color={C.text} />
+                    <View style={styles.iconSlot32}>
+                      <Feather name={c.icon} size={28} color={C.text} />
                     </View>
 
-                    <View style={styles.modalItemInfo}>
-                      <Text
-                        style={[
-                          styles.modalItemNameTxt,
-                          {
-                            color: active ? fg : C.text,
-                            fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaSemiBold,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {label}
-                      </Text>
-                      {sub.length > 0 && (
-                        <Text
-                          style={[styles.modalItemSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}
-                          numberOfLines={1}
-                        >
-                          {sub}
-                        </Text>
-                      )}
-                    </View>
+                    <Text
+                      style={[
+                        styles.categoryBarTitleTxt,
+                        {
+                          color: C.text,
+                          fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {label}
+                    </Text>
 
-                    <View style={styles.modalItemRight}>
-                      <View
-                        style={[
-                          styles.modalCountBadge,
-                          {
-                            backgroundColor: active
-                              ? (isDark ? `${fg}30` : `${fg}18`)
-                              : (isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2),
-                          },
-                        ]}
-                      >
-                        <Text
+                    <View style={styles.categoryBarRight}>
+                      {count > 0 && (
+                        <View
                           style={[
-                            styles.modalCountTxt,
+                            styles.categoryCountBadge,
                             {
-                              color: active ? fg : C.textMuted,
-                              fontFamily: FontFamily.jakartaBold,
+                              backgroundColor: C.surface2,
+                              borderColor: C.border,
                             },
                           ]}
                         >
-                          {count}
-                        </Text>
-                      </View>
+                          <Text
+                            style={[
+                              styles.categoryCountTxt,
+                              {
+                                color: C.textMuted,
+                                fontFamily: FontFamily.jakartaBold,
+                              },
+                            ]}
+                          >
+                            {count}
+                          </Text>
+                        </View>
+                      )}
 
                       {active && (
-                        <View style={[styles.modalCheckCircle, { backgroundColor: fg }]}>
-                          <Feather name="check" size={11} color="#fff" />
-                        </View>
+                        <Feather name="check" size={18} color={C.text} />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -1036,6 +978,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  } as ViewStyle,
+  iconSlot32: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   } as ViewStyle,
   adminBarTextCol: {
     flex: 1,
@@ -1386,43 +1335,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  // Category Sheet Items
-  modalItemCard: {
+  // Category Sheet 58dp Standard Bars
+  categoryBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
     gap: 12,
-    padding: 12,
-    borderRadius: 14,
     marginBottom: 8,
   } as ViewStyle,
-  modalItemIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  modalItemInfo: { flex: 1 } as ViewStyle,
-  modalItemNameTxt: { fontSize: 14 } as any,
-  modalItemSubTxt: { fontSize: 11.5, marginTop: 2 } as any,
-  modalItemRight: {
+  categoryBarTitleTxt: {
+    flex: 1,
+    fontSize: 14.5,
+  } as any,
+  categoryBarRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   } as ViewStyle,
-  modalCountBadge: {
+  categoryCountBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
+    borderRadius: 8,
+    borderWidth: 1,
   } as ViewStyle,
-  modalCountTxt: { fontSize: 11.5 } as any,
-  modalCheckCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
+  categoryCountTxt: {
+    fontSize: 11,
+  } as any,
 
   // Filter Sheet Elements
   sectionHeading: {

@@ -110,7 +110,7 @@ export function ModerationReasonModal({
                     disabled={loading}
                   >
                     <View style={styles.iconSlot32}>
-                      <Feather name={r.icon} size={20} color={C.text} />
+                      <Feather name={r.icon} size={24} color={C.text} />
                     </View>
                     <Text
                       style={[
@@ -135,7 +135,7 @@ export function ModerationReasonModal({
               {selectedId === 'other' && (
                 <View style={[styles.bar58, { backgroundColor: C.surface2, borderColor: C.border, marginTop: 4 }]}>
                   <View style={styles.iconSlot32}>
-                    <Feather name="message-square" size={18} color={C.textMuted} />
+                    <Feather name="message-square" size={22} color={C.textMuted} />
                   </View>
                   <TextInput
                     style={[styles.inputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}

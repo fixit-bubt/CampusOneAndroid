@@ -615,16 +615,25 @@ export function MarketDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {/* Admin Moderation Button */}
+        {/* Admin Moderation 58dp Take Down Bar */}
         {!isOwn && isAdmin && (
           <TouchableOpacity
-            style={[styles.deleteBtn, { backgroundColor: C.dangerBg, marginTop: 14 }]}
+            style={[
+              styles.adminTakeDownBar58,
+              {
+                backgroundColor: C.dangerBg,
+                borderColor: C.danger + '40',
+                marginTop: 14,
+              },
+            ]}
             onPress={handleDeleteListing}
             activeOpacity={0.8}
           >
-            <Icon name="trash" size={16} color={C.danger} />
-            <Text style={[styles.deleteBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-              {t.market2.deleteListingAdmin}
+            <View style={styles.iconSlot32}>
+              <Feather name="shield-off" size={20} color={C.danger} />
+            </View>
+            <Text style={[styles.adminTakeDownTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+              {t.market2.takeDownListing ?? 'Take Down Listing (Admin)'}
             </Text>
           </TouchableOpacity>
         )}
@@ -834,6 +843,28 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   } as ViewStyle,
   deleteBtnTxt: { fontSize: 14 } as any,
+
+  // Admin 58dp Take Down Bar Standard
+  adminTakeDownBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    gap: 10,
+  } as ViewStyle,
+  adminTakeDownTxt: {
+    fontSize: 14.5,
+  } as any,
+  iconSlot32: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
 
   contactCard: {
     flexDirection: 'row',

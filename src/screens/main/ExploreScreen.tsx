@@ -108,6 +108,7 @@ export function ExploreScreen({ navigation }: any) {
       s.id === 'faculty' && isAdmin ? 'ManageFaculty' :
       s.id === 'clubs' && isAdmin ? 'ManageClubs' :
       s.id === 'study' && isAdmin ? 'ManageStudyHub' :
+      s.id === 'market' && isAdmin ? 'ManageMarket' :
       SECTOR_ROUTE[s.id];
     return (
       <TouchableOpacity
