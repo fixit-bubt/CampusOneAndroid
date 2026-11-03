@@ -374,7 +374,7 @@ export function ManageUsersScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.deptBarLeading}>
-              <Icon name={activeDeptItem.icon} size={22} color={selectedDept !== 'All' ? C.brand : C.text} />
+              <Icon name={activeDeptItem.icon} size={32} color={selectedDept !== 'All' ? C.brand : C.text} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   style={[
@@ -448,7 +448,7 @@ export function ManageUsersScreen({ navigation }: any) {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <View style={styles.emptyIconWrap}>
-                  <Icon name={activeTab === 'student' ? 'users' : activeTab === 'staff' ? 'briefcase' : 'shield'} size={36} color={C.textMuted} />
+                  <Icon name={activeTab === 'student' ? 'users' : activeTab === 'staff' ? 'briefcase' : 'shield'} size={44} color={C.textMuted} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {searchQuery.trim().length > 0
@@ -546,7 +546,7 @@ export function ManageUsersScreen({ navigation }: any) {
                   activeOpacity={0.75}
                 >
                   <View style={styles.deptModalLeading}>
-                    <Icon name={d.icon} size={22} color={isSelected ? C.brand : C.text} />
+                    <Icon name={d.icon} size={32} color={isSelected ? C.brand : C.text} />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text
                         style={[
