@@ -316,14 +316,14 @@ export function ManageClubsScreen({ navigation }: any) {
           <View style={styles.barLeft}>
             <Feather
               name={CATEGORY_ICONS[categoryFilter] ?? 'layers'}
-              size={20}
+              size={28}
               color={C.text}
             />
             <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {categoryFilter === 'All' ? 'All Categories' : `Category: ${categoryFilter}`}
             </Text>
           </View>
-          <Feather name="chevron-down" size={18} color={C.textMuted} />
+          <Feather name="chevron-down" size={20} color={C.textMuted} />
         </TouchableOpacity>
 
         {/* 3. Standard 58dp Create New Club Trigger Bar */}
@@ -334,8 +334,6 @@ export function ManageClubsScreen({ navigation }: any) {
             {
               backgroundColor: C.surface,
               borderColor: C.border,
-              borderLeftColor: C.text,
-              borderLeftWidth: 4,
               marginBottom: 14,
             },
           ]}
@@ -343,12 +341,12 @@ export function ManageClubsScreen({ navigation }: any) {
           activeOpacity={0.75}
         >
           <View style={styles.barLeft}>
-            <Feather name="plus-circle" size={20} color={C.text} />
+            <Feather name="plus-circle" size={28} color={C.text} />
             <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.clubs.newClub}
             </Text>
           </View>
-          <Feather name="chevron-right" size={18} color={C.textMuted} />
+          <Feather name="chevron-right" size={20} color={C.textMuted} />
         </TouchableOpacity>
 
         {/* 4. Club Cards Listing */}
@@ -529,12 +527,12 @@ export function ManageClubsScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={styles.barLeft}>
-                  <Feather name={CATEGORY_ICONS[newCategory] ?? 'layers'} size={20} color={C.text} />
+                  <Feather name={CATEGORY_ICONS[newCategory] ?? 'layers'} size={28} color={C.text} />
                   <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {newCategory}
                   </Text>
                 </View>
-                <Feather name="chevron-down" size={18} color={C.textMuted} />
+                <Feather name="chevron-down" size={20} color={C.textMuted} />
               </TouchableOpacity>
 
               {/* Submit CTA Button (58dp) */}
@@ -599,7 +597,7 @@ export function ManageClubsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.barLeft}>
-                      <Feather name={CATEGORY_ICONS[cat] ?? 'layers'} size={20} color={C.text} />
+                      <Feather name={CATEGORY_ICONS[cat] ?? 'layers'} size={28} color={C.text} />
                       <Text
                         style={[
                           styles.barTitle,
@@ -612,7 +610,7 @@ export function ManageClubsScreen({ navigation }: any) {
                         {cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                    {isSelected && <Feather name="check" size={20} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -661,7 +659,7 @@ export function ManageClubsScreen({ navigation }: any) {
                     <View style={styles.barLeft}>
                       <Feather
                         name={CATEGORY_ICONS[cat] ?? 'layers'}
-                        size={20}
+                        size={28}
                         color={C.text}
                       />
                       <Text
@@ -676,7 +674,7 @@ export function ManageClubsScreen({ navigation }: any) {
                         {cat === 'All' ? 'All Categories' : cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                    {isSelected && <Feather name="check" size={20} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -748,7 +746,7 @@ export function ManageClubsScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.barLeft}>
-                <Feather name={activeDeptItem.icon} size={20} color={C.text} />
+                <Feather name={activeDeptItem.icon} size={28} color={C.text} />
                 <Text
                   style={[
                     styles.barTitle,
@@ -770,7 +768,7 @@ export function ManageClubsScreen({ navigation }: any) {
                     </Text>
                   </View>
                 )}
-                <Feather name="chevron-down" size={18} color={C.textMuted} />
+                <Feather name="chevron-down" size={20} color={C.textMuted} />
               </View>
             </TouchableOpacity>
 
@@ -870,7 +868,7 @@ export function ManageClubsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.barLeft}>
-                      <Feather name={dept.icon} size={20} color={C.text} />
+                      <Feather name={dept.icon} size={28} color={C.text} />
                       <Text
                         style={[
                           styles.barTitle,
@@ -884,7 +882,7 @@ export function ManageClubsScreen({ navigation }: any) {
                         {dept.name}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                    {isSelected && <Feather name="check" size={20} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -917,7 +915,7 @@ const styles = StyleSheet.create({
   barLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     flex: 1,
   } as ViewStyle,
   barTitle: {

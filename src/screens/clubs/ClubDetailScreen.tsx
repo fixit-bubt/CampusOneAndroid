@@ -17,16 +17,6 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 
-// Keys must match the clubs.category DB CHECK values exactly.
-const CL_CATS: Record<string, { label: string; fg: string }> = {
-  Tech:         { label: 'Tech',         fg: Accent.purple },
-  Cultural:     { label: 'Cultural',     fg: Accent.pink },
-  Sports:       { label: 'Sports',       fg: Accent.teal },
-  Professional: { label: 'Professional', fg: Accent.blue },
-  Social:       { label: 'Social',       fg: Accent.amber },
-  other:        { label: 'Other',        fg: Accent.slate }, // display fallback only
-};
-
 type Tab = 'feed' | 'members';
 
 interface Club {
@@ -169,8 +159,6 @@ export function ClubDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const cat = CL_CATS[club.category] ?? CL_CATS.other;
-  const tintBg = isDark ? `${cat.fg}2e` : `${cat.fg}18`;
   const isAdmin = profile?.role === 'admin';
   // Two different admin bypasses on the backend, not one: club_update_details()
   // and club_members RLS both allow is_admin() regardless of membership, so
@@ -259,7 +247,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
           <View style={{ flex: 1 }}>
             <Text style={[styles.clubName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{club.name}</Text>
             <Text style={[styles.clubMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {members.length} members · {cat.label}
+              {members.length} members · {club.category}
             </Text>
           </View>
           {myRole && (

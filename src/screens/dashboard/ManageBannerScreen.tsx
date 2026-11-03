@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   previewImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill as any,
     width: '100%',
     height: '100%',
   },

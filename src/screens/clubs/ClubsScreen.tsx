@@ -179,14 +179,14 @@ export function ClubsScreen({ navigation }: any) {
           <View style={styles.barLeft}>
             <Feather
               name={CATEGORY_ICONS[categoryFilter] ?? 'layers'}
-              size={20}
+              size={28}
               color={C.text}
             />
             <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {categoryFilter === 'All' ? 'All Club Categories' : `Category: ${categoryFilter}`}
             </Text>
           </View>
-          <Feather name="chevron-down" size={18} color={C.textMuted} />
+          <Feather name="chevron-down" size={20} color={C.textMuted} />
         </TouchableOpacity>
 
         {/* 3. Club Cards List */}
@@ -316,7 +316,7 @@ export function ClubsScreen({ navigation }: any) {
                     <View style={styles.barLeft}>
                       <Feather
                         name={CATEGORY_ICONS[cat] ?? 'layers'}
-                        size={20}
+                        size={28}
                         color={C.text}
                       />
                       <Text
@@ -331,7 +331,7 @@ export function ClubsScreen({ navigation }: any) {
                         {cat === 'All' ? 'All Club Categories' : cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                    {isSelected && <Feather name="check" size={20} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   barLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     flex: 1,
   } as ViewStyle,
   barTitle: {

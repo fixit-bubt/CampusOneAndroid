@@ -10,7 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
@@ -26,13 +26,12 @@ interface Member {
 const FORM_CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
 type FormCategory = typeof FORM_CATEGORIES[number];
 
-const CL_CATS: Record<string, string> = {
-  Tech: Accent.purple,
-  Cultural: Accent.pink,
-  Sports: Accent.teal,
-  Professional: Accent.blue,
-  Social: Accent.amber,
-  other: Accent.slate,
+const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
+  Tech: 'cpu',
+  Cultural: 'music',
+  Sports: 'activity',
+  Professional: 'briefcase',
+  Social: 'users',
 };
 
 export function ClubManageScreen({ route, navigation }: any) {
@@ -196,12 +195,16 @@ export function ClubManageScreen({ route, navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barLeft}>
-              <View style={[styles.dot10, { backgroundColor: CL_CATS[category] ?? C.brand }]} />
+              <Feather
+                name={CATEGORY_ICONS[category] ?? 'layers'}
+                size={28}
+                color={C.text}
+              />
               <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {category}
               </Text>
             </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
+            <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           {/* Field: About Section */}
@@ -314,7 +317,6 @@ export function ClubManageScreen({ route, navigation }: any) {
             <View style={{ gap: 8 }}>
               {FORM_CATEGORIES.map(cat => {
                 const isSelected = category === cat;
-                const catColor = CL_CATS[cat] ?? C.brand;
                 return (
                   <TouchableOpacity
                     key={cat}
@@ -322,8 +324,8 @@ export function ClubManageScreen({ route, navigation }: any) {
                       styles.bar58,
                       styles.dropdownBar,
                       {
-                        backgroundColor: isSelected ? (isDark ? `${catColor}20` : '#eff6ff') : C.bg,
-                        borderColor: isSelected ? catColor : C.border,
+                        backgroundColor: isSelected ? C.surface2 : C.bg,
+                        borderColor: isSelected ? C.text : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -333,12 +335,16 @@ export function ClubManageScreen({ route, navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.barLeft}>
-                      <View style={[styles.dot10, { backgroundColor: catColor }]} />
+                      <Feather
+                        name={CATEGORY_ICONS[cat] ?? 'layers'}
+                        size={28}
+                        color={C.text}
+                      />
                       <Text
                         style={[
                           styles.barTitle,
                           {
-                            color: isSelected ? catColor : C.text,
+                            color: C.text,
                             fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
@@ -346,7 +352,7 @@ export function ClubManageScreen({ route, navigation }: any) {
                         {cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={catColor} />}
+                    {isSelected && <Feather name="check" size={20} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -406,7 +412,7 @@ const styles = StyleSheet.create({
   barLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     flex: 1,
   } as ViewStyle,
   barTitle: {
