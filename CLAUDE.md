@@ -3051,6 +3051,12 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Replaced small generic icons (size 18/20) with standard 32dp (`size={32}`) monochrome vector icons across both the 58dp department dropdown bar and the modal picker items.
 - **58dp Department Picker Item Architecture:**
   - Standardized picker items in the "Select Department" bottom sheet modal to strict 58dp bars (`height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 16`, `gap: 14`).
+- **Redesigned 58dp "Add Intake" Modal Architecture:**
+  - Replaced cramped 46dp raw text inputs with standard 58dp input bars (`inputBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 14`).
+  - Added clean top header with title and circular touch-friendly `X` close button (`sheetCloseBtn`).
+  - Added dedicated 58dp department context pill (`deptContextPill`) displaying the target department name alongside its custom vector icon (`cpu`, `tool`, `briefcase`, etc.).
+  - Added leading vector icons: `#` (`hash` in `C.brand`) for intake number and `calendar` (`C.textMuted`) for academic years.
+  - Upgraded submit button to a full-width 58dp primary action button (`primaryBtn58`, `height: 58`, `borderRadius: 16`, `backgroundColor: C.brand`, centered `plus` icon and bold typography).
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 23s.

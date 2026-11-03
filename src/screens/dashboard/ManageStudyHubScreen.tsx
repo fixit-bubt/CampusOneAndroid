@@ -827,48 +827,95 @@ export function ManageStudyHubScreen({ navigation }: any) {
       {/* Add Intake Sheet */}
       <Modal visible={addIntakeOpen} animationType="slide" transparent onRequestClose={() => setAddIntakeOpen(false)}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setAddIntakeOpen(false)} />
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddIntakeOpen(false)} />
           <View style={[styles.sheet, { backgroundColor: C.surface }]}>
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.study2?.addIntake ?? 'Add Intake'}
-            </Text>
 
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {/* Header with Title and Close Button */}
+            <View style={styles.sheetHeaderRow}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
+                {t.study2?.addIntake ?? 'Add Intake'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => setAddIntakeOpen(false)}
+                activeOpacity={0.75}
+              >
+                <Feather name="x" size={16} color={C.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Department Context Pill */}
+            {activeDept && (
+              <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <View style={styles.iconSlot32}>
+                  <Feather name={getDeptIcon(activeDept.name)} size={22} color={C.brand} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                    DEPARTMENT
+                  </Text>
+                  <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {shortDept(activeDept.name)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Intake Number Field */}
+            <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {t.study2?.intakeNumber ?? 'INTAKE NUMBER'}
             </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={intakeNumInput}
-              onChangeText={val => setIntakeNumInput(val.replace(/\D/g, ''))}
-              keyboardType="numeric"
-              placeholder="e.g. 52"
-              placeholderTextColor={C.textMuted}
-            />
+            <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="hash" size={20} color={C.brand} />
+              </View>
+              <TextInput
+                style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                value={intakeNumInput}
+                onChangeText={val => setIntakeNumInput(val.replace(/\D/g, ''))}
+                keyboardType="numeric"
+                placeholder="e.g. 52"
+                placeholderTextColor={C.textMuted}
+              />
+            </View>
 
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {/* Academic Years Field (Optional) */}
+            <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {t.study2?.yearsOptional ?? 'YEARS (OPTIONAL)'}
             </Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={intakeYearsInput}
-              onChangeText={setIntakeYearsInput}
-              placeholder="e.g. 2023-2024"
-              placeholderTextColor={C.textMuted}
-            />
+            <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="calendar" size={19} color={C.textMuted} />
+              </View>
+              <TextInput
+                style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                value={intakeYearsInput}
+                onChangeText={setIntakeYearsInput}
+                placeholder="e.g. 2023 - 2027"
+                placeholderTextColor={C.textMuted}
+              />
+            </View>
 
+            {/* 58dp Primary Create Button */}
             <TouchableOpacity
-              style={[styles.submitBtn, { backgroundColor: C.brand }]}
+              style={[
+                styles.primaryBtn58,
+                {
+                  backgroundColor: C.brand,
+                  opacity: intakeNumInput.trim() && !submittingIntake ? 1 : 0.6,
+                },
+              ]}
               onPress={handleAddIntake}
-              disabled={submittingIntake}
+              disabled={!intakeNumInput.trim() || submittingIntake}
               activeOpacity={0.8}
             >
               {submittingIntake ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Feather name="plus" size={16} color="#fff" />
-                  <Text style={[styles.submitBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                  <Feather name="plus" size={18} color="#fff" />
+                  <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                     {t.study2?.addIntake ?? 'Add Intake'}
                   </Text>
                 </>
@@ -1391,6 +1438,71 @@ const styles = StyleSheet.create({
     marginTop: 4,
   } as ViewStyle,
   submitBtnTxt: { fontSize: 14 } as any,
+
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  } as ViewStyle,
+  sheetCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  deptContextPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  } as ViewStyle,
+  deptContextLabel: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+  } as any,
+  deptContextName: {
+    fontSize: 14.5,
+    marginTop: 1,
+  } as any,
+  modalFieldLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    marginBottom: 6,
+  } as any,
+  inputBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 10,
+    marginBottom: 14,
+  } as ViewStyle,
+  inputBarTxt: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
+  } as any,
+  primaryBtn58: {
+    height: 58,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 6,
+  } as ViewStyle,
+  primaryBtnTxt: {
+    fontSize: 15,
+  } as any,
 
   studentRow: {
     flexDirection: 'row',
