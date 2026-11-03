@@ -3285,3 +3285,42 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 83. Admin Announcements System Overhaul, Universal 58dp Bar Standard & Notice Anti-Clutter Redesign (`ManageAnnouncementsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Removal of Cluttered Top Stats & Header Button:**
+  - Removed top-right `Post` button from `SubBar`.
+  - Removed top `statsRow` metric boxes (`Total`, `In Banner`, `Scraped`), eliminating horizontal clutter and box-heavy UI.
+- **Dedicated 58dp Post Announcement Action Bar (`styles.postBar58`):**
+  - Added full-width 58dp primary trigger bar (`height: Layout.controlHeight = 58, borderRadius: 16`) with `plus-circle` icon and bold white text, navigating directly to `AnnouncePost`.
+- **BUBT Official Notice Board Sync Card Parity (`styles.syncCard`):**
+  - Redesigned sync card to match `ManageFacultyScreen.tsx` 1:1:
+    - Card container with `44 x 44 dp` transparent slot and `AnimatedIcon name="refresh-cw" size={32}`.
+    - Automated crawl metadata subtext querying `notice_sync_logs` (`Last crawl: 2h ago` via `formatRelativeTime`).
+    - Dedicated 58dp sync action button (`styles.syncActionBtn`, `height: Layout.controlHeight = 58, borderRadius: 16`) with globe icon triggering crawler edge function and reloading feed.
+- **Universal 58dp Search Bar (`styles.searchBar`):**
+  - Standardized search bar to 58dp (`height: 58, borderRadius: 16, borderWidth: 1`), with 22dp search icon and instant clear button.
+- **Universal 58dp Category Filter Dropdown Bar & Modal Bottom Sheet (`styles.dropdownBar`, `styles.pickerBar58`):**
+  - Replaced horizontal pill tabs with a dedicated 58dp dropdown bar displaying active filter label and trailing chevron.
+  - Tapping opens a sleek bottom sheet modal containing 58dp filter bars (`All Notices`, `Manual Broadcasts`, `BUBT Scraped`, `Home Hero Banner`) with live counts and checkmark indicator.
+  - Android hardware back button handler registered to cleanly dismiss the bottom sheet modal.
+- **Notice Card Anti-Clutter Monochrome Redesign (`styles.noticeCard`):**
+  - Purged all rainbow color clutter (neon blue code text, bright green manual tags, red delete buttons, and blue card borders).
+  - Adopted clean OLED dark mode Zinc palette:
+    - Neutral text for notice codes (`C.text2`) and department metadata (`C.textMuted`).
+    - Discreet monochrome source badge (`BUBT Official` / `Manual Broadcast` in `C.surface2`, `C.border`, `C.text2`).
+    - High-contrast 14.5px notice title (`C.text`, `FontFamily.jakartaBold`) and relative time metadata.
+    - Refined, disciplined control toolbar:
+      - 36dp `+ Banner` / `In Banner` pill with check icon and subtle active highlight.
+      - 36dp `Pin` / `Pinned` pill with gold pin icon.
+      - 36dp neutral `trash-2` delete button with native confirmation alert dialog.
+- **120 FPS Virtualized FlatList Optimization:**
+  - Configured `initialNumToRender={10}`, `maxToRenderPerBatch={10}`, `windowSize={5}`, `removeClippedSubviews={Platform.OS === 'android'}`, and `keyboardShouldPersistTaps="handled"`.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors (`tsc --noEmit`).
+  - Unit Tests: 18 test suites passed, 140 tests passed (`npm test`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 44s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched cleanly on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.

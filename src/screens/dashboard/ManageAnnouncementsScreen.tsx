@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,12 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  BackHandler,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,9 +22,11 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Radius, Accent } from '../../theme';
+import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
+import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
+import { formatRelativeTime } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import type { Announcement } from '../../types/database';
 import {
@@ -26,6 +34,31 @@ import {
   triggerNoticeSync,
   updateAnnouncementBannerStatus,
 } from '../../services/announcementService';
+
+interface SyncLog {
+  id: string;
+  created_at?: string;
+  status: string;
+  total_scanned?: number;
+  new_added?: number;
+  updated_count?: number;
+  duration_ms?: number;
+}
+
+type FilterType = 'all' | 'manual' | 'scraped' | 'banner';
+
+interface FilterOption {
+  id: FilterType;
+  label: string;
+  icon: string;
+}
+
+const FILTER_OPTIONS: FilterOption[] = [
+  { id: 'all', label: 'All Notices', icon: 'layers' },
+  { id: 'manual', label: 'Manual Broadcasts', icon: 'send' },
+  { id: 'scraped', label: 'BUBT Scraped', icon: 'globe' },
+  { id: 'banner', label: 'Home Hero Banner', icon: 'image' },
+];
 
 export function ManageAnnouncementsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
@@ -37,14 +70,26 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
   const [syncing, setSyncing] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'manual' | 'scraped' | 'banner'>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [filterPickerVisible, setFilterPickerVisible] = useState(false);
+  const [lastSyncLog, setLastSyncLog] = useState<SyncLog | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
-      const res = await fetchAnnouncementsFeed();
+      const [res, logRes] = await Promise.all([
+        fetchAnnouncementsFeed(),
+        supabase
+          .from('notice_sync_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1),
+      ]);
       if (res.items) {
         setAnnouncements(res.items);
+      }
+      if (logRes.data && logRes.data[0]) {
+        setLastSyncLog(logRes.data[0] as unknown as SyncLog);
       }
     } finally {
       setLoading(false);
@@ -63,6 +108,19 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
     loadData();
   };
 
+  // Android hardware back button handler for bottom sheet
+  useEffect(() => {
+    const onBackPress = () => {
+      if (filterPickerVisible) {
+        setFilterPickerVisible(false);
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [filterPickerVisible]);
+
   const handleSyncCrawler = async () => {
     if (syncing) return;
     setSyncing(true);
@@ -75,7 +133,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
           title: 'Sync Complete',
           message: res.newAdded ? `Ingested ${res.newAdded} new notices.` : 'All notices are up to date.',
         });
-        loadData();
+        await loadData();
       } else {
         toast({ type: 'error', title: 'Sync Failed', message: res.error });
       }
@@ -125,7 +183,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
       toast({
         type: 'success',
         title: nextPinned ? 'Pinned to Top' : 'Unpinned',
-        message: `Notice pin status updated.`,
+        message: 'Notice pin status updated.',
       });
     } catch (err: any) {
       toast({ type: 'error', title: 'Pin Failed', message: err.message });
@@ -151,23 +209,19 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
             toast({ type: 'error', title: 'Delete Failed', message: error.message });
             loadData();
           } else {
-            toast({ type: 'success', title: 'Deleted', message: 'Notice soft-deleted successfully.' });
+            toast({ type: 'success', title: 'Deleted', message: 'Notice deleted successfully.' });
           }
         },
       },
     ]);
   };
 
-  const inBannerCount = useMemo(() => {
-    return announcements.filter((a) => a.in_banner).length;
-  }, [announcements]);
-
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return announcements.filter((a) => {
-      if (activeTab === 'manual' && a.source !== 'manual') return false;
-      if (activeTab === 'scraped' && a.source === 'manual') return false;
-      if (activeTab === 'banner' && !a.in_banner) return false;
+      if (activeFilter === 'manual' && a.source !== 'manual') return false;
+      if (activeFilter === 'scraped' && a.source === 'manual') return false;
+      if (activeFilter === 'banner' && !a.in_banner) return false;
 
       if (q) {
         const matchTitle = (a.title || '').toLowerCase().includes(q);
@@ -177,7 +231,11 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
       }
       return true;
     });
-  }, [announcements, activeTab, search]);
+  }, [announcements, activeFilter, search]);
+
+  const currentFilterOption = useMemo(() => {
+    return FILTER_OPTIONS.find((opt) => opt.id === activeFilter) || FILTER_OPTIONS[0];
+  }, [activeFilter]);
 
   if (profile?.role !== 'admin') {
     return (
@@ -191,175 +249,157 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
     );
   }
 
+  const renderHeader = () => (
+    <View style={{ paddingTop: 8 }}>
+      {/* 1. Post Announcement 58dp Action Bar */}
+      <TouchableOpacity
+        style={[styles.postBar58, { backgroundColor: SectorColors.announce }]}
+        onPress={() => navigation.navigate('AnnouncePost')}
+        activeOpacity={0.85}
+      >
+        <Feather name="plus-circle" size={18} color="#fff" />
+        <Text style={[styles.postBar58Txt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+          Post New Announcement
+        </Text>
+      </TouchableOpacity>
+
+      {/* 2. BUBT Notice Board Automated Sync Card (Matches Manage Faculty Sync Card) */}
+      <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+        <View style={styles.syncCardTop}>
+          <View style={styles.syncIconWrap}>
+            <AnimatedIcon name="refresh-cw" size={32} color={C.text} />
+          </View>
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              BUBT Official Notice Board
+            </Text>
+            <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              {lastSyncLog?.created_at
+                ? `Last crawl: ${formatRelativeTime(lastSyncLog.created_at)}`
+                : 'Automated crawler for bubt.edu.bd/notice'}
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.syncActionBtn, { backgroundColor: SectorColors.announce }]}
+          onPress={handleSyncCrawler}
+          disabled={syncing}
+          activeOpacity={0.85}
+        >
+          {syncing ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Feather name="globe" size={18} color="#fff" />
+              <Text style={[styles.syncActionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                Sync from BUBT Website
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* 3. 58dp Global Search Bar */}
+      <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+        <Icon name="search" size={22} color={C.textMuted} />
+        <TextInput
+          style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search notices by title, code or dept..."
+          placeholderTextColor={C.textMuted}
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+            <Feather name="x" size={16} color={C.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* 4. 58dp Dropdown Selector Bar */}
+      <TouchableOpacity
+        style={[styles.dropdownBar, { backgroundColor: C.surface, borderColor: C.border }]}
+        onPress={() => setFilterPickerVisible(true)}
+        activeOpacity={0.75}
+      >
+        <View style={styles.dropdownIconTile}>
+          <AnimatedIcon name={currentFilterOption.icon} size={28} color={C.text} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+          <Text style={[styles.dropdownValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            {currentFilterOption.label}
+          </Text>
+        </View>
+        <Feather name="chevron-down" size={18} color={C.textMuted} />
+      </TouchableOpacity>
+
+      {/* 5. Results Count & Clear Filter Header */}
+      <View style={styles.resultsHead}>
+        <Text style={[styles.resultsTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+          {filteredItems.length} {filteredItems.length === 1 ? 'NOTICE FOUND' : 'NOTICES FOUND'}
+        </Text>
+        {(search.length > 0 || activeFilter !== 'all') && (
+          <TouchableOpacity
+            onPress={() => {
+              setSearch('');
+              setActiveFilter('all');
+            }}
+            hitSlop={8}
+          >
+            <Text style={[styles.clearTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              Clear Filter
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar
-        title="Announcements & Circulars"
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.postBtn, { backgroundColor: C.brand }]}
-            onPress={() => navigation.navigate('AnnouncePost')}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={15} color="#ffffff" />
-            <Text style={styles.postBtnTxt}>Post</Text>
-          </TouchableOpacity>
-        }
-      />
+      <SubBar title="Announcements & Circulars" onBack={() => navigation.goBack()} />
 
       <FlatList
         data={filteredItems}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
         }
-        ListHeaderComponent={
-          <View>
-            {/* Quick Executive Stats Strip */}
-            <View style={styles.statsRow}>
-              <View style={[styles.statBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Text style={[styles.statNum, { color: C.text }]}>{announcements.length}</Text>
-                <Text style={[styles.statLabel, { color: C.textMuted }]}>Total</Text>
-              </View>
-
-              <TouchableOpacity
-                style={[styles.statBox, { backgroundColor: C.surface, borderColor: C.brand }]}
-                onPress={() => navigation.navigate('ManageBanner')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.bannerBadgeRow}>
-                  <Text style={[styles.statNum, { color: C.brand }]}>{inBannerCount}/6</Text>
-                  <Feather name="chevron-right" size={14} color={C.brand} />
-                </View>
-                <Text style={[styles.statLabel, { color: C.brand }]}>In Banner (Curate)</Text>
-              </TouchableOpacity>
-
-              <View style={[styles.statBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Text style={[styles.statNum, { color: C.text }]}>
-                  {announcements.filter((a) => a.source !== 'manual').length}
-                </Text>
-                <Text style={[styles.statLabel, { color: C.textMuted }]}>Scraped</Text>
-              </View>
-            </View>
-
-            {/* Ingestion Hub Banner Bar */}
-            <View style={[styles.syncBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.syncLeft}>
-                <Feather name="globe" size={18} color={C.brand} />
-                <View>
-                  <Text style={[styles.syncTitle, { color: C.text }]}>BUBT Official Notice Board</Text>
-                  <Text style={[styles.syncSub, { color: C.textMuted }]}>Auto-scraped from bubt.edu.bd/notice</Text>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={[styles.syncActionBtn, { backgroundColor: syncing ? C.surface2 : C.brand }]}
-                onPress={handleSyncCrawler}
-                disabled={syncing}
-                activeOpacity={0.8}
-              >
-                {syncing ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <>
-                    <Feather name="refresh-cw" size={13} color="#ffffff" />
-                    <Text style={styles.syncActionBtnTxt}>Sync Now</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Search Input */}
-            <View style={[styles.searchBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="search" size={16} color={C.textMuted} />
-              <TextInput
-                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search notices by title, code or dept..."
-                placeholderTextColor={C.textMuted}
-              />
-              {search.length > 0 && (
-                <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-                  <Feather name="x" size={16} color={C.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Filter Tabs */}
-            <View style={styles.filterTabsRow}>
-              {(['all', 'manual', 'scraped', 'banner'] as const).map((tab) => {
-                const isActive = activeTab === tab;
-                const label =
-                  tab === 'all'
-                    ? 'All'
-                    : tab === 'manual'
-                    ? 'Manual Broadcasts'
-                    : tab === 'scraped'
-                    ? 'BUBT Scraped'
-                    : `In Banner (${inBannerCount})`;
-                return (
-                  <TouchableOpacity
-                    key={tab}
-                    onPress={() => setActiveTab(tab)}
-                    style={[
-                      styles.filterTabPill,
-                      {
-                        backgroundColor: isActive ? C.brand : C.surface,
-                        borderColor: isActive ? C.brand : C.border,
-                      },
-                    ]}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      style={[
-                        styles.filterTabTxt,
-                        { color: isActive ? '#ffffff' : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        }
+        ListHeaderComponent={renderHeader}
         renderItem={({ item }) => {
           const isBusy = busyId === item.id;
           const isOfficial = item.source !== 'manual';
 
           return (
             <TouchableOpacity
-              style={[
-                styles.noticeCard,
-                { backgroundColor: C.surface, borderColor: item.in_banner ? C.brand : C.border },
-              ]}
+              style={[styles.noticeCard, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => navigation.navigate('AnnouncementDetail', { announcementId: item.id })}
               activeOpacity={0.75}
             >
-              {/* Top Row: Ref Code, Department, Time */}
+              {/* Top Row: Ref Code, Department, Discreet Source Badge */}
               <View style={styles.cardTopRow}>
                 <View style={styles.cardTopLeft}>
-                  <Text style={[styles.codeTxt, { color: C.brand }]}>{item.code || 'ANN'}</Text>
+                  <Text style={[styles.codeTxt, { color: C.text2 }]}>{item.code || 'NOTICE'}</Text>
                   <Text style={[styles.dotTxt, { color: C.textMuted }]}>·</Text>
                   <Text style={[styles.deptTxt, { color: C.textMuted }]} numberOfLines={1}>
-                    {item.department_code || item.department}
+                    {item.department_code || item.department || 'General'}
                   </Text>
                 </View>
 
-                {isOfficial ? (
-                  <View style={[styles.officialTag, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#e0edff' }]}>
-                    <Text style={[styles.officialTagTxt, { color: C.brand }]}>BUBT Scraped</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.officialTag, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#d1fae5' }]}>
-                    <Text style={[styles.officialTagTxt, { color: C.success }]}>Manual Broadcast</Text>
-                  </View>
-                )}
+                <View style={[styles.sourceBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <Text style={[styles.sourceBadgeTxt, { color: C.text2 }]}>
+                    {isOfficial ? 'BUBT Official' : 'Manual'}
+                  </Text>
+                </View>
               </View>
 
               {/* Title */}
@@ -367,15 +407,22 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                 {item.title}
               </Text>
 
-              {/* Control Action Toolbar */}
+              {/* Date Metadata */}
+              <Text style={[styles.cardDate, { color: C.textMuted }]}>
+                {formatRelativeTime(item.created_at)}
+              </Text>
+
+              {/* Disciplined Control Toolbar (Zero Color Clutter) */}
               <View style={[styles.cardBottomRow, { borderTopColor: C.border }]}>
                 {/* 1. Toggle Banner Button */}
                 <TouchableOpacity
                   style={[
                     styles.actionBtn,
                     {
-                      backgroundColor: item.in_banner ? (isDark ? 'rgba(59, 130, 246, 0.2)' : '#e0edff') : C.surface2,
-                      borderColor: item.in_banner ? C.brand : C.border,
+                      backgroundColor: item.in_banner
+                        ? (isDark ? 'rgba(255, 255, 255, 0.08)' : '#f4f4f5')
+                        : C.surface2,
+                      borderColor: item.in_banner ? C.border2 : C.border,
                     },
                   ]}
                   onPress={(e) => {
@@ -386,17 +433,17 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   activeOpacity={0.8}
                 >
                   <Feather
-                    name="image"
+                    name={item.in_banner ? 'check' : 'image'}
                     size={13}
                     color={item.in_banner ? C.brand : C.textMuted}
                   />
                   <Text
                     style={[
                       styles.actionBtnTxt,
-                      { color: item.in_banner ? C.brand : C.textMuted },
+                      { color: item.in_banner ? C.text : C.textMuted },
                     ]}
                   >
-                    {item.in_banner ? 'In Banner' : '+ Home Banner'}
+                    {item.in_banner ? 'In Banner' : '+ Banner'}
                   </Text>
                 </TouchableOpacity>
 
@@ -405,8 +452,10 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   style={[
                     styles.actionBtn,
                     {
-                      backgroundColor: item.pinned ? (isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7') : C.surface2,
-                      borderColor: item.pinned ? Accent.gold : C.border,
+                      backgroundColor: item.pinned
+                        ? (isDark ? 'rgba(255, 255, 255, 0.08)' : '#f4f4f5')
+                        : C.surface2,
+                      borderColor: item.pinned ? C.border2 : C.border,
                     },
                   ]}
                   onPress={(e) => {
@@ -424,16 +473,18 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   <Text
                     style={[
                       styles.actionBtnTxt,
-                      { color: item.pinned ? Accent.gold : C.textMuted },
+                      { color: item.pinned ? C.text : C.textMuted },
                     ]}
                   >
                     {item.pinned ? 'Pinned' : 'Pin'}
                   </Text>
                 </TouchableOpacity>
 
+                <View style={{ flex: 1 }} />
+
                 {/* 3. Delete Button */}
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                  style={[styles.deleteBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                   onPress={(e) => {
                     e.stopPropagation();
                     handleDelete(item);
@@ -441,7 +492,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   disabled={isBusy}
                   activeOpacity={0.8}
                 >
-                  <Feather name="trash-2" size={13} color={C.danger} />
+                  <Feather name="trash-2" size={14} color={C.textMuted} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -457,13 +508,103 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
               <Feather name="file-text" size={26} color={C.textMuted} />
               <Text style={[styles.emptyCardTitle, { color: C.text }]}>No Notices Found</Text>
               <Text style={[styles.emptyCardSub, { color: C.textMuted }]}>
-                No announcements match your search or selected tab.
+                No announcements match your search or selected filter.
               </Text>
             </View>
           )
         }
         ListFooterComponent={<View style={{ height: 40 }} />}
       />
+
+      {/* Bottom Sheet Filter Modal (58dp items inside) */}
+      <Modal
+        visible={filterPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFilterPickerVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setFilterPickerVisible(false)}
+          />
+          <View style={[styles.sheetCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.sheetHandle}>
+              <View style={[styles.sheetHandleBar, { backgroundColor: C.border }]} />
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Filter Announcements
+            </Text>
+
+            {FILTER_OPTIONS.map((opt) => {
+              const active = activeFilter === opt.id;
+              const count =
+                opt.id === 'all'
+                  ? announcements.length
+                  : opt.id === 'manual'
+                  ? announcements.filter((a) => a.source === 'manual').length
+                  : opt.id === 'scraped'
+                  ? announcements.filter((a) => a.source !== 'manual').length
+                  : announcements.filter((a) => a.in_banner).length;
+
+              return (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={[
+                    styles.pickerBar58,
+                    {
+                      backgroundColor: active
+                        ? isDark
+                          ? 'rgba(62, 125, 224, 0.16)'
+                          : 'rgba(62, 125, 224, 0.08)'
+                        : C.surface2,
+                      borderColor: active ? SectorColors.announce : C.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    setActiveFilter(opt.id);
+                    setFilterPickerVisible(false);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.pickerIconTile}>
+                    <AnimatedIcon
+                      name={opt.icon}
+                      size={28}
+                      color={active ? SectorColors.announce : C.text}
+                    />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text
+                      style={[
+                        styles.pickerBarText,
+                        {
+                          color: active ? SectorColors.announce : C.text,
+                          fontFamily: FontFamily.jakartaBold,
+                        },
+                      ]}
+                    >
+                      {opt.label} ({count})
+                    </Text>
+                  </View>
+                  {active ? (
+                    <View style={[styles.checkCircle, { backgroundColor: SectorColors.announce }]}>
+                      <Feather name="check" size={13} color="#fff" />
+                    </View>
+                  ) : (
+                    <View style={[styles.emptyCircle, { borderColor: C.border }]} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -471,211 +612,290 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-  },
+  } as ViewStyle,
   scroll: {
     paddingBottom: 24,
-  },
+  } as ViewStyle,
   centerPad: {
     padding: 36,
     alignItems: 'center',
     justifyContent: 'center',
-  },
+  } as ViewStyle,
   blockedTitle: {
     fontFamily: FontFamily.jakartaBold,
     fontSize: 16,
     marginTop: 14,
-  },
-  postBtn: {
+  } as TextStyle,
+
+  // 1. Post Announcement 58dp Bar
+  postBar58: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-  },
-  postBtnTxt: {
-    color: '#ffffff',
-    fontFamily: FontFamily.jakartaBold,
-    fontSize: 12.5,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  statBox: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: Radius.md,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  statNum: {
-    fontFamily: FontFamily.jakartaExtraBold,
-    fontSize: 18,
-  },
-  statLabel: {
-    fontFamily: FontFamily.jakartaBold,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  bannerBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  syncBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: Radius.md,
+    gap: 9,
+    height: Layout.controlHeight,
+    borderRadius: 16,
+    marginBottom: 10,
+  } as ViewStyle,
+  postBar58Txt: {
+    fontSize: 14.5,
+  } as TextStyle,
+
+  // 2. BUBT Notice Board Sync Card (Matches ManageFacultyScreen.tsx)
+  syncCard: {
+    borderRadius: 16,
     borderWidth: 1,
-    marginTop: 10,
-    gap: 8,
-  },
-  syncLeft: {
+    padding: 14,
+    marginBottom: 10,
+  } as ViewStyle,
+  syncCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
+    gap: 12,
+    marginBottom: 12,
+  } as ViewStyle,
+  syncIconWrap: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
   syncTitle: {
-    fontFamily: FontFamily.jakartaBold,
-    fontSize: 13,
-  },
+    fontSize: 14.5,
+  } as TextStyle,
   syncSub: {
-    fontFamily: FontFamily.jakartaMedium,
-    fontSize: 11,
-    marginTop: 1,
-  },
+    fontSize: 12,
+    marginTop: 2,
+  } as TextStyle,
   syncActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.sm,
-  },
-  syncActionBtnTxt: {
-    color: '#ffffff',
-    fontFamily: FontFamily.jakartaBold,
-    fontSize: 11.5,
-  },
-  searchBox: {
+    justifyContent: 'center',
+    gap: 9,
+    height: Layout.controlHeight,
+    borderRadius: 16,
+  } as ViewStyle,
+  syncActionTxt: {
+    fontSize: 14.5,
+  } as TextStyle,
+
+  // 3. 58dp Search Bar
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Radius.md,
+    gap: 9,
+    paddingHorizontal: 16,
+    height: Layout.controlHeight,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    height: 44,
-    marginTop: 10,
-    gap: 8,
-  },
+    marginBottom: 10,
+  } as ViewStyle,
   searchInput: {
     flex: 1,
-    fontSize: 13,
-    padding: 0,
-  },
-  filterTabsRow: {
+    fontSize: 14.5,
+    paddingVertical: 0,
+  } as TextStyle,
+
+  // 4. 58dp Dropdown Trigger Bar
+  dropdownBar: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 10,
-    marginBottom: 12,
-  },
-  filterTabPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
+    alignItems: 'center',
+    gap: 12,
+    height: Layout.controlHeight,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 1,
-  },
-  filterTabTxt: {
+    marginBottom: 10,
+  } as ViewStyle,
+  dropdownIconTile: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  dropdownValue: {
+    fontSize: 14,
+  } as TextStyle,
+
+  // Results meta header
+  resultsHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  } as ViewStyle,
+  resultsTxt: {
     fontSize: 11.5,
-  },
+    letterSpacing: 0.8,
+  } as TextStyle,
+  clearTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+
+  // Notice card (Anti-clutter, clean monochrome)
   noticeCard: {
-    borderRadius: Radius.md,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 12,
+    padding: 14,
     marginBottom: 10,
     gap: 8,
-  },
+  } as ViewStyle,
   cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
+  } as ViewStyle,
   cardTopLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     flex: 1,
-  },
+  } as ViewStyle,
   codeTxt: {
     fontFamily: FontFamily.jakartaBold,
     fontSize: 11.5,
-  },
+  } as TextStyle,
   dotTxt: {
     fontSize: 12,
-  },
+  } as TextStyle,
   deptTxt: {
     fontFamily: FontFamily.jakartaMedium,
     fontSize: 11.5,
     flex: 1,
-  },
-  officialTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  officialTagTxt: {
-    fontFamily: FontFamily.jakartaBold,
+  } as TextStyle,
+  sourceBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+  } as ViewStyle,
+  sourceBadgeTxt: {
+    fontFamily: FontFamily.jakartaSemiBold,
     fontSize: 10,
-  },
+  } as TextStyle,
   cardTitle: {
     fontFamily: FontFamily.jakartaBold,
-    fontSize: 13.5,
-    lineHeight: 18,
-  },
+    fontSize: 14,
+    lineHeight: 19,
+  } as TextStyle,
+  cardDate: {
+    fontFamily: FontFamily.jakartaRegular,
+    fontSize: 11,
+    marginTop: -2,
+  } as TextStyle,
   cardBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
-  },
+    marginTop: 2,
+  } as ViewStyle,
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4.5,
-    borderRadius: Radius.sm,
+    gap: 6,
+    paddingHorizontal: 12,
+    height: 36,
+    borderRadius: 10,
     borderWidth: 1,
-  },
+  } as ViewStyle,
   actionBtnTxt: {
     fontFamily: FontFamily.jakartaBold,
-    fontSize: 11,
-  },
+    fontSize: 11.5,
+  } as TextStyle,
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
   emptyCard: {
     padding: 30,
-    borderRadius: Radius.md,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-  },
+  } as ViewStyle,
   emptyCardTitle: {
     fontFamily: FontFamily.jakartaBold,
     fontSize: 14,
     marginTop: 4,
-  },
+  } as TextStyle,
   emptyCardSub: {
     fontFamily: FontFamily.jakartaMedium,
     fontSize: 12,
     textAlign: 'center',
-  },
-});
+  } as TextStyle,
 
+  // Bottom sheet modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalBackdrop: {
+    ...(StyleSheet.absoluteFill as any),
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  } as ViewStyle,
+  sheetCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    paddingHorizontal: Layout.screenPadding,
+    paddingBottom: Layout.screenPadding + 16,
+  } as ViewStyle,
+  sheetHandle: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  } as ViewStyle,
+  sheetHandleBar: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  } as ViewStyle,
+  sheetTitle: {
+    fontSize: 17,
+    textAlign: 'center',
+    marginBottom: 16,
+  } as TextStyle,
+
+  // 58dp Picker Bars inside Bottom Sheet
+  pickerBar58: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    height: Layout.controlHeight,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+  } as ViewStyle,
+  pickerIconTile: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  pickerBarText: {
+    fontSize: 14,
+  } as TextStyle,
+  checkCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  emptyCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  } as ViewStyle,
+});
