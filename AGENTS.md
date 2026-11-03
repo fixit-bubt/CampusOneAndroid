@@ -3609,17 +3609,21 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Removed the small shield and plus icons from `SubBar.rightSlot` for Admins.
   - Eliminated student-only `[ Browse | Saved | Applied ]` segmented tabs row for Admins (admins do not submit outgoing student job applications or bookmark personal jobs).
   - Added two dedicated, full-width 58dp action bars at the top of the jobs board for Admins:
-    1. `Post an Opportunity` (58dp height, 20dp vector icon `plus-circle`, bold title, chevron right, navigates to `JobPost`).
-    2. `Job Moderation` (58dp height, 20dp vector icon `shield`, bold title, live pending reports badge e.g. `{reportedCount} reported`, chevron right, navigates to `JobsModerate`).
-- **Full 58dp Dropdown Form Standardization (`JobPostScreen.tsx`):**
-  - Completely replaced all messy scattered chips, horizontal swipe scrolls, and cramped tabs across all 6 core form fields with standardized, full-width **58dp dropdown bars**:
-    1. **Job Type**: 58dp trigger bar with 58dp modal option bars for `Internship`, `Private Tuition`, `On-Campus Job`, `Part-Time`, `Full-Time`, `Freelance & Projects`.
+    1. `Post an Opportunity` (58dp height, 28dp vector icon `plus-circle`, bold title, chevron right, navigates to `JobPost`).
+    2. `Job Moderation` (58dp height, 28dp vector icon `shield`, bold title, live pending reports badge e.g. `{reportedCount} reported`, chevron right, navigates to `JobsModerate`).
+- **Clean Search Bar & Zero Text Clutter (`JobsBrowseScreen.tsx`):**
+  - Search bar input cleaned of verbose placeholder text (`placeholder=""`), leaving a pristine 58dp search bar with only the 24dp search icon.
+  - Dual filter buttons (`All Types` / `All Depts`) boosted to 22dp vector icons.
+- **Full 58dp Dropdown Form Standardization & 28dp Icons (`JobPostScreen.tsx`):**
+  - Completely replaced all messy scattered chips, horizontal swipe scrolls, and cramped tabs across all 6 core form fields with standardized, full-width **58dp dropdown bars** with **28dp prominent vector icons**:
+    1. **Job Type**: 58dp trigger bar with 58dp modal option bars (26dp icons, 20dp checkmark) for `Internship`, `Private Tuition`, `On-Campus Job`, `Part-Time`, `Full-Time`, `Freelance & Projects`.
     2. **Target Department**: 58dp trigger bar with 58dp modal option bars for `All Departments`, `CSE`, `EEE`, `BBA`, `LAW`, `ENG`, `ECO`, `MATH`, `TEX`.
     3. **Work Mode**: 58dp trigger bar with 58dp modal option bars for `On-site`, `Remote`, `Hybrid`.
-    4. **Compensation Model**: 58dp trigger bar with 58dp modal option bars for `Paid`, `Conveyance Only`, `Unpaid`, `Negotiable`, plus a 54dp text input for salary when Paid is picked.
-    5. **Location / Area**: 58dp trigger bar with 58dp modal option bars for top Dhaka zones (`Mirpur (Near BUBT)`, `Dhanmondi`, `Uttara`, `Gulshan`, `Mohakhali`, `Remote`, etc.) + 54dp custom specific address input.
+    4. **Compensation Model**: 58dp trigger bar with 58dp modal option bars for `Paid`, `Conveyance Only`, `Unpaid`, `Negotiable`, plus a 58dp text input for salary when Paid is picked.
+    5. **Location / Area**: 58dp trigger bar with 58dp modal option bars for top Dhaka zones (`Mirpur (Near BUBT)`, `Dhanmondi`, `Uttara`, `Gulshan`, `Mohakhali`, `Remote`, etc.) + 58dp custom specific address input.
     6. **Minimum Semester**: 58dp trigger bar with 58dp modal option bars for `Any Semester`, `2nd+`, `3rd+`, `4th+`, `5th+`, `6th+`, `7th+`, `Final Year`.
-  - Every option inside every picker sheet strictly maintains full 58dp height, bold title vertically centered, 18dp vector icon, and active checkmark.
+  - Every option inside every picker sheet strictly maintains full 58dp height, bold title vertically centered, 26dp vector icon, and active 20dp checkmark.
+  - **How to Apply Segmented Bar**: Standardized to full **58dp fixed height** (`SegmentedTabs` default size) with 58dp input field and 22-24dp action icons.
 - **Direct Moderation Actions (`JobsModerateScreen.tsx`):**
   - Added direct **Dismiss Reports** action on reported cards, calling `adminDismissJobReports(job.id)` to clear false flags while keeping listings active.
   - Added direct **Remove Listing** action opening a slide-up modal with presets (`Spam / Misleading`, `Fraud / Scam`, `Expired Listing`, `Policy Violation`) and custom reason input.

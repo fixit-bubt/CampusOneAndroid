@@ -160,7 +160,7 @@ function PickerModalSheet<T extends string | number>({
                   <View style={styles.barIconSlot}>
                     <Feather
                       name={opt.icon ?? 'circle'}
-                      size={18}
+                      size={26}
                       color={isSelected ? C.brand : C.text}
                     />
                   </View>
@@ -179,7 +179,7 @@ function PickerModalSheet<T extends string | number>({
                     </Text>
                   </View>
                   {isSelected && (
-                    <Feather name="check" size={16} color={C.brand} style={{ marginLeft: 6 }} />
+                    <Feather name="check" size={20} color={C.brand} style={{ marginLeft: 6 }} />
                   )}
                 </TouchableOpacity>
               );
@@ -457,14 +457,14 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedType.icon ?? 'briefcase'} size={20} color={C.text} />
+              <Feather name={selectedType.icon ?? 'briefcase'} size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedType.label}
               </Text>
             </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
+            <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           {/* 2. Target Department Dropdown Bar (Height 58dp) */}
@@ -477,14 +477,14 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedDept.icon ?? 'layers'} size={20} color={C.text} />
+              <Feather name={selectedDept.icon ?? 'layers'} size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedDept.label}
               </Text>
             </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
+            <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           {/* 3. Work Mode Dropdown Bar (Height 58dp) */}
@@ -497,14 +497,14 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedMode.icon ?? 'map-pin'} size={20} color={C.text} />
+              <Feather name={selectedMode.icon ?? 'map-pin'} size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedMode.label}
               </Text>
             </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
+            <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           {/* 4. Compensation Model Dropdown Bar (Height 58dp) */}
@@ -517,14 +517,14 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedComp.icon ?? 'dollar-sign'} size={20} color={C.text} />
+              <Feather name={selectedComp.icon ?? 'dollar-sign'} size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedComp.label}
               </Text>
             </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
+            <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           {compensationType === 'paid' && (
@@ -547,14 +547,14 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name="map-pin" size={20} color={C.text} />
+              <Feather name="map-pin" size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {areaName || location || 'Select Area'}
               </Text>
             </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
+            <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           <TextInput
@@ -575,14 +575,14 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedSem.icon ?? 'award'} size={20} color={C.text} />
+              <Feather name={selectedSem.icon ?? 'award'} size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {selectedSem.label}
               </Text>
             </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
+            <Feather name="chevron-down" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           {/* Alumni Referral Bar (Height 58dp) */}
@@ -600,7 +600,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name="award" size={20} color={isAlumniReferral ? Accent.gold : C.text} />
+              <Feather name="award" size={28} color={isAlumniReferral ? Accent.gold : C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: isAlumniReferral ? Accent.gold : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -608,7 +608,7 @@ export function JobPostScreen({ navigation }: any) {
               </Text>
             </View>
             <View style={[styles.alumniCheckPill, { backgroundColor: isAlumniReferral ? Accent.gold : C.surface2 }]}>
-              <Feather name={isAlumniReferral ? 'check' : 'plus'} size={14} color={isAlumniReferral ? '#fff' : C.textMuted} />
+              <Feather name={isAlumniReferral ? 'check' : 'plus'} size={15} color={isAlumniReferral ? '#fff' : C.textMuted} />
             </View>
           </TouchableOpacity>
 
@@ -690,7 +690,6 @@ export function JobPostScreen({ navigation }: any) {
             tabs={APPLY_METHODS}
             activeTab={applyMethod}
             onTabChange={setApplyMethod}
-            size="sm"
           />
 
           {applyMethod === 'email' && (
@@ -721,7 +720,7 @@ export function JobPostScreen({ navigation }: any) {
             <View style={{ marginTop: 10 }}>
               {pickedFile ? (
                 <View style={[styles.filePickedCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="file-text" size={20} color={SectorColors.jobs} />
+                  <Feather name="file-text" size={24} color={SectorColors.jobs} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={[styles.fileNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                       {pickedFile.name}
@@ -742,7 +741,7 @@ export function JobPostScreen({ navigation }: any) {
                   onPress={pickPdfFile}
                   activeOpacity={0.75}
                 >
-                  <Feather name="upload" size={18} color={C.brand} />
+                  <Feather name="upload" size={22} color={C.brand} />
                   <Text style={[styles.filePickTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                     {t.jobs2?.uploadResume ?? 'Upload Circular PDF'}
                   </Text>
@@ -765,7 +764,7 @@ export function JobPostScreen({ navigation }: any) {
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Icon name="check" size={18} color={canSubmit ? '#fff' : C.textMuted} />
+                <Icon name="check" size={22} color={canSubmit ? '#fff' : C.textMuted} />
                 <Text style={[styles.submitText, { color: canSubmit ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                   {t.jobs2?.postListing ?? 'Post Listing'}
                 </Text>
@@ -863,26 +862,26 @@ const styles = StyleSheet.create({
   } as any,
 
   input54: {
-    height: 54,
-    borderRadius: 14,
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: 14.5,
   } as any,
 
   dropdownBar58: {
     height: 58,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     gap: 12,
   } as ViewStyle,
 
   barIconSlot: {
-    width: 26,
-    height: 26,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

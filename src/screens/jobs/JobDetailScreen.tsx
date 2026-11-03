@@ -631,7 +631,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 onPress={adminRestore}
                 activeOpacity={0.85}
               >
-                <Feather name="rotate-ccw" size={16} color={C.text} />
+                <Feather name="rotate-ccw" size={20} color={C.text} />
                 <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.jobs2.restoreListingAdmin}
                 </Text>
@@ -653,7 +653,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 }}
                 activeOpacity={0.85}
               >
-                <Icon name="jobs" size={17} color="#fff" />
+                <Icon name="jobs" size={22} color="#fff" />
                 <Text style={[styles.actionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                   {job.apply_method === 'file' ? 'View Circular (PDF)' : t.jobs2.applyNow}
                 </Text>
@@ -663,7 +663,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             {/* Expired Closed Banner or Live External / Direct Apply Buttons */}
             {isExpired ? (
               <View style={[styles.closedBanner, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <Feather name="calendar" size={15} color={C.textMuted} />
+                <Feather name="calendar" size={18} color={C.textMuted} />
                 <Text style={[styles.closedBannerTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                   Applications are closed for this position
                 </Text>
@@ -680,7 +680,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                     }}
                     activeOpacity={0.85}
                   >
-                    <Feather name="external-link" size={16} color={C.text} />
+                    <Feather name="external-link" size={20} color={C.text} />
                     <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Apply on External Website
                     </Text>
@@ -696,7 +696,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                     }}
                     activeOpacity={0.85}
                   >
-                    <Feather name="mail" size={16} color={C.text} />
+                    <Feather name="mail" size={20} color={C.text} />
                     <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Send Email to Poster
                     </Text>
@@ -711,7 +711,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 onPress={() => openUrl(job.apply_file_url)}
                 activeOpacity={0.85}
               >
-                <Feather name="file-text" size={16} color={SectorColors.jobs} />
+                <Feather name="file-text" size={20} color={SectorColors.jobs} />
                 <Text style={[styles.secondaryTxt, { color: SectorColors.jobs, fontFamily: FontFamily.jakartaBold }]}>
                   View Attached Circular PDF
                 </Text>
@@ -724,7 +724,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 onPress={confirmWithdraw}
                 activeOpacity={0.85}
               >
-                <Icon name="trash" size={16} color={C.text} />
+                <Icon name="trash" size={20} color={C.text} />
                 <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.jobs2.withdrawListing}
                 </Text>
@@ -735,7 +735,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 onPress={() => setReportOpen(true)}
                 activeOpacity={0.85}
               >
-                <Feather name="flag" size={16} color={C.text} />
+                <Feather name="flag" size={20} color={C.text} />
                 <Text style={[styles.secondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.jobs2.reportListing}
                 </Text>
@@ -748,7 +748,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 onPress={() => setRemoveOpen(true)}
                 activeOpacity={0.85}
               >
-                <Feather name="slash" size={16} color={C.danger} />
+                <Feather name="slash" size={20} color={C.danger} />
                 <Text style={[styles.secondaryTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
                   {t.jobs2.removeListingAdmin}
                 </Text>

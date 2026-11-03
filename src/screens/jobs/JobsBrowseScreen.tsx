@@ -474,14 +474,14 @@ export function JobsBrowseScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.adminBarIconSlot}>
-              <Feather name="plus-circle" size={20} color={C.brand} />
+              <Feather name="plus-circle" size={28} color={C.brand} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Post an Opportunity
               </Text>
             </View>
-            <Feather name="chevron-right" size={18} color={C.textMuted} />
+            <Feather name="chevron-right" size={20} color={C.textMuted} />
           </TouchableOpacity>
 
           {/* 58dp Bar 2: Job Moderation */}
@@ -491,7 +491,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.adminBarIconSlot}>
-              <Feather name="shield" size={20} color={C.text} />
+              <Feather name="shield" size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -500,13 +500,13 @@ export function JobsBrowseScreen({ navigation }: any) {
             </View>
             {reportedCount > 0 ? (
               <View style={[styles.reportBadge, { backgroundColor: C.dangerBg }]}>
-                <Feather name="flag" size={11} color={C.danger} />
+                <Feather name="flag" size={12} color={C.danger} />
                 <Text style={[styles.reportBadgeTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
                   {reportedCount} reported
                 </Text>
               </View>
             ) : null}
-            <Feather name="chevron-right" size={18} color={C.textMuted} />
+            <Feather name="chevron-right" size={20} color={C.textMuted} />
           </TouchableOpacity>
         </View>
       ) : (
@@ -543,7 +543,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             <AnimatedIcon
               family="feather"
               name={typeFilter === 'all' ? 'briefcase' : currentTypeConfig.icon}
-              size={16}
+              size={22}
               color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
             />
             <Text
@@ -562,7 +562,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             </Text>
             <Feather
               name="chevron-down"
-              size={15}
+              size={18}
               color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
             />
           </TouchableOpacity>
@@ -587,7 +587,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             <AnimatedIcon
               family="feather"
               name={deptFilter === 'ALL' ? 'book-open' : currentDeptConfig.icon}
-              size={16}
+              size={22}
               color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
             />
             <Text
@@ -604,7 +604,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             </Text>
             <Feather
               name="chevron-down"
-              size={15}
+              size={18}
               color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
             />
           </TouchableOpacity>
@@ -618,7 +618,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             <Icon name="search" size={24} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder={t.jobs?.searchPlaceholder ?? 'Search title, company, skills, area...'}
+              placeholder=""
               placeholderTextColor={C.textMuted}
               value={query}
               onChangeText={setQuery}
@@ -1426,16 +1426,16 @@ const styles = StyleSheet.create({
 
   adminBar58: {
     height: 58,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     gap: 12,
   } as ViewStyle,
   adminBarIconSlot: {
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
