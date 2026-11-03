@@ -10,6 +10,7 @@ import { useAuth } from '../../store/authStore';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { SectorIcon } from '../../components/ui/SectorIcon';
+import { Icon } from '../../components/ui/Icon';
 import { TopBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import type { SectorKey } from '../../theme';
@@ -240,7 +241,7 @@ export function ExploreScreen({ navigation }: any) {
             title={t.dash.manage ?? 'ADMINISTRATION'}
             icon="shield"
             accentColor={C.brand}
-            count={7}
+            count={8}
             countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'administration' || openSection === null}
             onToggle={() => toggleSection('administration')}
@@ -281,7 +282,28 @@ export function ExploreScreen({ navigation }: any) {
               <SectorIcon sector="directory" size="md" dark={isDark} />
               <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageUsers ?? 'User Directory & Roles'}
+                  {t.dash.manageUsers ?? 'User Directory'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('CreateStaffAdmin')}
+              activeOpacity={0.7}
+            >
+              <Icon name="userPlus" size={32} color={C.text} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Create Staff / Admin Account
                 </Text>
               </View>
               <Feather name="chevron-right" size={18} color={C.textMuted} />

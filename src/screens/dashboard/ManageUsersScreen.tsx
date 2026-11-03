@@ -1,626 +1,1151 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
-  RefreshControl, Alert, Modal, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+  StyleSheet,
+  RefreshControl,
+  Modal,
+  ActivityIndicator,
+  Platform,
+  type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
-import { PasswordInput } from '../../components/ui/PasswordInput';
+import { Icon } from '../../components/ui/Icon';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
-import { createUserAsAdmin } from '../../services/adminService';
 import type { Profile } from '../../types/database';
 import { useT } from '../../i18n';
-import { useToast } from '../../components/ui/Toast';
 
-const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
-// Students are never promoted to staff/admin - they only become CR or Club
-// President (per-row shortcuts). The role pill only toggles Staff <-> Admin on
-// accounts that are already staff/admin; new staff/admin come from Create account.
-const ROLE_NEXT: Record<string, Profile['role']> = { staff: 'admin', admin: 'staff' };
+type UserTab = 'student' | 'staff' | 'admin';
 
-// Staff trade values match Report.category so assignment can match by trade.
-const TRADES = ['Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'] as const;
+interface DepartmentOption {
+  id: string;
+  code: string;
+  name: string;
+  icon: string;
+}
+
+const DEPARTMENTS: DepartmentOption[] = [
+  { id: 'All', code: 'All', name: 'All Departments', icon: 'globe' },
+  { id: 'CSE', code: 'CSE', name: 'Computer Science & Engineering', icon: 'cpu' },
+  { id: 'EEE', code: 'EEE', name: 'Electrical & Electronic Engineering', icon: 'zap' },
+  { id: 'BBA', code: 'BBA', name: 'Business Administration', icon: 'briefcase' },
+  { id: 'Law', code: 'Law', name: 'Department of Law', icon: 'shield' },
+  { id: 'English', code: 'English', name: 'Department of English', icon: 'book-open' },
+  { id: 'Civil', code: 'Civil', name: 'Civil Engineering', icon: 'compass' },
+  { id: 'Textile', code: 'Textile', name: 'Textile Engineering', icon: 'layers' },
+  { id: 'Economics', code: 'Economics', name: 'Department of Economics', icon: 'trending-up' },
+];
+
+function formatDate(iso?: string | null): string {
+  if (!iso) return 'Not available';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return 'Not available';
+  }
+}
 
 export function ManageUsersScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
+  const insets = useSafeAreaInsets();
   const t = useT();
+
   const [users, setUsers] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [toast, setToast] = useState(false);
-  const showToast = useToast();
-  const [expertiseTarget, setExpertiseTarget] = useState<Profile | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
+  // Active Tab & Filters
+  const [activeTab, setActiveTab] = useState<UserTab>('student');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDept, setSelectedDept] = useState<string>('All');
+  const [deptModalVisible, setDeptModalVisible] = useState(false);
 
-  // Assign-position pickers (student rows only)
-  const [crFor, setCrFor] = useState<Profile | null>(null);
-  const [presFor, setPresFor] = useState<Profile | null>(null);
-  const [sections, setSections] = useState<{ id: string; label: string }[] | null>(null);
-  const [clubs, setClubs] = useState<{ id: string; name: string }[] | null>(null);
-  const [assigning, setAssigning] = useState(false);
+  // Profile Details Modal
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
 
-  // Create-account sheet
-  const [createOpen, setCreateOpen] = useState(false);
-  const [cName, setCName] = useState('');
-  const [cEmail, setCEmail] = useState('');
-  const [cPassword, setCPassword] = useState('');
-  const [cRole, setCRole] = useState<Profile['role']>('staff');
-  const [cTrade, setCTrade] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-
-  const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('full_name', { ascending: true })
-      .limit(500);
-    if (data) setUsers(data as Profile[]);
-  }, []);
-
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
-
-  async function cycleRole(u: Profile) {
-    // Students can't be promoted from here - CR / President only (via the row shortcuts).
-    if (u.role === 'student') return;
-    if (u.id === user?.id) {
-      showToast({ type: 'error', title: t.manage.notAllowed, message: t.manage.cannotDemoteSelf });
-      return;
-    }
-    const next = ROLE_NEXT[u.role];
-    if (!next) return;
-    Alert.alert(
-      t.manage.changeRole,
-      t.manage.changeRoleBody(u.full_name, u.role, next),
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: next } : x));
-            const { error } = await supabase.from('profiles').update({ role: next }).eq('id', u.id);
-            if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); await load(); return; }
-            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-            setToast(true);
-            toastTimerRef.current = setTimeout(() => setToast(false), 1500);
-          },
-        },
-      ]
-    );
-  }
-
-  async function setExpertise(u: Profile, value: string | null) {
-    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, expertise: value } : x));
-    setExpertiseTarget(null);
-    const { error } = await supabase.from('profiles').update({ expertise: value }).eq('id', u.id);
-    if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); await load(); return; }
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast(true);
-    toastTimerRef.current = setTimeout(() => setToast(false), 1500);
-  }
-
-  async function openCr(u: Profile) {
-    setCrFor(u);
-    if (sections === null) {
+  const loadUsers = useCallback(async () => {
+    try {
+      setErrorMsg(null);
       const { data, error } = await supabase
-        .from('study_sections')
-        .select('id, number, study_intakes(number, departments(name))')
-        .order('number');
-      // Leave the cache null on failure so reopening retries instead of showing a false-empty list.
-      if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
-      const opts = (data ?? []).map((s: any) => {
-        const intake = Array.isArray(s.study_intakes) ? s.study_intakes[0] : s.study_intakes;
-        const dept = intake && (Array.isArray(intake.departments) ? intake.departments[0] : intake.departments);
-        const deptName = (dept?.name ?? '').replace(/^Department of\s*/i, '');
-        return { id: s.id as string, label: `${deptName || '-'} · Intake ${intake?.number ?? '?'} · Sec ${s.number}` };
-      }).sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label));
-      setSections(opts);
+        .from('profiles')
+        .select('*')
+        .order('full_name', { ascending: true })
+        .limit(600);
+
+      if (error) {
+        setErrorMsg(error.message);
+      } else if (data) {
+        setUsers(data as Profile[]);
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message ?? 'Failed to load users.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  }
+  }, []);
 
-  async function openPres(u: Profile) {
-    setPresFor(u);
-    if (clubs === null) {
-      const { data, error } = await supabase.from('clubs').select('id, name').eq('is_active', true).order('name');
-      if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
-      setClubs((data ?? []) as { id: string; name: string }[]);
+  useFocusEffect(
+    useCallback(() => {
+      loadUsers();
+    }, [loadUsers])
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadUsers();
+  }, [loadUsers]);
+
+  // Segregate by role
+  const studentUsers = useMemo(() => users.filter((u) => u.role === 'student'), [users]);
+  const staffUsers = useMemo(() => users.filter((u) => u.role === 'staff'), [users]);
+  const adminUsers = useMemo(() => users.filter((u) => u.role === 'admin'), [users]);
+
+  // Department counts for students
+  const deptCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: studentUsers.length };
+    for (const s of studentUsers) {
+      const deptRaw = (s.department ?? '').trim().toLowerCase();
+      if (!deptRaw) continue;
+      for (const d of DEPARTMENTS) {
+        if (d.id === 'All') continue;
+        if (
+          deptRaw === d.id.toLowerCase() ||
+          deptRaw === d.code.toLowerCase() ||
+          deptRaw.includes(d.id.toLowerCase()) ||
+          d.name.toLowerCase().includes(deptRaw)
+        ) {
+          counts[d.id] = (counts[d.id] || 0) + 1;
+        }
+      }
     }
-  }
+    return counts;
+  }, [studentUsers]);
 
-  async function assignCr(sectionId: string) {
-    if (!crFor || assigning) return;
-    setAssigning(true);
-    // One CR per section: demote any current CR first (mirrors club_set_president's
-    // atomic hand-over), otherwise a section accumulates multiple CRs.
-    await supabase.from('study_section_members')
-      .update({ role: 'member' })
-      .eq('section_id', sectionId).eq('role', 'cr').neq('user_id', crFor.id);
-    const { error } = await supabase.from('study_section_members').upsert(
-      { section_id: sectionId, user_id: crFor.id, role: 'cr', status: 'approved' },
-      { onConflict: 'section_id,user_id' },
-    );
-    setAssigning(false);
-    if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
-    showToast({ type: 'success', title: t.manage.crAssigned, message: crFor.full_name });
-    setCrFor(null);
-  }
+  // Selected Department Item
+  const activeDeptItem = useMemo(
+    () => DEPARTMENTS.find((d) => d.id === selectedDept) ?? DEPARTMENTS[0],
+    [selectedDept]
+  );
 
-  async function assignPres(clubId: string) {
-    if (!presFor || assigning) return;
-    setAssigning(true);
-    const { error } = await supabase.rpc('club_set_president', { p_club_id: clubId, p_user_id: presFor.id });
-    setAssigning(false);
-    if (error) { showToast({ type: 'error', title: t.common.error, message: error.message }); return; }
-    showToast({ type: 'success', title: t.manage.presidentAssigned, message: presFor.full_name });
-    setPresFor(null);
-  }
+  // Tabs for 58dp SegmentedTabs
+  const tabs = useMemo<TabItem<UserTab>[]>(
+    () => [
+      {
+        id: 'student',
+        label: 'Student',
+        icon: 'users',
+        count: studentUsers.length,
+      },
+      {
+        id: 'staff',
+        label: 'Staff',
+        icon: 'briefcase',
+        count: staffUsers.length,
+      },
+      {
+        id: 'admin',
+        label: 'Admin',
+        icon: 'shield',
+        count: adminUsers.length,
+      },
+    ],
+    [studentUsers.length, staffUsers.length, adminUsers.length]
+  );
 
-  function resetCreateForm() {
-    setCName(''); setCEmail(''); setCPassword(''); setCRole('staff'); setCTrade(null);
-  }
+  // Filtered List based on tab, department, and search
+  const displayedUsers = useMemo(() => {
+    let list: Profile[] = [];
+    if (activeTab === 'student') {
+      list = studentUsers;
+      if (selectedDept !== 'All') {
+        const target = selectedDept.toLowerCase();
+        list = list.filter((u) => {
+          const dept = (u.department ?? '').toLowerCase();
+          return (
+            dept === target ||
+            dept === activeDeptItem.code.toLowerCase() ||
+            dept.includes(target) ||
+            activeDeptItem.name.toLowerCase().includes(dept)
+          );
+        });
+      }
+    } else if (activeTab === 'staff') {
+      list = staffUsers;
+    } else {
+      list = adminUsers;
+    }
 
-  async function submitCreate() {
-    if (creating) return;
-    setCreating(true);
-    const res = await createUserAsAdmin({
-      name: cName,
-      email: cEmail,
-      password: cPassword,
-      role: cRole,
-      expertise: cRole === 'staff' ? cTrade : null,
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return list;
+
+    return list.filter((u) => {
+      const name = (u.full_name ?? '').toLowerCase();
+      const email = (u.email ?? '').toLowerCase();
+      const studentId = (u.student_id ?? '').toLowerCase();
+      const dept = (u.department ?? '').toLowerCase();
+      const phone = (u.phone ?? '').toLowerCase();
+      const expertise = (u.expertise ?? '').toLowerCase();
+      return (
+        name.includes(q) ||
+        email.includes(q) ||
+        studentId.includes(q) ||
+        dept.includes(q) ||
+        phone.includes(q) ||
+        expertise.includes(q)
+      );
     });
-    setCreating(false);
-    if (!res.ok) { showToast({ type: 'error', title: t.manage.couldNotCreateAccount, message: res.error }); return; }
-    setCreateOpen(false);
-    resetCreateForm();
-    setToast(true);
-    setTimeout(() => setToast(false), 1500);
-    await load();
-  }
+  }, [
+    activeTab,
+    studentUsers,
+    staffUsers,
+    adminUsers,
+    selectedDept,
+    activeDeptItem,
+    searchQuery,
+  ]);
 
-  const createOk = cName.trim().length > 1 && /\S+@\S+\.\S+/.test(cEmail) && cPassword.length >= 6;
+  const handleUserPress = useCallback(
+    (u: Profile) => {
+      setSelectedUser(u);
+    },
+    []
+  );
 
+  const handleOpenFullProfile = useCallback(
+    (u: Profile) => {
+      setSelectedUser(null);
+      if (u.role === 'student') {
+        navigation.navigate('StudentProfile', {
+          studentId: u.id,
+          id: u.id,
+          student: u,
+        });
+      }
+    },
+    [navigation]
+  );
+
+  // Access check
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title={t.manage.manageUsers} onBack={() => navigation.goBack()} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18, marginBottom: 8 }}>{t.manage.accessDenied}</Text>
-          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 14, textAlign: 'center' }}>
-            {t.manage.onlyAdminsManageUsers}
+        <SubBar title="Users" onBack={() => navigation.goBack()} />
+        <View style={styles.accessDeniedWrap}>
+          <Icon name="shield" size={40} color={C.danger} />
+          <Text style={[styles.accessDeniedTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            {t.manage?.accessDenied ?? 'Access Denied'}
+          </Text>
+          <Text style={[styles.accessDeniedSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            {t.manage?.onlyAdminsManageUsers ?? 'Only administrators can view and manage user records.'}
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Render 58dp User Bar
+  const renderUserItem = ({ item }: { item: Profile }) => {
+    let metaSubtitle = '';
+    if (item.role === 'student') {
+      const parts: string[] = [];
+      if (item.department) parts.push(item.department);
+      if (item.intake) parts.push(`Intake ${item.intake}`);
+      if (item.section) parts.push(`Sec ${item.section}`);
+      metaSubtitle = parts.join(' · ') || item.student_id || item.email || 'Student';
+    } else if (item.role === 'staff') {
+      metaSubtitle = item.expertise ? `Trade: ${item.expertise}` : item.email || 'Campus Staff';
+    } else {
+      metaSubtitle = item.email || 'Administrator';
+    }
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.userBar58,
+          {
+            backgroundColor: C.surface,
+            borderColor: C.border,
+          },
+        ]}
+        onPress={() => handleUserPress(item)}
+        activeOpacity={0.7}
+      >
+        <Avatar uri={item.avatar_url} name={item.full_name} size="sm" />
+        <View style={styles.userBarBody}>
+          <Text
+            style={[styles.userBarName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+            numberOfLines={1}
+          >
+            {item.full_name}
+          </Text>
+          <Text
+            style={[styles.userBarMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+            numberOfLines={1}
+          >
+            {metaSubtitle}
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={18} color={C.textMuted} />
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar
-        title={t.manage.manageUsers}
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.newBtn, { backgroundColor: C.brand }]}
-            onPress={() => setCreateOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={14} color="#fff" />
-            <Text style={[styles.newBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>{t.manage.newBtn}</Text>
-          </TouchableOpacity>
-        }
-      />
+      <SubBar title="Users" onBack={() => navigation.goBack()} />
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        <Text style={[styles.hint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-          {t.manage.manageUsersHint}
-        </Text>
-
-        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {users.map((u, i) => {
-            const roleHex = C[ROLE_TOKEN[u.role as keyof typeof ROLE_TOKEN]] ?? C.textMuted;
-            return (
-              <View key={u.id}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                <View style={styles.row}>
-                  <Avatar uri={u.avatar_url} name={u.full_name} size="sm" />
-                  <View style={styles.body}>
-                    <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {u.full_name}
-                    </Text>
-                    <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {u.department ?? '-'}{u.intake ? t.manage.intakeLabel(u.intake) : ''}
-                    </Text>
-                    {u.role === 'staff' && (
-                      <TouchableOpacity
-                        style={[styles.tradeChip, { borderColor: C.border, backgroundColor: C.bg }]}
-                        onPress={() => setExpertiseTarget(u)}
-                        activeOpacity={0.75}
-                      >
-                        <View style={[styles.pilldot, { backgroundColor: u.expertise ? C.success : C.textMuted }]} />
-                        <Text style={[styles.tradeChipTxt, { color: u.expertise ? C.text2 : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                          {u.expertise ?? t.manage.setTrade}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {u.role === 'student' && (
-                      <View style={styles.studentActions}>
-                        <TouchableOpacity
-                          style={[styles.actChip, { borderColor: C.border, backgroundColor: C.bg }]}
-                          onPress={() => openCr(u)}
-                          activeOpacity={0.75}
-                        >
-                          <Feather name="award" size={12} color={C.text2} />
-                          <Text style={[styles.actChipTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.manage.makeCr}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.actChip, { borderColor: C.border, backgroundColor: C.bg }]}
-                          onPress={() => openPres(u)}
-                          activeOpacity={0.75}
-                        >
-                          <Feather name="star" size={12} color={C.text2} />
-                          <Text style={[styles.actChipTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>{t.manage.makePresident}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.rolePill, { backgroundColor: roleHex + (isDark ? '36' : '1e') }]}
-                    onPress={u.role === 'student' ? undefined : () => cycleRole(u)}
-                    disabled={u.role === 'student'}
-                    activeOpacity={u.role === 'student' ? 1 : 0.75}
-                  >
-                    <View style={[styles.pilldot, { backgroundColor: roleHex }]} />
-                    <Text style={[styles.pillTxt, { color: roleHex, fontFamily: FontFamily.jakartaBold }]}>
-                      {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })}
+      {/* Main Container */}
+      <View style={[styles.contentContainer, { paddingHorizontal: Layout.screenPadding }]}>
+        {/* 58dp Search Bar */}
+        <View
+          style={[
+            styles.searchBar58,
+            {
+              backgroundColor: C.surface,
+              borderColor: C.border,
+            },
+          ]}
+        >
+          <Feather name="search" size={20} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={
+              activeTab === 'student'
+                ? 'Search students by name, ID, intake...'
+                : activeTab === 'staff'
+                ? 'Search staff by name, trade, email...'
+                : 'Search administrators...'
+            }
+            placeholderTextColor={C.textMuted}
+            autoCapitalize="none"
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        <View style={{ height: 20 }} />
-      </ScrollView>
+        {/* 58dp Segmented Tab Bar: [ Student | Staff | Admin ] */}
+        <View style={styles.tabsWrapper}>
+          <SegmentedTabs<UserTab>
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={(tId) => {
+              setActiveTab(tId);
+            }}
+            size="md"
+          />
+        </View>
 
-      {/* Expertise picker */}
-      <Modal visible={!!expertiseTarget} transparent animationType="slide" onRequestClose={() => setExpertiseTarget(null)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setExpertiseTarget(null)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {t.manage.setTradeWithName(expertiseTarget?.full_name ?? '')}
-          </Text>
-          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {t.manage.setTradeSub}
-          </Text>
-          {TRADES.map((t, i) => {
-            const on = expertiseTarget?.expertise === t;
-            return (
-              <View key={t}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                <TouchableOpacity style={styles.optRow} onPress={() => expertiseTarget && setExpertise(expertiseTarget, t)} activeOpacity={0.75}>
-                  <View style={[styles.pilldot, { backgroundColor: on ? C.success : C.border }]} />
-                  <Text style={[styles.optTxt, { color: on ? C.success : C.text, fontFamily: FontFamily.jakartaBold }]}>{t}</Text>
+        {/* 58dp Department Dropdown Bar (Student Tab Only) */}
+        {activeTab === 'student' && (
+          <TouchableOpacity
+            style={[
+              styles.deptDropdownBar58,
+              {
+                backgroundColor: C.surface,
+                borderColor: selectedDept !== 'All' ? C.brand : C.border,
+              },
+            ]}
+            onPress={() => setDeptModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.deptBarLeading}>
+              <Icon name={activeDeptItem.icon} size={22} color={selectedDept !== 'All' ? C.brand : C.text} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  style={[
+                    styles.deptBarTitle,
+                    {
+                      color: selectedDept !== 'All' ? C.brand : C.text,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {selectedDept === 'All' ? 'All Departments' : activeDeptItem.name}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.deptBarTrailing}>
+              {selectedDept !== 'All' && (
+                <View style={[styles.deptCountPill, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}>
+                  <Text style={[styles.deptCountPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {displayedUsers.length}
+                  </Text>
+                </View>
+              )}
+              <Feather name="chevron-down" size={18} color={selectedDept !== 'All' ? C.brand : C.textMuted} />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Users List with FlatList Performance */}
+        {loading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color={C.brand} />
+            <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              Loading users...
+            </Text>
+          </View>
+        ) : errorMsg ? (
+          <View style={[styles.errorCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Feather name="alert-circle" size={32} color={C.danger} />
+            <Text style={[styles.errorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Could Not Load Users
+            </Text>
+            <Text style={[styles.errorDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+              {errorMsg}
+            </Text>
+            <TouchableOpacity
+              style={[styles.retryBtn, { backgroundColor: C.brand }]}
+              onPress={loadUsers}
+              activeOpacity={0.8}
+            >
+              <Feather name="refresh-cw" size={16} color="#ffffff" />
+              <Text style={[styles.retryBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                Retry
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={displayedUsers}
+            keyExtractor={(item) => item.id}
+            renderItem={renderUserItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
+            }
+            initialNumToRender={15}
+            maxToRenderPerBatch={15}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconWrap}>
+                  <Icon name={activeTab === 'student' ? 'users' : activeTab === 'staff' ? 'briefcase' : 'shield'} size={36} color={C.textMuted} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {searchQuery.trim().length > 0
+                    ? 'No matching users found'
+                    : activeTab === 'student' && selectedDept !== 'All'
+                    ? `No students in ${activeDeptItem.code}`
+                    : `No ${activeTab} accounts`}
+                </Text>
+                <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  {searchQuery.trim().length > 0
+                    ? 'Try refining your search keyword or clearing the search bar.'
+                    : activeTab === 'student' && selectedDept !== 'All'
+                    ? 'No registered student profiles match this department filter.'
+                    : `There are currently no registered ${activeTab} accounts in the database.`}
+                </Text>
+                {selectedDept !== 'All' && activeTab === 'student' && (
+                  <TouchableOpacity
+                    style={[styles.clearFilterBtn, { borderColor: C.border, backgroundColor: C.surface }]}
+                    onPress={() => setSelectedDept('All')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.clearFilterBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                      Show All Departments
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            }
+          />
+        )}
+      </View>
+
+      {/* Department Picker Bottom Sheet Modal */}
+      <Modal
+        visible={deptModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeptModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setDeptModalVisible(false)}
+        />
+        <View
+          style={[
+            styles.deptSheet,
+            {
+              backgroundColor: C.surface,
+              paddingBottom: Math.max(28, insets.bottom + 12),
+            },
+          ]}
+        >
+          <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#383838' : '#d4d4d8' }]} />
+
+          <View style={styles.sheetHeaderRow}>
+            <View>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                Select Department
+              </Text>
+              <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Filter students by department
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}
+              onPress={() => setDeptModalVisible(false)}
+            >
+              <Feather name="x" size={18} color={C.text} />
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={DEPARTMENTS}
+            keyExtractor={(d) => d.id}
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 420 }}
+            renderItem={({ item: d }) => {
+              const isSelected = selectedDept === d.id;
+              const count = deptCounts[d.id] ?? 0;
+
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.deptModalRow58,
+                    {
+                      backgroundColor: isSelected ? (isDark ? '#262626' : '#f4f4f5') : 'transparent',
+                      borderColor: isSelected ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    setSelectedDept(d.id);
+                    setDeptModalVisible(false);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.deptModalLeading}>
+                    <Icon name={d.icon} size={22} color={isSelected ? C.brand : C.text} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.deptModalName,
+                          {
+                            color: isSelected ? C.brand : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {d.name}
+                      </Text>
+                      {d.id !== 'All' && (
+                        <Text
+                          style={[styles.deptModalCode, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                        >
+                          {d.code}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.deptModalTrailing}>
+                    <View style={[styles.deptModalCountPill, { backgroundColor: isDark ? '#1c1c1c' : '#e4e4e7' }]}>
+                      <Text style={[styles.deptModalCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                        {count}
+                      </Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      </Modal>
+
+      {/* User Details Bottom Sheet Modal */}
+      <Modal
+        visible={!!selectedUser}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedUser(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedUser(null)}
+        />
+        <View
+          style={[
+            styles.detailsSheet,
+            {
+              backgroundColor: C.surface,
+              paddingBottom: Math.max(28, insets.bottom + 12),
+            },
+          ]}
+        >
+          <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#383838' : '#d4d4d8' }]} />
+
+          {selectedUser && (
+            <>
+              {/* Profile Header */}
+              <View style={styles.profileHeader}>
+                <Avatar uri={selectedUser.avatar_url} name={selectedUser.full_name} size="lg" />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={[styles.profileName, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}
+                    numberOfLines={1}
+                  >
+                    {selectedUser.full_name}
+                  </Text>
+                  <View style={styles.roleBadgeRow}>
+                    <View
+                      style={[
+                        styles.roleBadge,
+                        {
+                          backgroundColor:
+                            selectedUser.role === 'admin'
+                              ? `${C.warn}22`
+                              : selectedUser.role === 'staff'
+                              ? `${C.brand}22`
+                              : `${C.success}22`,
+                          borderColor:
+                            selectedUser.role === 'admin'
+                              ? C.warn
+                              : selectedUser.role === 'staff'
+                              ? C.brand
+                              : C.success,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.roleBadgeDot,
+                          {
+                            backgroundColor:
+                              selectedUser.role === 'admin'
+                                ? C.warn
+                                : selectedUser.role === 'staff'
+                                ? C.brand
+                                : C.success,
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.roleBadgeTxt,
+                          {
+                            color:
+                              selectedUser.role === 'admin'
+                                ? C.warn
+                                : selectedUser.role === 'staff'
+                                ? C.brand
+                                : C.success,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {selectedUser.role === 'admin'
+                          ? 'Administrator'
+                          : selectedUser.role === 'staff'
+                          ? 'Staff Member'
+                          : 'Student'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[styles.sheetCloseBtn, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}
+                  onPress={() => setSelectedUser(null)}
+                >
+                  <Feather name="x" size={18} color={C.text} />
                 </TouchableOpacity>
               </View>
-            );
-          })}
-          <View style={[styles.divider, { backgroundColor: C.border }]} />
-          <TouchableOpacity style={styles.optRow} onPress={() => expertiseTarget && setExpertise(expertiseTarget, null)} activeOpacity={0.75}>
-            <View style={[styles.pilldot, { backgroundColor: C.textMuted }]} />
-            <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.manage.noTradeOption}</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
 
-      {/* CR picker */}
-      <Modal visible={!!crFor} transparent animationType="slide" onRequestClose={() => setCrFor(null)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setCrFor(null)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.manage.crSheetTitle}</Text>
-          <Text style={[styles.sheetSub, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginBottom: 2 }]}>{crFor?.full_name}</Text>
-          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.manage.crSheetSub}</Text>
-          {sections === null ? (
-            <ActivityIndicator style={{ marginVertical: 24 }} color={C.brand} />
-          ) : sections.length === 0 ? (
-            <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, paddingVertical: 18 }]}>{t.manage.noSections}</Text>
-          ) : (
-            <ScrollView style={{ maxHeight: 360 }}>
-              {sections.map((s, i) => (
-                <View key={s.id}>
-                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                  <TouchableOpacity style={styles.optRow} onPress={() => assignCr(s.id)} disabled={assigning} activeOpacity={0.75}>
-                    <Text style={[styles.optTxt, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]}>{s.label}</Text>
-                    <Feather name="chevron-right" size={16} color={C.textMuted} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      </Modal>
-
-      {/* President picker */}
-      <Modal visible={!!presFor} transparent animationType="slide" onRequestClose={() => setPresFor(null)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setPresFor(null)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{t.manage.presSheetTitle}</Text>
-          <Text style={[styles.sheetSub, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginBottom: 2 }]}>{presFor?.full_name}</Text>
-          <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>{t.manage.presSheetSub}</Text>
-          {clubs === null ? (
-            <ActivityIndicator style={{ marginVertical: 24 }} color={C.brand} />
-          ) : clubs.length === 0 ? (
-            <Text style={[styles.optTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, paddingVertical: 18 }]}>{t.manage.noActiveClubs}</Text>
-          ) : (
-            <ScrollView style={{ maxHeight: 360 }}>
-              {clubs.map((c, i) => (
-                <View key={c.id}>
-                  {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
-                  <TouchableOpacity style={styles.optRow} onPress={() => assignPres(c.id)} disabled={assigning} activeOpacity={0.75}>
-                    <Text style={[styles.optTxt, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]}>{c.name}</Text>
-                    <Feather name="chevron-right" size={16} color={C.textMuted} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      </Modal>
-
-      {/* Create account sheet */}
-      <Modal visible={createOpen} transparent animationType="slide" onRequestClose={() => { setCreateOpen(false); resetCreateForm(); }}>
-        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { setCreateOpen(false); resetCreateForm(); }} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.manage.createAccount}
-            </Text>
-            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.manage.createAccountSub}
-            </Text>
-
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.fullNameLabel}</Text>
-              <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={cName} onChangeText={setCName} placeholder={t.manage.fullNamePlaceholder} placeholderTextColor={C.textMuted}
-              />
-
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.emailLabel}</Text>
-              <TextInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={cEmail} onChangeText={setCEmail} placeholder={t.manage.emailUniversityPlaceholder} placeholderTextColor={C.textMuted}
-                autoCapitalize="none" keyboardType="email-address"
-              />
-
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.passwordMin6Label}</Text>
-              <PasswordInput
-                style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={cPassword} onChangeText={setCPassword} placeholder="••••••" placeholderTextColor={C.textMuted}
-              />
-
-              <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.roleLabel}</Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {(['student', 'staff', 'admin'] as const).map(r => {
-                  const sel = cRole === r;
-                  return (
-                    <TouchableOpacity
-                      key={r}
-                      style={[styles.roleChip, { backgroundColor: sel ? C.brand : C.bg, borderColor: sel ? C.brand : C.border }]}
-                      onPress={() => setCRole(r)}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={{ fontSize: 13, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>
-                        {r.charAt(0).toUpperCase() + r.slice(1)}
+              {/* Information Rows */}
+              <View style={[styles.infoGrid, { backgroundColor: C.bg, borderColor: C.border }]}>
+                {selectedUser.role === 'student' && (
+                  <>
+                    <View style={styles.infoRow}>
+                      <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        Student ID
                       </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                      <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {selectedUser.student_id || 'Not provided'}
+                      </Text>
+                    </View>
+                    <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+
+                    <View style={styles.infoRow}>
+                      <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        Department
+                      </Text>
+                      <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {selectedUser.department || 'Not specified'}
+                      </Text>
+                    </View>
+                    <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+
+                    <View style={styles.infoRow}>
+                      <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        Intake / Section
+                      </Text>
+                      <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {selectedUser.intake ? `Intake ${selectedUser.intake}` : 'Not set'}
+                        {selectedUser.section ? ` · Sec ${selectedUser.section}` : ''}
+                      </Text>
+                    </View>
+                    <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+                  </>
+                )}
+
+                {selectedUser.role === 'staff' && (
+                  <>
+                    <View style={styles.infoRow}>
+                      <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        Assigned Trade
+                      </Text>
+                      <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {selectedUser.expertise || 'General Maintenance'}
+                      </Text>
+                    </View>
+                    <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+                  </>
+                )}
+
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Email Address
+                  </Text>
+                  <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {selectedUser.email || 'Not available'}
+                  </Text>
+                </View>
+                <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Phone Number
+                  </Text>
+                  <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {selectedUser.phone || 'Not shared'}
+                  </Text>
+                </View>
+                <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+
+                {selectedUser.role === 'student' && (
+                  <>
+                    <View style={styles.infoRow}>
+                      <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                        Blood Group
+                      </Text>
+                      <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {selectedUser.blood_group || 'Not specified'}
+                      </Text>
+                    </View>
+                    <View style={[styles.infoDivider, { backgroundColor: C.border }]} />
+                  </>
+                )}
+
+                <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Account Created
+                  </Text>
+                  <Text style={[styles.infoValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {formatDate(selectedUser.created_at)}
+                  </Text>
+                </View>
               </View>
 
-              {cRole === 'staff' && (
-                <>
-                  <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.manage.tradeOptionalLabel}</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-                    {TRADES.map(t => {
-                      const sel = cTrade === t;
-                      return (
-                        <TouchableOpacity
-                          key={t}
-                          style={[styles.roleChip, { backgroundColor: sel ? C.brand : C.bg, borderColor: sel ? C.brand : C.border }]}
-                          onPress={() => setCTrade(sel ? null : t)}
-                          activeOpacity={0.75}
-                        >
-                          <Text style={{ fontSize: 12, color: sel ? '#fff' : C.text, fontFamily: FontFamily.jakartaBold }}>{t}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </>
+              {/* Action Button: View Full Student Profile if Student */}
+              {selectedUser.role === 'student' && (
+                <TouchableOpacity
+                  style={[styles.fullProfileBtn58, { backgroundColor: C.brand }]}
+                  onPress={() => handleOpenFullProfile(selectedUser)}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="user" size={18} color="#ffffff" />
+                  <Text style={[styles.fullProfileBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                    View Full Student Profile
+                  </Text>
+                  <Feather name="arrow-right" size={18} color="#ffffff" />
+                </TouchableOpacity>
               )}
-
-              <TouchableOpacity
-                style={[styles.createBtn, { backgroundColor: createOk ? C.brand : C.surface2, opacity: createOk ? 1 : 0.55 }]}
-                disabled={!createOk || creating}
-                onPress={submitCreate}
-                activeOpacity={0.8}
-              >
-                {creating
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Feather name="user-plus" size={16} color={createOk ? '#fff' : C.textMuted} />}
-                <Text style={[styles.createBtnTxt, { color: createOk ? '#fff' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.manage.createAccount}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* Toast */}
-      {toast && (
-        <View style={[styles.toast, { backgroundColor: C.text }]} pointerEvents="none">
-          <Text style={[styles.toastTxt, { color: C.bg, fontFamily: FontFamily.jakartaBold }]}>{t.manage.saved}</Text>
+            </>
+          )}
         </View>
-      )}
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
-
-  hint: {
-    fontSize: 12.5,
-    marginBottom: 12,
-    marginLeft: 2,
-  } as any,
-
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
+  contentContainer: {
+    flex: 1,
+    paddingTop: 12,
   } as ViewStyle,
 
-  divider: { height: StyleSheet.hairlineWidth } as ViewStyle,
+  /* 58dp Universal Search Bar */
+  searchBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+    marginBottom: 12,
+  } as ViewStyle,
+  searchInput: {
+    flex: 1,
+    fontSize: 14.5,
+    paddingVertical: 0,
+  } as any,
 
-  row: {
+  /* 58dp Tabs Wrapper */
+  tabsWrapper: {
+    marginBottom: 12,
+  } as ViewStyle,
+
+  /* 58dp Department Dropdown Bar */
+  deptDropdownBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  } as ViewStyle,
+  deptBarLeading: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    marginRight: 10,
+  } as ViewStyle,
+  deptBarTitle: {
+    fontSize: 14.5,
+  } as any,
+  deptBarTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+  deptCountPill: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 12,
+  } as ViewStyle,
+  deptCountPillTxt: {
+    fontSize: 12,
+  } as any,
+
+  /* 58dp User Bar Rows */
+  listContent: {
+    paddingBottom: 32,
+  } as ViewStyle,
+  userBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
+    marginBottom: 8,
+  } as ViewStyle,
+  userBarBody: {
+    flex: 1,
+    justifyContent: 'center',
+  } as ViewStyle,
+  userBarName: {
+    fontSize: 14,
+  } as any,
+  userBarMeta: {
+    fontSize: 11.5,
+    marginTop: 1.5,
+  } as any,
+
+  /* Loading & Error */
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  } as ViewStyle,
+  loadingTxt: {
+    fontSize: 14,
+  } as any,
+
+  errorCard: {
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 20,
+  } as ViewStyle,
+  errorTitle: {
+    fontSize: 16,
+    marginTop: 4,
+  } as any,
+  errorDesc: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  } as any,
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    height: 44,
+    borderRadius: 12,
+    marginTop: 6,
+  } as ViewStyle,
+  retryBtnTxt: {
+    fontSize: 14,
+  } as any,
+
+  /* Empty State */
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    gap: 10,
+  } as ViewStyle,
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  } as ViewStyle,
+  emptyTitle: {
+    fontSize: 16,
+    textAlign: 'center',
+  } as any,
+  emptyDesc: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  } as any,
+  clearFilterBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
+  } as ViewStyle,
+  clearFilterBtnTxt: {
+    fontSize: 13.5,
+  } as any,
+
+  /* Modal Sheets */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+  } as ViewStyle,
+  sheetHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  } as ViewStyle,
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  } as ViewStyle,
+  sheetTitle: {
+    fontSize: 18,
+  } as any,
+  sheetSub: {
+    fontSize: 12.5,
+    marginTop: 2,
+  } as any,
+  sheetCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
 
-  body: { flex: 1, minWidth: 0 } as ViewStyle,
+  /* Department Bottom Sheet */
+  deptSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 14,
+  } as ViewStyle,
+  deptModalRow58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  } as ViewStyle,
+  deptModalLeading: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginRight: 12,
+  } as ViewStyle,
+  deptModalName: {
+    fontSize: 14,
+  } as any,
+  deptModalCode: {
+    fontSize: 11.5,
+    marginTop: 1,
+  } as any,
+  deptModalTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as ViewStyle,
+  deptModalCountPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  } as ViewStyle,
+  deptModalCountTxt: {
+    fontSize: 11.5,
+  } as any,
 
-  name: { fontSize: 14 } as any,
-  meta: { fontSize: 12, marginTop: 1 } as any,
-
-  rolePill: {
+  /* User Details Bottom Sheet */
+  detailsSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 14,
+    maxHeight: '85%',
+  } as ViewStyle,
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 18,
+  } as ViewStyle,
+  profileName: {
+    fontSize: 17,
+    marginBottom: 4,
+  } as any,
+  roleBadgeRow: {
+    flexDirection: 'row',
+  } as ViewStyle,
+  roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: 12,
+    borderWidth: 1,
   } as ViewStyle,
-
-  pilldot: {
+  roleBadgeDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   } as ViewStyle,
-
-  pillTxt: { fontSize: 12 } as any,
-
-  tradeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 6,
-  } as ViewStyle,
-  tradeChipTxt: { fontSize: 11.5 } as any,
-
-  studentActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 6 } as ViewStyle,
-  actChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-  } as ViewStyle,
-  actChipTxt: { fontSize: 11.5 } as any,
-
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
-  sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 20,
-    paddingBottom: 34,
-    maxHeight: '80%',
-  } as ViewStyle,
-  sheetTitle: { fontSize: 17, marginBottom: 4 } as any,
-  sheetSub: { fontSize: 12.5, marginBottom: 12 } as any,
-  optRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 } as ViewStyle,
-  optTxt: { fontSize: 14.5 } as any,
-
-  toast: {
-    position: 'absolute',
-    bottom: 36,
-    alignSelf: 'center',
-    
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 999,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
-  } as ViewStyle,
-
-  toastTxt: {
-    
-    fontSize: 13.5,
+  roleBadgeTxt: {
+    fontSize: 11.5,
   } as any,
 
-  newBtn: {
+  /* Details Grid */
+  infoGrid: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 16,
+  } as ViewStyle,
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 999,
+    justifyContent: 'space-between',
+    paddingVertical: 12,
   } as ViewStyle,
-  newBtnTxt: { color: '#fff', fontSize: 12.5 } as any,
+  infoLabel: {
+    fontSize: 12.5,
+  } as any,
+  infoValue: {
+    fontSize: 13.5,
+    maxWidth: '65%',
+    textAlign: 'right',
+  } as any,
+  infoDivider: {
+    height: StyleSheet.hairlineWidth,
+  } as ViewStyle,
 
-  fieldLabel: { fontSize: 11, letterSpacing: 0.7, marginTop: 13, marginBottom: 6, marginLeft: 2 } as any,
-  field: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14 } as any,
-  roleChip: {
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-  } as ViewStyle,
-  createBtn: {
+  fullProfileBtn58: {
+    height: 58,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 50,
-    borderRadius: 14,
-    marginTop: 20,
+    gap: 10,
+    marginTop: 4,
   } as ViewStyle,
-  createBtnTxt: { fontSize: 15 } as any,
+  fullProfileBtnTxt: {
+    fontSize: 15,
+  } as any,
+
+  /* Access Denied */
+  accessDeniedWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 10,
+  } as ViewStyle,
+  accessDeniedTitle: {
+    fontSize: 18,
+    marginTop: 6,
+  } as any,
+  accessDeniedSub: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  } as any,
 });

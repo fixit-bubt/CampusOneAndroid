@@ -144,6 +144,7 @@ export type AppStackParams = {
   // Dashboards
   AdminDashboard: undefined;
   ManageUsers:    undefined;
+  CreateStaffAdmin: undefined;
   ManageFaculty:  undefined;
   ManageStudyHub: undefined;
   AllReports:     undefined;

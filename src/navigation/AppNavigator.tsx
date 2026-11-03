@@ -47,6 +47,7 @@ import { NotifSettingsScreen }     from '../screens/notifications/NotifSettingsS
 import { MessageThread }           from '../screens/messages/MessageThread';
 import { AdminDashboardScreen }    from '../screens/dashboard/AdminDashboardScreen';
 import { ManageUsersScreen }       from '../screens/dashboard/ManageUsersScreen';
+import { CreateStaffAdminScreen }   from '../screens/dashboard/CreateStaffAdminScreen';
 import { ManageFacultyScreen }     from '../screens/dashboard/ManageFacultyScreen';
 import { ManageStudyHubScreen }    from '../screens/dashboard/ManageStudyHubScreen';
 import { AllReportsScreen }        from '../screens/dashboard/AllReportsScreen';
@@ -195,6 +196,7 @@ export function AppNavigator() {
       {/* Dashboards (reached from Admin Dashboard tiles / Home tab) */}
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       <Stack.Screen name="ManageUsers"    component={ManageUsersScreen} />
+      <Stack.Screen name="CreateStaffAdmin" component={CreateStaffAdminScreen} />
       <Stack.Screen name="ManageFaculty"  component={ManageFacultyScreen} />
       <Stack.Screen name="ManageStudyHub"  component={ManageStudyHubScreen} />
       <Stack.Screen name="AllReports"     component={AllReportsScreen} />
