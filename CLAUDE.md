@@ -4173,3 +4173,25 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`cmd.exe /c npx tsc --noEmit`).
   - Native Local Release Build: Compiled locally via Gradle (`gradlew assembleRelease`) with local release keystore.
   - Physical Device Deployment: Installed and verified on physical USB-connected Android phone (`8734b5da`).
+
+
+---
+
+### 110. Campus Rides Clean Domain Separation: 100% Student Peer-to-Peer Architecture & Full Removal of Administrative Overrides (`RideDetailScreen.tsx`, `ExploreScreen.tsx`, `en.ts`, `bn.ts`, `20261104050000_rides_student_peer_to_peer.sql`, Web `Rides.jsx`, Web `AppShell.jsx`, Web `App.jsx`) (/code-review-and-quality, /zero-slop)
+- **Zero Administrative Liability & Clean University Domain Separation:**
+  - Evaluated administrative scope: university administration oversees institutional assets (facilities/reports, academic calendar, notices, official bus schedules, directory), while carpools are an informal, student-run commute.
+  - Eliminated administrative presence from Campus Rides to prevent awkward university liability and examiner confusion regarding private student commutes.
+- **Mobile Client Cleanup (`RideDetailScreen.tsx` & `ExploreScreen.tsx`):**
+  - Removed `isAdmin` role check, `adminDelete()` alert handler, and the red `Delete Ride (Admin)` button from `RideDetailScreen.tsx`.
+  - Added `'ride'` to `ADMIN_EXCLUDED` in `ExploreScreen.tsx`, removing Ride Share navigation from administrator explore menus.
+  - Purged unused translation keys (`adminDeleteTitle`, `adminDeleteBody`, `deleteRideAdmin`) from English and Bengali dictionaries (`en.ts`, `bn.ts`).
+- **Web Client Parity (`CampusOneWeb`):**
+  - Gated all `/rides`, `/rides/new`, and `/rides/:id` routes strictly behind `<RequireRole role="Student">` in `App.jsx`, redirecting administrators to `/admin`.
+  - Filtered out `rideshare` from the `Community` section in `AppShell.jsx` for Admin and Staff navigation menus.
+  - Stripped all `isAdmin` ternary hacks from `Rides.jsx` (moderation subtitles, post-creation button blocking, and driver-only delete checks).
+- **Database & Row-Level Security (RLS) Hardening (`20261104050000_rides_student_peer_to_peer.sql`):**
+  - Updated `public.rides` update and delete policies: strictly restricted to `driver_id = auth.uid()` with zero `is_admin()` override clauses.
+  - Updated `public.ride_requests` select and delete policies: strictly restricted to the requester or ride driver.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx tsc --noEmit`).
+  - Web Build Validation: Verified syntax and component contracts across React Web components.

@@ -47,8 +47,7 @@ export function RideDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
-  const { user, profile } = useAuth();
-  const isAdmin = profile?.role === 'admin';
+  const { user } = useAuth();
   const { rideId } = route.params ?? {};
 
   const [ride, setRide] = useState<any>(null);
@@ -369,29 +368,6 @@ export function RideDetailScreen({ route, navigation }: any) {
             setRequesters(prev => prev.filter(r => r.requester_id !== requesterId));
             setTakenCount(c => Math.max(c - 1, 0));
             toast({ type: 'success', title: 'Passenger removed' });
-          },
-        },
-      ]
-    );
-  }
-
-  function adminDelete() {
-    if (isOffline) {
-      toast({ type: 'info', title: 'Offline Mode', message: 'Internet connection required to delete ride.' });
-      return;
-    }
-    Alert.alert(
-      t.rides2.adminDeleteTitle ?? 'Delete ride',
-      t.rides2.adminDeleteBody ?? 'Remove this ride post permanently?',
-      [
-        { text: t.common.cancel ?? 'Cancel', style: 'cancel' },
-        {
-          text: t.common.delete ?? 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const { error } = await supabase.from('rides').delete().eq('id', rideId);
-            if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
-            navigation.goBack();
           },
         },
       ]
@@ -955,20 +931,6 @@ export function RideDetailScreen({ route, navigation }: any) {
               </TouchableOpacity>
             )
           )
-        )}
-
-        {/* Admin Moderation */}
-        {!isOwnRide && isAdmin && (
-          <TouchableOpacity
-            style={[styles.deleteRideBtn, { backgroundColor: C.dangerBg, marginTop: 12 }]}
-            onPress={adminDelete}
-            activeOpacity={0.85}
-          >
-            <Icon name="trash" size={16} color={C.danger} />
-            <Text style={[styles.deleteRideTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-              {t.rides2.deleteRideAdmin ?? 'Delete Ride (Admin)'}
-            </Text>
-          </TouchableOpacity>
         )}
 
         <View style={{ height: 32 }} />

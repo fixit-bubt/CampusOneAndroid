@@ -86,9 +86,9 @@ export function ExploreScreen({ navigation }: any) {
 
   // Admin excluded sectors: Student Directory (security-definer gated to students),
   // Lost & Found (student claiming with proof), Cover Page generator (student assignment covers),
-  // and Class Routines (student class lecture schedules). Reports, Faculty, Clubs, and Announcements are
-  // elevated to the dedicated Administration section below.
-  const ADMIN_EXCLUDED: SectorKey[] = ['directory', 'lostfound', 'coverpage', 'routines', 'reports', 'faculty', 'clubs', 'announce'];
+  // Class Routines (student class lecture schedules), and Ride Share (student peer-to-peer carpool).
+  // Reports, Faculty, Clubs, and Announcements are elevated to the dedicated Administration section below.
+  const ADMIN_EXCLUDED: SectorKey[] = ['directory', 'lostfound', 'coverpage', 'routines', 'ride', 'reports', 'faculty', 'clubs', 'announce'];
 
   const sectors = isStaff
     ? SECTORS.filter((s) => STAFF_SECTORS.includes(s.id))
