@@ -17,11 +17,12 @@ import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 
-const CATEGORY_LIST = ['All', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
+const CATEGORY_LIST = ['All', 'My Clubs', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
 type CategoryFilter = typeof CATEGORY_LIST[number];
 
 const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   All: 'layers',
+  'My Clubs': 'award',
   Tech: 'cpu',
   Cultural: 'music',
   Sports: 'activity',
@@ -127,11 +128,15 @@ export function ClubsScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
+  const myClubs = useMemo(() => clubs.filter(c => !!c.user_role), [clubs]);
+
   // Filtered dataset
   const filteredClubs = useMemo(() => {
     let result = clubs;
 
-    if (categoryFilter !== 'All') {
+    if (categoryFilter === 'My Clubs') {
+      result = result.filter(c => !!c.user_role);
+    } else if (categoryFilter !== 'All') {
       result = result.filter(c => c.category === categoryFilter);
     }
 
@@ -146,6 +151,57 @@ export function ClubsScreen({ navigation }: any) {
 
     return result;
   }, [clubs, categoryFilter, searchQuery]);
+
+  function renderClubCard(c: Club) {
+    const role = c.user_role;
+    return (
+      <TouchableOpacity
+        key={c.id}
+        style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+        onPress={() => navigation.navigate('ClubDetail', { clubId: c.id })}
+        activeOpacity={0.75}
+      >
+        <View style={styles.thumb}>
+          <Icon name="clubs" size={32} color={C.text} />
+        </View>
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              {c.name}
+            </Text>
+            {role && (
+              <View style={[styles.rolePill, { backgroundColor: C.surface2 }]}>
+                <Text style={[styles.roleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.clubs.roleLabels[role] ?? role}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {c.tagline ? (
+            <Text style={[styles.tagline, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+              {c.tagline}
+            </Text>
+          ) : null}
+
+          <View style={styles.metaRow}>
+            <View style={[styles.categoryPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+              <Text style={[styles.categoryTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                {c.category}
+              </Text>
+            </View>
+
+            <Text style={[styles.memberCount, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {c.member_count} {t.clubs.members.toLowerCase()}
+            </Text>
+          </View>
+        </View>
+
+        <Icon name="chevR" size={18} color={C.textMuted} />
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -198,7 +254,7 @@ export function ClubsScreen({ navigation }: any) {
               color={C.text}
             />
             <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {categoryFilter === 'All' ? 'All Club Categories' : `Category: ${categoryFilter}`}
+              {categoryFilter === 'All' ? 'All Club Categories' : categoryFilter === 'My Clubs' ? 'My Clubs' : `Category: ${categoryFilter}`}
             </Text>
           </View>
           <Feather name="chevron-down" size={20} color={C.textMuted} />
@@ -234,58 +290,29 @@ export function ClubsScreen({ navigation }: any) {
               </TouchableOpacity>
             ) : null}
           </View>
+        ) : categoryFilter === 'All' && !searchQuery.trim() && myClubs.length > 0 ? (
+          <View>
+            {/* Section 1: My Clubs (Pinned to Top) */}
+            <View style={{ marginBottom: 18 }}>
+              <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginBottom: 8 }]}>
+                MY CLUBS · {myClubs.length}
+              </Text>
+              <View style={{ gap: 10 }}>
+                {myClubs.map(renderClubCard)}
+              </View>
+            </View>
+
+            {/* Section 2: All Campus Clubs */}
+            <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginBottom: 8 }]}>
+              ALL CAMPUS CLUBS
+            </Text>
+            <View style={{ gap: 10 }}>
+              {filteredClubs.filter(c => !c.user_role).map(renderClubCard)}
+            </View>
+          </View>
         ) : (
           <View style={{ gap: 10 }}>
-            {filteredClubs.map(c => {
-              const role = c.user_role;
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-                  onPress={() => navigation.navigate('ClubDetail', { clubId: c.id })}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.thumb}>
-                    <Icon name="clubs" size={32} color={C.text} />
-                  </View>
-
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <View style={styles.titleRow}>
-                      <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {c.name}
-                      </Text>
-                      {role && (
-                        <View style={[styles.rolePill, { backgroundColor: C.surface2 }]}>
-                          <Text style={[styles.roleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                            {t.clubs.roleLabels[role] ?? role}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {c.tagline ? (
-                      <Text style={[styles.tagline, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {c.tagline}
-                      </Text>
-                    ) : null}
-
-                    <View style={styles.metaRow}>
-                      <View style={[styles.categoryPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
-                        <Text style={[styles.categoryTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                          {c.category}
-                        </Text>
-                      </View>
-
-                      <Text style={[styles.memberCount, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                        {c.member_count} {t.clubs.members.toLowerCase()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Icon name="chevR" size={18} color={C.textMuted} />
-                </TouchableOpacity>
-              );
-            })}
+            {filteredClubs.map(renderClubCard)}
           </View>
         )}
         <View style={{ height: 24 }} />
@@ -391,6 +418,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   } as TextStyle,
 
+  sectionLabel: {
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    paddingHorizontal: 2,
+  } as TextStyle,
   card: {
     flexDirection: 'row',
     alignItems: 'center',
