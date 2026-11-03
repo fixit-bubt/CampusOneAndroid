@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  RefreshControl, Alert, ActivityIndicator, Modal, type ViewStyle, type TextStyle,
+  RefreshControl, Alert, ActivityIndicator, Modal, type ViewStyle, type TextStyle, type ImageStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -303,6 +303,16 @@ export function ReportDetailScreen({ route, navigation }: any) {
     timelineSteps.push({ label: t.reports2.awaitingResolution, done: false });
   }
 
+  const rawBuilding = report.building?.trim() || '';
+  const displayBuilding = rawBuilding
+    ? (/^[0-9]+$/.test(rawBuilding) ? `Building ${rawBuilding}` : rawBuilding)
+    : 'Campus';
+
+  const rawRoom = report.room?.trim() || '';
+  const displayRoom = rawRoom
+    ? (rawRoom.toLowerCase().startsWith('room') || rawRoom.toLowerCase().startsWith('রুম') ? rawRoom : t.reports2.room(rawRoom))
+    : 'General';
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={code} onBack={() => navigation.goBack()} />
@@ -312,38 +322,83 @@ export function ReportDetailScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {/* Header: icon + title + status */}
-        <View style={styles.header}>
-          <View style={styles.catIcon}>
-                  <Icon name={cat.icon} size={32} color={C.text} />
-                </View>
-          <View style={styles.headerBody}>
-            <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={3}>
-              {report.description.split('\n')[0]}
+        {/* Top Badges Row: Category + Status */}
+        <View style={styles.topBadgesRow}>
+          <View style={[styles.categoryPill, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Icon name={cat.icon} size={15} color={C.text} />
+            <Text style={[styles.categoryPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {report.category}
             </Text>
-            <View style={styles.locRow}>
-              <Icon name="pin" size={12} color={C.textMuted} />
-              <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {report.building}{report.room ? ` · ${t.reports2.room(report.room)}` : ''}
-              </Text>
-            </View>
           </View>
           <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
             <Text style={[styles.statusText, { color: statusStyle.text, fontFamily: FontFamily.jakartaBold }]}>
-              {report.status}
+              {t.status[report.status] ?? report.status}
             </Text>
           </View>
         </View>
 
-        {/* Description */}
-        {report.description.includes('\n') && (
-          <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-            {report.description}
+        {/* Issue Title & Filing Timestamp */}
+        <View style={styles.titleBlock}>
+          <Text style={[styles.reportTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            {report.description.split('\n')[0]}
           </Text>
+          <Text style={[styles.timeMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            Filed on {formatDate(report.created_at)}
+          </Text>
+        </View>
+
+        {/* Standard 58dp Location Bar: Building & Room sharing equally */}
+        <View style={[styles.locBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.locCol58}>
+            <View style={styles.locIconSlot}>
+              <Icon name="pin" size={22} color={C.text} />
+            </View>
+            <View style={styles.locColText}>
+              <Text style={[styles.locColLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                BUILDING
+              </Text>
+              <Text
+                style={[styles.locColValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+              >
+                {displayBuilding}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.locDivider, { backgroundColor: C.border }]} />
+          <View style={styles.locCol58}>
+            <View style={styles.locIconSlot}>
+              <Icon name="grid" size={22} color={C.text} />
+            </View>
+            <View style={styles.locColText}>
+              <Text style={[styles.locColLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                ROOM
+              </Text>
+              <Text
+                style={[styles.locColValue, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+              >
+                {displayRoom}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Description Details (if multi-line) */}
+        {report.description.includes('\n') && (
+          <View style={[styles.descCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+              {report.description}
+            </Text>
+          </View>
         )}
 
         {report.photo_url ? (
-          <Image source={{ uri: report.photo_url }} style={{ width: '100%', height: 200, borderRadius: 14, marginTop: 14, marginBottom: 4 }} resizeMode="cover" />
+          <Image source={{ uri: report.photo_url }} style={styles.evidencePhoto} resizeMode="cover" />
         ) : null}
 
         {/* Reporter + Assignee */}
@@ -433,19 +488,6 @@ export function ReportDetailScreen({ route, navigation }: any) {
               </View>
             </View>
           ))}
-        </View>
-
-        {/* Category */}
-        <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-          CATEGORY
-        </Text>
-        <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 }]}>
-          <View style={styles.catIcon}>
-            <Icon name={cat.icon} size={32} color={C.text} />
-          </View>
-          <Text style={[{ color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 14.5 }]}>
-            {report.category}
-          </Text>
         </View>
 
         {/* Edit / Delete (only if mine and open) */}
@@ -661,52 +703,107 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 13,
-    marginBottom: 14,
-  } as ViewStyle,
-
-  catIcon: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-
-  headerBody: { flex: 1 } as ViewStyle,
-
-  title: {
-    fontSize: 18,
-    lineHeight: 24,
-    letterSpacing: -0.2,
-  } as any,
-
-  locRow: {
+  // Top Badges Row
+  topBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 5,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    marginTop: 4,
   } as ViewStyle,
-
-  loc: { fontSize: 12 } as any,
-
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+  } as ViewStyle,
+  categoryPillTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
   statusPill: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
     flexShrink: 0,
   } as ViewStyle,
+  statusText: {
+    fontSize: 12,
+  } as TextStyle,
+  titleBlock: {
+    marginBottom: 14,
+  } as ViewStyle,
+  reportTitle: {
+    fontSize: 18,
+    lineHeight: 25,
+    letterSpacing: -0.2,
+  } as TextStyle,
+  timeMeta: {
+    fontSize: 12,
+    marginTop: 4,
+  } as TextStyle,
 
-  statusText: { fontSize: 12 } as any,
+  // Standard 58dp Location Bar - Building & Room sharing equally
+  locBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    overflow: 'hidden',
+  } as ViewStyle,
+  locCol58: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    gap: 10,
+    height: '100%',
+  } as ViewStyle,
+  locIconSlot: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  } as ViewStyle,
+  locColText: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+  } as ViewStyle,
+  locColLabel: {
+    fontSize: 9.5,
+    letterSpacing: 0.6,
+  } as TextStyle,
+  locColValue: {
+    fontSize: 14,
+    marginTop: 1,
+  } as TextStyle,
+  locDivider: {
+    width: 1,
+    height: 28,
+  } as ViewStyle,
 
+  descCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 12,
+  } as ViewStyle,
   desc: {
     fontSize: 14,
     lineHeight: 22,
-    marginBottom: 16,
-  } as any,
+  } as TextStyle,
+  evidencePhoto: {
+    width: '100%',
+    height: 200,
+    borderRadius: 14,
+    marginBottom: 12,
+  } as ImageStyle,
 
   card: {
     borderRadius: 16,

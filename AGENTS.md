@@ -3081,3 +3081,25 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 46s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+---
+
+### 74. Standard 58dp Admin Metric Cards & Standard 58dp Location Bar (AdminDashboardScreen.tsx, ReportDetailScreen.tsx) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Standard 58dp Metric Cards Architecture (AdminDashboardScreen.tsx):**
+  - Upgraded the 3 interactive filter counters (Unassigned, In Progress, Resolved) to strict 58dp metric cards (height: 58, orderRadius: 16, orderWidth: 1, paddingHorizontal: 8, gap: 2), replacing the old bulky ~110dp vertical stat boxes.
+  - Formatted each card with large bold count (ontSize: 18, lineHeight: 22, FontFamily.jakartaExtraBold) and crisp status label (ontSize: 11, lineHeight: 14, FontFamily.jakartaBold), saving over 52dp of vertical screen space so reports appear immediately without scrolling.
+  - Active card highlights with Electric Brand Blue border (orderColor: C.brand, orderWidth: 1.5, ackgroundColor: C.brand + '14'), with text dynamically tinting to C.brand.
+- **Standard 58dp Location Bar Architecture (ReportDetailScreen.tsx):**
+  - Prominently highlighted campus location by replacing tiny 12px muted text with a dedicated **58dp Location Bar** (locBar58, height: 58, orderRadius: 16, orderWidth: 1, ackgroundColor: C.surface, orderColor: C.border).
+  - Split the bar into two equal halves (locCol58, lex: 1 each) separated by a 1px vertical divider (locDivider):
+    - Left half: BUILDING label + building identifier with 22dp monochrome map-pin vector icon (pin).
+    - Right half: ROOM label + room number with 22dp monochrome grid vector icon (grid).
+  - Both halves share the bar equally (lex: 1 each) with zero outer colored boxes, guaranteeing high-contrast visibility.
+- **Redundancy Elimination & Executive Header Redesign:**
+  - Consolidated top metadata into a clean row featuring a Category pill (categoryPill, height: 32, orderRadius: 16) alongside the status badge (statusPill).
+  - Completely eliminated the duplicate CATEGORY section card at the bottom of the screen, removing visual clutter and redundant database rendering.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (	sc --noEmit).
+  - Native Release APK: Locally compiled via Gradle (ssembleRelease) with release keystore in 47s.
+  - Direct ADB Deployment: Streamed install (db install -r) and launched on physical phone 8734b5da.
+  - Remote Git Sync: Pushed to https://github.com/fixit-bubt/CampusOneAndroid.git on main with 0 AI footprint.
