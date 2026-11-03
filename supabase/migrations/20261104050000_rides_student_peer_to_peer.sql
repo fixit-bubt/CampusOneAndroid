@@ -36,3 +36,4 @@ create policy ride_req_delete on public.ride_requests for delete to authenticate
         and r.driver_id = auth.uid()
     )
   );
+

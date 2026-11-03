@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  StyleSheet, Image, ActivityIndicator, type ViewStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  StyleSheet,
+  Image,
+  Modal,
+  ActivityIndicator,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -11,24 +21,31 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
 import { BUCKETS } from '../../constants/app';
 import { localToday } from '../../utils/format';
 import type { Event } from '../../types/database';
 
-const EVT_CATS: { id: Event['category']; label: string; color: string; icon: string }[] = [
-  { id: 'Academic', label: 'Academic', color: SectorColors.reports, icon: 'study' },
-  { id: 'Cultural', label: 'Cultural', color: SectorColors.events, icon: 'sparkle' },
-  { id: 'Sports', label: 'Sports', color: SectorColors.market, icon: 'pulse' },
-  { id: 'Club', label: 'Club', color: SectorColors.clubs, icon: 'clubs' },
-  { id: 'Career', label: 'Career', color: SectorColors.jobs, icon: 'jobs' },
+type FeatherName = React.ComponentProps<typeof Feather>['name'];
+
+interface CategoryOption {
+  id: Event['category'];
+  label: string;
+  icon: FeatherName;
+}
+
+const EVT_CATS: CategoryOption[] = [
+  { id: 'Academic', label: 'Academic', icon: 'book-open' },
+  { id: 'Cultural', label: 'Cultural', icon: 'music' },
+  { id: 'Sports',   label: 'Sports',   icon: 'activity' },
+  { id: 'Club',     label: 'Club',     icon: 'users' },
+  { id: 'Career',   label: 'Career',   icon: 'briefcase' },
 ];
 
 export function EventPostScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -46,6 +63,10 @@ export function EventPostScreen({ navigation }: any) {
   const [uploadingImg, setUploadingImg] = useState(false);
   const [loading, setLoading] = useState(false);
   const [canCreate, setCanCreate] = useState<boolean | null>(null);
+
+  // Dropdown bottom sheets
+  const [catModalOpen, setCatModalOpen] = useState(false);
+  const [clubModalOpen, setClubModalOpen] = useState(false);
 
   // Club associations
   const [clubs, setClubs] = useState<Array<{ id: string; name: string }>>([]);
@@ -78,7 +99,7 @@ export function EventPostScreen({ navigation }: any) {
       setCanCreate(!!orgRes.data || isLeader);
 
       if (isLeader && leadRes.data) {
-        const leadClubIds = leadRes.data.map(m => m.club_id);
+        const leadClubIds = leadRes.data.map((m) => m.club_id);
         const { data: myClubs } = await supabase
           .from('clubs')
           .select('id, name')
@@ -127,17 +148,12 @@ export function EventPostScreen({ navigation }: any) {
     }
   }
 
-  function setDatePreset(daysFromNow: number) {
-    const [y, m, d] = localToday().split('-').map(Number);
-    const dt = new Date(Date.UTC(y, m - 1, d + daysFromNow));
-    setEventDate(dt.toISOString().split('T')[0]);
-  }
-
+  // Security gate: strictly block form rendering during async check
   if (canCreate === null) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title={t.events2.postAnEvent ?? "Post an Event"} onBack={() => navigation.goBack()} />
-        <View style={[styles.centerPad, { justifyContent: 'center', alignItems: 'center' }]}>
+        <SubBar title={t.events2.postAnEvent ?? 'Post an Event'} onBack={() => navigation.goBack()} />
+        <View style={styles.centerPad}>
           <ActivityIndicator size="small" color={C.brand} />
         </View>
       </SafeAreaView>
@@ -147,9 +163,11 @@ export function EventPostScreen({ navigation }: any) {
   if (canCreate === false) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Post an Event" onBack={() => navigation.goBack()} />
+        <SubBar title={t.events2.postAnEvent ?? 'Post an Event'} onBack={() => navigation.goBack()} />
         <View style={styles.centerPad}>
-          <Icon name="events" size={36} color={C.textMuted} />
+          <View style={styles.iconSlot32}>
+            <Feather name="calendar" size={32} color={C.textMuted} />
+          </View>
           <Text style={[styles.deniedTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             {t.events2.organizersOnly}
           </Text>
@@ -192,18 +210,24 @@ export function EventPostScreen({ navigation }: any) {
       });
 
       if (error) throw error;
-      toast({ type: 'success', title: 'Event Published', message: 'Your event is now live on the campus feed!' });
+
+      toast({ type: 'success', title: 'Event Published' });
       navigation.goBack();
     } catch (err: any) {
+      console.error('Post event error:', err);
       toast({ type: 'error', title: t.common.error, message: err?.message || t.events2.postEventError });
     } finally {
       setLoading(false);
     }
   }
 
+  const selectedCategoryObj = EVT_CATS.find((c) => c.id === cat) || EVT_CATS[0];
+  const selectedClubName =
+    clubs.find((c) => c.id === selectedClubId)?.name || 'General / University-Wide';
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar title="Post an Event" onBack={() => navigation.goBack()} />
+      <SubBar title={t.events2.postAnEvent ?? 'Post an Event'} onBack={() => navigation.goBack()} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView
@@ -214,7 +238,7 @@ export function EventPostScreen({ navigation }: any) {
         >
           {/* Banner Flyer Upload Section */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Event Poster / Flyer
+            EVENT POSTER / FLYER
           </Text>
           {bannerUrl ? (
             <View style={styles.bannerPreviewWrap}>
@@ -238,238 +262,196 @@ export function EventPostScreen({ navigation }: any) {
                 <ActivityIndicator color={C.brand} />
               ) : (
                 <View style={styles.uploadContent}>
-                  <Feather name="image" size={24} color={C.brand} />
+                  <View style={styles.iconSlot32}>
+                    <Feather name="image" size={28} color={C.text} />
+                  </View>
                   <Text style={[styles.uploadText, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    Upload Cover Flyer
+                    Upload Event Flyer
                   </Text>
-                  <Text style={[styles.uploadSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    Supports PNG, JPG (Recommended 16:9 ratio)
+                  <Text style={[styles.uploadSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    Supports PNG, JPG (16:9 ratio recommended)
                   </Text>
                 </View>
               )}
             </TouchableOpacity>
           )}
 
-          {/* Category Selector */}
+          {/* 1. Category Dropdown Bar (Strict 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            {t.events2.category}
+            {t.events2.category} *
           </Text>
-          <View style={styles.catRow}>
-            {EVT_CATS.map(c => {
-              const on = cat === c.id;
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={[
-                    styles.catBtn,
-                    {
-                      borderColor: on ? c.color : C.border,
-                      backgroundColor: on ? c.color + '1a' : C.surface,
-                    },
-                  ]}
-                  onPress={() => setCat(c.id)}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.catIcon}>
-                    <Icon name={c.icon} size={20} color={on ? C.text : C.text2} />
-                  </View>
-                  <Text
-                    style={[
-                      styles.catLabel,
-                      { color: on ? c.color : C.text2, fontFamily: FontFamily.jakartaBold },
-                    ]}
-                  >
-                    {c.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Club Association if clubs available */}
-          {clubs.length > 0 && (
-            <View style={{ marginTop: 14 }}>
-              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-                Associated Club (Optional)
+          <TouchableOpacity
+            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setCatModalOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.iconSlot32}>
+              <Feather name={selectedCategoryObj.icon} size={28} color={C.text} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {selectedCategoryObj.label}
               </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
-                <TouchableOpacity
-                  style={[
-                    styles.clubChip,
-                    {
-                      borderColor: selectedClubId === null ? C.brand : C.border,
-                      backgroundColor: selectedClubId === null ? `${C.brand}18` : C.surface,
-                    },
-                  ]}
-                  onPress={() => setSelectedClubId(null)}
-                >
-                  <Text
-                    style={[
-                      styles.clubChipTxt,
-                      {
-                        color: selectedClubId === null ? C.brand : C.textMuted,
-                        fontFamily: FontFamily.jakartaBold,
-                      },
-                    ]}
-                  >
-                    General / University-Wide
+            </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+
+          {/* 2. Associated Club Dropdown Bar (Strict 58dp) */}
+          {clubs.length > 0 && (
+            <View style={{ marginTop: 6 }}>
+              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                ASSOCIATED CLUB (OPTIONAL)
+              </Text>
+              <TouchableOpacity
+                style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => setClubModalOpen(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.iconSlot32}>
+                  <Feather name="users" size={28} color={C.text} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                  <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {selectedClubName}
                   </Text>
-                </TouchableOpacity>
-                {clubs.map(cl => {
-                  const on = selectedClubId === cl.id;
-                  return (
-                    <TouchableOpacity
-                      key={cl.id}
-                      style={[
-                        styles.clubChip,
-                        {
-                          borderColor: on ? C.brand : C.border,
-                          backgroundColor: on ? `${C.brand}18` : C.surface,
-                        },
-                      ]}
-                      onPress={() => {
-                        setSelectedClubId(cl.id);
-                        setOrganizer(cl.name);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.clubChipTxt,
-                          { color: on ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold },
-                        ]}
-                      >
-                        {cl.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+                </View>
+                <Feather name="chevron-down" size={18} color={C.textMuted} />
+              </TouchableOpacity>
             </View>
           )}
 
-          {/* Title */}
+          {/* 3. Title (Strict 58dp Input Bar) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.events2.eventTitleLabel} *
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[
+              styles.inputBar58,
+              { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+            ]}
             value={title}
             onChangeText={setTitle}
             placeholder={t.events2.titlePlaceholder}
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Organizer */}
+          {/* 4. Organizer (Strict 58dp Input Bar) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.events2.organizerLabel}
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[
+              styles.inputBar58,
+              { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+            ]}
             value={organizer}
             onChangeText={setOrganizer}
             placeholder="Organizing club or department"
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Venue / Location */}
+          {/* 5. Venue / Location (Strict 58dp Input Bar) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.events2.venueLabel} *
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[
+              styles.inputBar58,
+              { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+            ]}
             value={location}
             onChangeText={setLocation}
             placeholder="Venue or auditorium"
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Date & Presets */}
+          {/* 6. Event Date (Strict 58dp Input Bar, Zero Presets) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Event Date (YYYY-MM-DD) *
+            EVENT DATE (YYYY-MM-DD) *
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[
+              styles.inputBar58,
+              { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+            ]}
             value={eventDate}
             onChangeText={setEventDate}
             placeholder="2026-10-25"
             placeholderTextColor={C.textMuted}
           />
-          <View style={styles.presetsRow}>
-            <TouchableOpacity style={[styles.presetChip, { backgroundColor: C.surface2 }]} onPress={() => setDatePreset(0)}>
-              <Text style={[styles.presetTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>Today</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, { backgroundColor: C.surface2 }]} onPress={() => setDatePreset(1)}>
-              <Text style={[styles.presetTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>Tomorrow</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.presetChip, { backgroundColor: C.surface2 }]} onPress={() => setDatePreset(7)}>
-              <Text style={[styles.presetTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>In 1 Week</Text>
-            </TouchableOpacity>
-          </View>
 
-          {/* Times */}
-          <View style={styles.row}>
-            <View style={styles.halfField}>
-              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 10 }]}>
-                Start Time *
+          {/* 7. Times (Strict 58dp Equal Half-Bars) */}
+          <View style={styles.timesRow}>
+            <View style={styles.halfCol}>
+              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                START TIME *
               </Text>
               <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                style={[
+                  styles.inputBar58,
+                  { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+                ]}
                 value={time}
                 onChangeText={setTime}
                 placeholder="10:00"
                 placeholderTextColor={C.textMuted}
               />
             </View>
-            <View style={styles.halfField}>
-              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 10 }]}>
-                End Time
+            <View style={styles.halfCol}>
+              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                END TIME
               </Text>
               <TextInput
-                style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                style={[
+                  styles.inputBar58,
+                  { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+                ]}
                 value={endTime}
                 onChangeText={setEndTime}
-                placeholder="13:00"
+                placeholder="12:00"
                 placeholderTextColor={C.textMuted}
               />
             </View>
           </View>
 
-          {/* Capacity */}
+          {/* 8. Capacity (Strict 58dp Input Bar) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Capacity Limit (Optional)
+            CAPACITY LIMIT (OPTIONAL)
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[
+              styles.inputBar58,
+              { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+            ]}
             value={capacity}
             onChangeText={setCapacity}
-            placeholder="Capacity (optional)"
+            placeholder="Maximum attendees (e.g. 150)"
             placeholderTextColor={C.textMuted}
             keyboardType="numeric"
           />
 
-          {/* Description */}
+          {/* 9. Description (Clean Textarea) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            Description / Overview *
+            DESCRIPTION / OVERVIEW *
           </Text>
           <TextInput
             style={[
-              styles.input,
               styles.textArea,
               { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
             ]}
             value={desc}
             onChangeText={setDesc}
-            placeholder="Event details and schedule..."
+            placeholder="Event details, agenda, and guidelines..."
             placeholderTextColor={C.textMuted}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
           />
 
-          {/* Submit Action Button */}
+          {/* 10. Submit Button (Strict 58dp Bar) */}
           <TouchableOpacity
             style={[
-              styles.submitBtn,
+              styles.submitBtn58,
               { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: canSubmit ? 1 : 0.6 },
             ]}
             onPress={handleSubmit}
@@ -485,9 +467,197 @@ export function EventPostScreen({ navigation }: any) {
             )}
           </TouchableOpacity>
 
-          <View style={{ height: 32 }} />
+          <View style={{ height: 36 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Category Bottom Sheet Modal */}
+      <Modal
+        visible={catModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCatModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={() => setCatModalOpen(false)}
+            activeOpacity={1}
+          />
+          <View style={[styles.modalBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.handleBar, { backgroundColor: C.border }]} />
+            <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
+              <Text style={[styles.modalTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Category
+              </Text>
+              <TouchableOpacity
+                onPress={() => setCatModalOpen(false)}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+                hitSlop={8}
+              >
+                <Feather name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: 8, padding: 16 }}>
+              {EVT_CATS.map((item) => {
+                const isSelected = cat === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.bar58,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')
+                          : C.surface,
+                        borderColor: isSelected ? C.text : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCat(item.id);
+                      setCatModalOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.iconSlot32}>
+                      <Feather name={item.icon} size={28} color={C.text} />
+                    </View>
+                    <Text
+                      style={[
+                        styles.barTitleTxt,
+                        {
+                          color: C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          flex: 1,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </Text>
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Associated Club Bottom Sheet Modal */}
+      <Modal
+        visible={clubModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setClubModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={() => setClubModalOpen(false)}
+            activeOpacity={1}
+          />
+          <View style={[styles.modalBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.handleBar, { backgroundColor: C.border }]} />
+            <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
+              <Text style={[styles.modalTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Select Associated Club
+              </Text>
+              <TouchableOpacity
+                onPress={() => setClubModalOpen(false)}
+                style={[styles.modalCloseBtn, { backgroundColor: C.surface2 }]}
+                hitSlop={8}
+              >
+                <Feather name="x" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 360, padding: 16 }}>
+              {/* General / University-Wide Option */}
+              <TouchableOpacity
+                style={[
+                  styles.bar58,
+                  {
+                    backgroundColor: selectedClubId === null
+                      ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')
+                      : C.surface,
+                    borderColor: selectedClubId === null ? C.text : C.border,
+                    marginBottom: 8,
+                  },
+                ]}
+                onPress={() => {
+                  setSelectedClubId(null);
+                  setClubModalOpen(false);
+                }}
+                activeOpacity={0.75}
+              >
+                <View style={styles.iconSlot32}>
+                  <Feather name="globe" size={28} color={C.text} />
+                </View>
+                <Text
+                  style={[
+                    styles.barTitleTxt,
+                    {
+                      color: C.text,
+                      fontFamily: selectedClubId === null ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      flex: 1,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  General / University-Wide
+                </Text>
+                {selectedClubId === null && <Feather name="check" size={18} color={C.text} />}
+              </TouchableOpacity>
+
+              {/* Clubs List */}
+              {clubs.map((cl) => {
+                const isSelected = selectedClubId === cl.id;
+                return (
+                  <TouchableOpacity
+                    key={cl.id}
+                    style={[
+                      styles.bar58,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)')
+                          : C.surface,
+                        borderColor: isSelected ? C.text : C.border,
+                        marginBottom: 8,
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedClubId(cl.id);
+                      setOrganizer(cl.name);
+                      setClubModalOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.iconSlot32}>
+                      <Feather name="users" size={28} color={C.text} />
+                    </View>
+                    <Text
+                      style={[
+                        styles.barTitleTxt,
+                        {
+                          color: C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          flex: 1,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {cl.name}
+                    </Text>
+                    {isSelected && <Feather name="check" size={18} color={C.text} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -496,20 +666,59 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 8, paddingBottom: 30 } as ViewStyle,
   centerPad: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 } as ViewStyle,
-  deniedTitle: { fontSize: 16, marginTop: 14 } as any,
-  deniedSub: { fontSize: 13.5, marginTop: 8, textAlign: 'center' } as any,
-  label: { fontSize: 12, letterSpacing: 0.3, marginTop: 14, marginBottom: 6 } as any,
-  input: {
-    height: 48,
-    borderRadius: 12,
+  deniedTitle: { fontSize: 16, marginTop: 14 } as TextStyle,
+  deniedSub: { fontSize: 13.5, marginTop: 8, textAlign: 'center', lineHeight: 20 } as TextStyle,
+  label: { fontSize: 11.5, letterSpacing: 0.4, marginTop: 14, marginBottom: 6 } as TextStyle,
+
+  // Strict 58dp Interactive Bars
+  bar58: {
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   } as ViewStyle,
-  textArea: { height: 110, paddingTop: 12 } as ViewStyle,
+  barTitleTxt: {
+    fontSize: 14.5,
+  } as TextStyle,
+  inputBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    fontSize: 14.5,
+  } as TextStyle,
+
+  iconSlot32: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  } as ViewStyle,
+
+  // Half width columns for time
+  timesRow: {
+    flexDirection: 'row',
+    gap: 12,
+  } as ViewStyle,
+  halfCol: {
+    flex: 1,
+  } as ViewStyle,
+
+  textArea: {
+    minHeight: 120,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    fontSize: 14.5,
+  } as TextStyle,
+
+  // Cover Image
   bannerPreviewWrap: {
-    height: 150,
-    borderRadius: 14,
+    height: 160,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
     marginTop: 4,
@@ -519,15 +728,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
   uploadBox: {
     height: 120,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     alignItems: 'center',
@@ -535,39 +744,59 @@ const styles = StyleSheet.create({
     marginTop: 4,
   } as ViewStyle,
   uploadContent: { alignItems: 'center', gap: 4 } as ViewStyle,
-  uploadText: { fontSize: 14 } as any,
-  uploadSub: { fontSize: 11.5 } as any,
-  catRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 } as ViewStyle,
-  catBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-  } as ViewStyle,
-  catIcon: { alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  catLabel: { fontSize: 12.5 } as any,
-  clubChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginRight: 8,
-  } as ViewStyle,
-  clubChipTxt: { fontSize: 12 } as any,
-  presetsRow: { flexDirection: 'row', gap: 8, marginTop: 8 } as ViewStyle,
-  presetChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 } as ViewStyle,
-  presetTxt: { fontSize: 12 } as any,
-  row: { flexDirection: 'row', gap: 12 } as ViewStyle,
-  halfField: { flex: 1 } as ViewStyle,
-  submitBtn: {
+  uploadText: { fontSize: 14 } as TextStyle,
+  uploadSub: { fontSize: 12 } as TextStyle,
+
+  // Submit Button
+  submitBtn58: {
     height: 58,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 22,
+    marginTop: 24,
   } as ViewStyle,
-  submitTxt: { fontSize: 15 } as any,
+  submitTxt: { fontSize: 15 } as TextStyle,
+
+  // Bottom Sheet Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalBox: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingBottom: 24,
+    maxHeight: '80%',
+    overflow: 'hidden',
+  } as ViewStyle,
+  handleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  } as ViewStyle,
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  } as ViewStyle,
+  modalTitleTxt: {
+    fontSize: 16,
+  } as TextStyle,
+  modalCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 });

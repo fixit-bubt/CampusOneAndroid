@@ -3955,3 +3955,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx tsc --noEmit`).
   - Web Build Validation: Verified syntax and component contracts across React Web components.
+
+---
+
+### 111. Events Admin Polish: Standard BUBT Sync Card, Bottom Sheet Dropdowns & Comprehensive 58dp Post-Event Architecture (`ManageEventsScreen.tsx`, `EventPostScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Standardized BUBT Crawler Sync Card (`ManageEventsScreen.tsx`):**
+  - Replaced the single trigger bar with the canonical two-tier `syncCard` matching `ManageAcademicCalendarScreen` and `ManageAnnouncementsScreen`.
+  - Top tier: 44dp `syncIconWrap` with enlarged 32dp monochrome vector `refresh-cw` icon, bold title ("BUBT Official Events Calendar"), and authentic subtitle ("Automated crawler for bubt.edu.bd/events").
+  - Bottom tier: Full-width 48dp action button (`syncActionBtn`) with 18dp `globe` icon ("Sync from BUBT Website"), live spinner, and toast feedback.
+- **Enlarged Monochrome Vector Icons (`ManageEventsScreen.tsx`):**
+  - Upgraded card metadata icons (calendar, clock, map-pin, users, award, eye, trash-2) from small 13dp/15dp to crisp 16dp monochrome vector icons.
+  - Category dropdown trigger icon enlarged to 28dp in `iconSlot32`.
+- **Bottom-Sheet Slide-Up Category & Club Pickers (`ManageEventsScreen.tsx`, `EventPostScreen.tsx`):**
+  - Replaced centered modals with native bottom sheets (`animationType="slide"`, `justifyContent: 'flex-end'`, `borderTopLeftRadius: 24`, `borderTopRightRadius: 24`).
+  - Added top grab handle bar (`handleBar`: 38x4dp, 2dp radius).
+  - Each item in the sheet is a separate 58dp bar with 28dp monochrome vector icons (`iconSlot32`) without background color boxes, bold labels, and active checkmarks.
+- **Modernized 58dp Architecture in Event Post (`EventPostScreen.tsx`):**
+  - **Category Dropdown Bar:** Upgraded from small wrapped button chips to a clean, full-width 58dp bar (`styles.bar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`) with 28dp vector icon and chevron-down.
+  - **Associated Club Dropdown Bar:** Upgraded from horizontal chips to a strict 58dp bar (`styles.bar58`) with 28dp `users` icon, opening a 58dp bottom sheet with "General / University-Wide" and active club options.
+  - **Eradication of Preset Chips:** Completely removed `Today`, `Tomorrow`, and `In 1 Week` chip buttons under Event Date, leaving a clean, uniform 58dp date input bar.
+  - **Strict 58dp Across All Fields:** Standardized Title, Organizer, Venue, Event Date, Start Time, End Time, and Capacity Limit to uniform 58dp input bars (`inputBar58`, `height: 58`, `borderRadius: 16`).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx.cmd tsc --noEmit`).
+  - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore.
+  - Physical Device Deployment: Installed and launched on physical USB Android phone (`8734b5da`).
+

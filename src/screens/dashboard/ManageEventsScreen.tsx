@@ -124,20 +124,20 @@ const EventAdminCard = memo(function EventAdminCard({
         {item.title}
       </Text>
 
-      {/* Organizer Row */}
+      {/* Organizer Row with enlarged 16dp icon */}
       {!!item.organizer && (
         <View style={styles.organizerRow}>
-          <Feather name="award" size={13} color={C.textMuted} />
+          <Feather name="award" size={16} color={C.textMuted} />
           <Text style={[styles.organizerTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
             {item.organizer}
           </Text>
         </View>
       )}
 
-      {/* Metadata Rows */}
+      {/* Metadata Rows with enlarged 16dp vector icons */}
       <View style={[styles.metaGrid, { borderTopColor: C.border, borderBottomColor: C.border }]}>
         <View style={styles.metaRow}>
-          <Feather name="calendar" size={13} color={C.textMuted} />
+          <Feather name="calendar" size={16} color={C.textMuted} />
           <Text style={[styles.metaTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
             {formatDateLong(item.date)} · {formatTime(item.time)}
             {item.end_time ? ` - ${formatTime(item.end_time)}` : ''}
@@ -145,14 +145,14 @@ const EventAdminCard = memo(function EventAdminCard({
         </View>
 
         <View style={styles.metaRow}>
-          <Feather name="map-pin" size={13} color={C.textMuted} />
+          <Feather name="map-pin" size={16} color={C.textMuted} />
           <Text style={[styles.metaTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
             {item.venue}
           </Text>
         </View>
 
         <View style={styles.metaRow}>
-          <Feather name="users" size={13} color={C.textMuted} />
+          <Feather name="users" size={16} color={C.textMuted} />
           <Text style={[styles.metaTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
             {rsvpCount} going{item.capacity ? ` · ${item.capacity} capacity` : ''}
           </Text>
@@ -166,7 +166,7 @@ const EventAdminCard = memo(function EventAdminCard({
           onPress={() => onView(item.id)}
           activeOpacity={0.75}
         >
-          <Feather name="eye" size={15} color={C.text} />
+          <Feather name="eye" size={16} color={C.text} />
           <Text style={[styles.actionBtnSecondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
             View Details
           </Text>
@@ -177,7 +177,7 @@ const EventAdminCard = memo(function EventAdminCard({
           onPress={() => onDelete(item)}
           activeOpacity={0.75}
         >
-          <Feather name="trash-2" size={15} color={C.danger} />
+          <Feather name="trash-2" size={16} color={C.danger} />
           <Text style={[styles.actionBtnDangerTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
             Delete Event
           </Text>
@@ -247,7 +247,7 @@ export function ManageEventsScreen({ navigation }: any) {
     loadData();
   }, [loadData]);
 
-  // Crawler Sync Action
+  // Crawler Sync Action (Matching Notice Board & Academic Calendar pattern)
   const handleSyncCrawler = useCallback(async () => {
     if (syncingCrawler) return;
     setSyncingCrawler(true);
@@ -409,7 +409,7 @@ export function ManageEventsScreen({ navigation }: any) {
             </View>
             <TextInput
               style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search events..."
+              placeholder="Search events, clubs, venues, or speakers..."
               placeholderTextColor={C.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -425,7 +425,7 @@ export function ManageEventsScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* 3. Strict 58dp Dropdown Category Bar */}
+        {/* 3. Strict 58dp Dropdown Category Bar with 28dp vector icon */}
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 10 }}>
           <TouchableOpacity
             style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -433,7 +433,7 @@ export function ManageEventsScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.iconSlot32}>
-              <Feather name="layers" size={22} color={C.text} />
+              <Feather name="layers" size={28} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
               <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -501,31 +501,48 @@ export function ManageEventsScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* 6. Strict 58dp BUBT Crawler Sync Bar */}
+        {/* 6. BUBT Automated Sync Card (Identical to Notice Board & Academic Calendar) */}
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 12 }}>
-          <TouchableOpacity
-            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={handleSyncCrawler}
-            activeOpacity={0.75}
-            disabled={syncingCrawler}
-          >
-            <View style={styles.iconSlot32}>
+          <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.syncCardTop}>
+              <View style={styles.syncIconWrap}>
+                <Feather name="refresh-cw" size={32} color={C.text} />
+              </View>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  BUBT Official Events Calendar
+                </Text>
+                <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  Automated crawler for bubt.edu.bd/events
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.syncActionBtn,
+                {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                  borderColor: C.border,
+                  borderWidth: 1,
+                },
+              ]}
+              onPress={handleSyncCrawler}
+              disabled={syncingCrawler}
+              activeOpacity={0.85}
+            >
               {syncingCrawler ? (
-                <ActivityIndicator size="small" color={C.text} />
+                <ActivityIndicator color={C.text} size="small" />
               ) : (
-                <Feather name="refresh-cw" size={20} color={C.text} />
+                <>
+                  <Feather name="globe" size={18} color={C.text} />
+                  <Text style={[styles.syncActionTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    Sync from BUBT Website
+                  </Text>
+                </>
               )}
-            </View>
-            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {t.events2.syncEvents ?? 'Sync BUBT Events'}
-              </Text>
-              <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                {syncingCrawler ? 'Fetching circulars...' : (t.events2.syncEventsDesc ?? 'Fetch official portal events')}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={C.textMuted} />
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* 7. Events List */}
@@ -554,7 +571,7 @@ export function ManageEventsScreen({ navigation }: any) {
             ListEmptyComponent={
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <View style={styles.iconSlot32}>
-                  <Feather name="calendar" size={32} color={C.textMuted} />
+                  <Feather name="calendar" size={36} color={C.textMuted} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   No events found
@@ -570,11 +587,11 @@ export function ManageEventsScreen({ navigation }: any) {
         )}
       </View>
 
-      {/* 8. Separate 58dp Category Selection Modal Sheet */}
+      {/* 8. Bottom Sheet: Category Selection Modal Sheet */}
       <Modal
         visible={categoryModalOpen}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setCategoryModalOpen(false)}
       >
         <View style={styles.modalOverlay}>
@@ -584,6 +601,9 @@ export function ManageEventsScreen({ navigation }: any) {
             activeOpacity={1}
           />
           <View style={[styles.modalBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+            {/* Top Handle Bar */}
+            <View style={[styles.handleBar, { backgroundColor: C.border }]} />
+
             <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
               <Text style={[styles.modalTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 Select Category
@@ -619,7 +639,7 @@ export function ManageEventsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.iconSlot32}>
-                      <Feather name={cat.icon} size={26} color={C.text} />
+                      <Feather name={cat.icon} size={28} color={C.text} />
                     </View>
                     <Text
                       style={[
@@ -627,6 +647,7 @@ export function ManageEventsScreen({ navigation }: any) {
                         {
                           color: C.text,
                           fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          flex: 1,
                         },
                       ]}
                       numberOfLines={1}
@@ -694,10 +715,6 @@ const styles = StyleSheet.create({
   barTitleTxt: {
     fontSize: 14.5,
   } as TextStyle,
-  barSubTxt: {
-    fontSize: 11,
-    marginTop: 2,
-  } as TextStyle,
 
   // Option A: 58dp 3-Tab Switcher Bar
   tabsRow58: {
@@ -731,6 +748,44 @@ const styles = StyleSheet.create({
     gap: 8,
   } as ViewStyle,
   createBarTxt: {
+    fontSize: 14,
+  } as TextStyle,
+
+  // BUBT Crawler Sync Card (Matches ManageAnnouncementsScreen & ManageAcademicCalendarScreen)
+  syncCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 4,
+  } as ViewStyle,
+  syncCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  } as ViewStyle,
+  syncIconWrap: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  syncTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+  syncSub: {
+    fontSize: 12,
+    marginTop: 2,
+  } as TextStyle,
+  syncActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    height: 48,
+    borderRadius: 12,
+  } as ViewStyle,
+  syncActionTxt: {
     fontSize: 14,
   } as TextStyle,
 
@@ -803,7 +858,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     paddingVertical: 8,
-    gap: 6,
+    gap: 8,
     marginBottom: 12,
   } as ViewStyle,
   metaRow: {
@@ -867,17 +922,29 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   } as TextStyle,
 
-  // Modal Sheet
+  // Bottom Sheet Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    justifyContent: 'center',
-    padding: 20,
+    justifyContent: 'flex-end',
   } as ViewStyle,
   modalBox: {
-    borderRadius: 20,
-    borderWidth: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingBottom: 24,
+    maxHeight: '80%',
     overflow: 'hidden',
+  } as ViewStyle,
+  handleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
   } as ViewStyle,
   modalHeader: {
     flexDirection: 'row',
