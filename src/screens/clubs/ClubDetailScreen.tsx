@@ -309,21 +309,38 @@ export function ClubDetailScreen({ route, navigation }: any) {
           </TouchableOpacity>
         )}
 
-        {/* Dedicated 58dp Manage Members Bar for President & VP (Above Feed & Centered) */}
+        {/* Dedicated 58dp Dual Action Bar: Add Member & Manage Members */}
         {canManageMembers && (
-          <TouchableOpacity
+          <View
             style={[
-              styles.bar58Center,
+              styles.dualBar58,
               { backgroundColor: C.surface, borderColor: C.border, marginTop: canPost ? 10 : 14 },
             ]}
-            onPress={() => navigation.navigate('ClubMembers', { clubId: club.id, clubName: club.name })}
-            activeOpacity={0.75}
           >
-            <Feather name="users" size={24} color={C.text} />
-            <Text style={[styles.barTitleCenter, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              Manage Members
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dualBarTab}
+              onPress={() => navigation.navigate('ClubAddMember', { clubId: club.id, clubName: club.name })}
+              activeOpacity={0.75}
+            >
+              <Feather name="user-plus" size={20} color={C.text} />
+              <Text style={[styles.dualBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Add Member
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.dualBarDivider, { backgroundColor: C.border }]} />
+
+            <TouchableOpacity
+              style={styles.dualBarTab}
+              onPress={() => navigation.navigate('ClubMembers', { clubId: club.id, clubName: club.name })}
+              activeOpacity={0.75}
+            >
+              <Feather name="users" size={20} color={C.text} />
+              <Text style={[styles.dualBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Manage
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Tabs */}
@@ -420,6 +437,29 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
 
+  dualBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  } as ViewStyle,
+  dualBarTab: {
+    flex: 1,
+    height: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  } as ViewStyle,
+  dualBarTxt: {
+    fontSize: 14,
+  } as TextStyle,
+  dualBarDivider: {
+    width: 1,
+    height: 28,
+  } as ViewStyle,
   bar58Center: {
     height: 58,
     borderRadius: 16,

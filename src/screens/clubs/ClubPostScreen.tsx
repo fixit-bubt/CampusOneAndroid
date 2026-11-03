@@ -13,6 +13,7 @@ import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { uploadFile } from '../../utils/storage';
+import { BUCKETS } from '../../constants/app';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 
@@ -42,21 +43,7 @@ export function ClubPostScreen({ route, navigation }: any) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.8 });
     if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-    setUploading(true);
-    try {
-      const up = await uploadFile('photos', asset.uri, `clubs/${user!.id}/${Date.now()}.jpg`, 'image/jpeg', true, {
-        preset: 'standard',
-        knownWidth: asset.width,
-        knownHeight: asset.height,
-      });
-      if (!up.success) throw new Error(up.error);
-      setPhotoUri(up.url);
-    } catch {
-      toast({ type: 'error', title: t.common.error, message: t.clubs2.uploadFailed });
-    } finally {
-      setUploading(false);
-    }
+    setPhotoUri(result.assets[0].uri);
   }
 
   async function handleSubmit() {
@@ -73,7 +60,27 @@ export function ClubPostScreen({ route, navigation }: any) {
 
       if (!mem || !['president', 'vp', 'editor'].includes(mem.role)) {
         toast({ type: 'error', title: 'Unauthorized', message: 'Only club officers can publish posts.' });
+        setLoading(false);
         return;
+      }
+
+      let finalImageUrl: string | null = null;
+      if (photoUri) {
+        if (photoUri.startsWith('http')) {
+          finalImageUrl = photoUri;
+        } else {
+          setUploading(true);
+          const up = await uploadFile(BUCKETS.photos, photoUri, `clubs/${user.id}/${Date.now()}.jpg`, 'image/jpeg', true, {
+            preset: 'standard',
+          });
+          setUploading(false);
+          if (!up.success) {
+            toast({ type: 'error', title: 'Upload Failed', message: up.error || 'Failed to upload photo.' });
+            setLoading(false);
+            return;
+          }
+          finalImageUrl = up.url;
+        }
       }
 
       const { error } = await supabase.from('club_posts').insert({
@@ -81,14 +88,15 @@ export function ClubPostScreen({ route, navigation }: any) {
         author_id: user.id,
         title:     title.trim() || null,
         body:      content.trim(),
-        image_url: photoUri,
+        image_url: finalImageUrl,
       });
       if (error) throw error;
       navigation.goBack();
-    } catch {
-      toast({ type: 'error', title: t.common.error });
+    } catch (e: any) {
+      toast({ type: 'error', title: t.common.error, message: e?.message || 'Failed to publish post' });
     } finally {
       setLoading(false);
+      setUploading(false);
     }
   }
 
@@ -127,23 +135,32 @@ export function ClubPostScreen({ route, navigation }: any) {
         />
 
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.photoOptional}</Text>
-        <TouchableOpacity
-          style={[styles.photoBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-          onPress={pickImage}
-          disabled={uploading}
-          activeOpacity={0.75}
-        >
-          {photoUri ? (
+        {photoUri ? (
+          <View style={[styles.photoContainer, { borderColor: C.border }]}>
             <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
-          ) : (
+            <TouchableOpacity
+              style={[styles.removePhotoBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setPhotoUri(null)}
+              activeOpacity={0.8}
+            >
+              <Feather name="x" size={16} color={C.text} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.photoBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={pickImage}
+            disabled={uploading}
+            activeOpacity={0.75}
+          >
             <View style={styles.photoPlaceholder}>
               <Feather name="camera" size={22} color={C.textMuted} />
               <Text style={[styles.photoPlaceholderTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {uploading ? t.clubs2.uploading : t.clubs2.tapToAddPhoto}
+                {t.clubs2.tapToAddPhoto}
               </Text>
             </View>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: canSubmit ? C.brand : C.surface2, opacity: (loading || uploading) ? 0.6 : 1 }]}
@@ -176,6 +193,24 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   } as any,
 
+  photoContainer: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+    height: 180,
+    position: 'relative',
+  } as ViewStyle,
+  removePhotoBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
   photoBtn: {
     borderRadius: 12,
     borderWidth: 1,

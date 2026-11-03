@@ -23,6 +23,13 @@ import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 
+function resolvePostImageUrl(urlOrPath: string | null): string | null {
+  if (!urlOrPath) return null;
+  if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) return urlOrPath;
+  const { data } = supabase.storage.from('photos').getPublicUrl(urlOrPath);
+  return data.publicUrl;
+}
+
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (secs < 60) return 'Just now';
@@ -241,7 +248,7 @@ export function ClubPostDetailScreen({ route, navigation }: any) {
         {/* Optional Image Attachment */}
         {post.image_url ? (
           <Image
-            source={{ uri: post.image_url }}
+            source={{ uri: resolvePostImageUrl(post.image_url) || post.image_url }}
             style={[styles.postImage, { borderColor: C.border }]}
             resizeMode="cover"
           />

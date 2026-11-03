@@ -41,7 +41,7 @@ interface Club {
 }
 
 export function ClubsScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const { user } = useAuth();
 
@@ -154,15 +154,25 @@ export function ClubsScreen({ navigation }: any) {
 
   function renderClubCard(c: Club) {
     const role = c.user_role;
+    const isMyClub = !!role;
     return (
       <TouchableOpacity
         key={c.id}
-        style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
+        style={[
+          styles.card,
+          {
+            backgroundColor: isMyClub
+              ? (isDark ? 'rgba(39, 94, 254, 0.08)' : 'rgba(39, 94, 254, 0.05)')
+              : C.surface,
+            borderColor: isMyClub ? 'rgba(39, 94, 254, 0.45)' : C.border,
+            borderWidth: isMyClub ? 1.5 : 1,
+          },
+        ]}
         onPress={() => navigation.navigate('ClubDetail', { clubId: c.id })}
         activeOpacity={0.75}
       >
         <View style={styles.thumb}>
-          <Icon name="clubs" size={32} color={C.text} />
+          <Icon name="clubs" size={32} color={isMyClub ? C.brand : C.text} />
         </View>
 
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -171,8 +181,8 @@ export function ClubsScreen({ navigation }: any) {
               {c.name}
             </Text>
             {role && (
-              <View style={[styles.rolePill, { backgroundColor: C.surface2 }]}>
-                <Text style={[styles.roleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              <View style={[styles.rolePill, { backgroundColor: isMyClub ? 'rgba(39, 94, 254, 0.18)' : C.surface2 }]}>
+                <Text style={[styles.roleTxt, { color: isMyClub ? C.brand : C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.clubs.roleLabels[role] ?? role}
                 </Text>
               </View>
