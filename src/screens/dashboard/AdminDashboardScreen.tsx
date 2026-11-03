@@ -85,7 +85,7 @@ interface StaffMember {
 
 interface AdminStats {
   unassigned: number;
-  inProgress: number;
+  active: number;
   resolved: number;
 }
 
@@ -239,7 +239,7 @@ export function AdminDashboardScreen({ navigation }: any) {
   const cacheStatsKey = CacheKeys.ADMIN_STATS;
 
   const [reports, setReports] = useState<Report[]>(() => getCacheSync<Report[]>(cacheReportsKey) ?? []);
-  const [stats, setStats] = useState<AdminStats>(() => getCacheSync<AdminStats>(cacheStatsKey) ?? { unassigned: 0, inProgress: 0, resolved: 0 });
+  const [stats, setStats] = useState<AdminStats>(() => getCacheSync<AdminStats>(cacheStatsKey) ?? { unassigned: 0, active: 0, resolved: 0 });
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [filterTab, setFilterTab] = useState<FilterTab>('unassigned');
   const [assignTarget, setAssignTarget] = useState<Report | null>(null);
@@ -264,7 +264,7 @@ export function AdminDashboardScreen({ navigation }: any) {
       }
 
       // 2. Parallel network fetch: live reports, staff directory, and exact SQL counts
-      const [reportsRes, staffRes, unassignedCountRes, inProgCountRes, resolvedCountRes, unreadRes] = await Promise.all([
+      const [reportsRes, staffRes, unassignedCountRes, activeCountRes, resolvedCountRes, unreadRes] = await Promise.all([
         supabase
           .from('reports')
           .select('*, profiles!reporter_id(full_name), assignee:profiles!assigned_staff_id(full_name)')
@@ -285,7 +285,8 @@ export function AdminDashboardScreen({ navigation }: any) {
         supabase
           .from('reports')
           .select('id', { count: 'exact', head: true })
-          .eq('status', 'In Progress')
+          .not('assigned_staff_id', 'is', null)
+          .in('status', ['Open', 'In Progress'])
           .is('deleted_at', null),
         supabase
           .from('reports')
@@ -313,7 +314,7 @@ export function AdminDashboardScreen({ navigation }: any) {
 
       const newStats: AdminStats = {
         unassigned: unassignedCountRes.count ?? 0,
-        inProgress: inProgCountRes.count ?? 0,
+        active: activeCountRes.count ?? 0,
         resolved: resolvedCountRes.count ?? 0,
       };
       setStats(newStats);
@@ -357,7 +358,9 @@ export function AdminDashboardScreen({ navigation }: any) {
     );
   }, [staffList, assignCat]);
 
-  // 1-tap assign with instant optimistic local mutation
+  // 1-tap assign with instant optimistic local mutation.
+  // Note: Admin ONLY assigns the staff member; status remains 'Open' so the assigned
+  // technician taps 'Start Work' in their Staff Dashboard to advance progress to 'In Progress'.
   const assignReport = useCallback(async (reportId: string, staffId: string) => {
     const staff = staffList.find((s) => s.id === staffId);
     const staffName = staff?.full_name ?? 'Staff';
@@ -366,7 +369,7 @@ export function AdminDashboardScreen({ navigation }: any) {
     setReports((prev) => {
       const updated = prev.map((r) =>
         r.id === reportId
-          ? { ...r, assigned_staff_id: staffId, assignee_name: staffName, status: 'In Progress' }
+          ? { ...r, assigned_staff_id: staffId, assignee_name: staffName }
           : r
       );
       setCache(cacheReportsKey, updated);
@@ -377,7 +380,7 @@ export function AdminDashboardScreen({ navigation }: any) {
       const updated = {
         ...prev,
         unassigned: Math.max(0, prev.unassigned - 1),
-        inProgress: prev.inProgress + 1,
+        active: prev.active + 1,
       };
       setCache(cacheStatsKey, updated);
       return updated;
@@ -385,10 +388,10 @@ export function AdminDashboardScreen({ navigation }: any) {
 
     setAssignTarget(null);
 
-    // 2. Network write
+    // 2. Network write: only update assigned_staff_id; never mutate status directly
     const { error } = await supabase
       .from('reports')
-      .update({ assigned_staff_id: staffId, status: 'In Progress' })
+      .update({ assigned_staff_id: staffId })
       .eq('id', reportId);
 
     if (error) {
@@ -400,10 +403,10 @@ export function AdminDashboardScreen({ navigation }: any) {
   // Filtered reports strictly by the active filter tab
   const displayedReports = useMemo(() => {
     if (filterTab === 'unassigned') {
-      return reports.filter((r) => r.status === 'Open' && !r.assigned_staff_id);
+      return reports.filter((r) => !r.assigned_staff_id && r.status !== 'Resolved' && r.status !== 'Closed');
     }
     if (filterTab === 'active') {
-      return reports.filter((r) => r.status === 'In Progress');
+      return reports.filter((r) => !!r.assigned_staff_id && r.status !== 'Resolved' && r.status !== 'Closed');
     }
     if (filterTab === 'done') {
       return reports.filter((r) => r.status === 'Resolved' || r.status === 'Closed');
@@ -414,9 +417,9 @@ export function AdminDashboardScreen({ navigation }: any) {
   // Strictly 3 tabs: never going beyond 3
   const filterTabs: TabItem<FilterTab>[] = useMemo(() => [
     { id: 'unassigned', label: t.dash.statUnassigned, count: stats.unassigned },
-    { id: 'active',     label: t.dash.statInProgress, count: stats.inProgress },
+    { id: 'active',     label: t.dash.statInProgress, count: stats.active },
     { id: 'done',       label: t.dash.statResolved,   count: stats.resolved },
-  ], [t.dash, stats.unassigned, stats.inProgress, stats.resolved]);
+  ], [t.dash, stats.unassigned, stats.active, stats.resolved]);
 
   const renderItem = useCallback(({ item: r }: { item: Report }) => {
     return (
@@ -510,26 +513,9 @@ export function AdminDashboardScreen({ navigation }: any) {
             {/* Exactly 3 Stat Counters: Balanced Single Row */}
             <View style={styles.statRow}>
               <StatCard icon="userPlus" num={stats.unassigned} label={t.dash.statUnassigned} C={C} />
-              <StatCard icon="pulse"    num={stats.inProgress} label={t.dash.statInProgress} C={C} />
+              <StatCard icon="pulse"    num={stats.active}     label={t.dash.statInProgress} C={C} />
               <StatCard icon="check"    num={stats.resolved}   label={t.dash.statResolved}   C={C} />
             </View>
-
-            {/* Quick Study Hub Management Bar */}
-            <TouchableOpacity
-              style={[styles.manageBar72, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => navigation.navigate('ManageStudyHub')}
-              activeOpacity={0.75}
-            >
-              <View style={styles.manageIconBox}>
-                <Icon name="study" size={32} color={C.text} />
-              </View>
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.manageTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageStudyHub ?? 'Study Hub'}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
 
             {/* 58dp Segmented Filter Tabs: Strictly 3 Tabs */}
             <View style={styles.tabWrap}>
@@ -967,26 +953,6 @@ const styles = StyleSheet.create({
   } as any,
   staffLoad: {
     fontSize: 12,
-  } as any,
-  manageBar72: {
-    height: 72,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 12,
-    gap: 13,
-  } as ViewStyle,
-  manageIconBox: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  manageTitle: {
-    fontSize: 14.5,
   } as any,
   divider: {
     height: StyleSheet.hairlineWidth,

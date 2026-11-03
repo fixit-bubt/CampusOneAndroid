@@ -507,27 +507,11 @@ export function ManageStudyHubScreen({ navigation }: any) {
       <SubBar
         title={t.dash?.manageStudyHub ?? 'Study Hub'}
         onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.newBtn, { backgroundColor: C.brand }]}
-            onPress={() => {
-              setIntakeNumInput('');
-              setIntakeYearsInput('');
-              setAddIntakeOpen(true);
-            }}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={13} color="#fff" />
-            <Text style={[styles.newBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-              {t.study2?.addIntake ?? 'Add Intake'}
-            </Text>
-          </TouchableOpacity>
-        }
       />
 
       <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 6, marginBottom: 10 }}>
         <SegmentedTabs
-          size="sm"
+          size="md"
           tabs={[
             { id: 'catalogue', label: t.study2?.catalogue ?? 'Catalogue', icon: 'book' },
             { id: 'pending', label: 'Pending Requests', icon: 'clock', count: pendingRequests.length },
@@ -580,6 +564,28 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 );
               })}
             </ScrollView>
+
+            {/* 58dp Add Intake Full-Width Bar */}
+            <TouchableOpacity
+              style={[
+                styles.addIntakeBar58,
+                { backgroundColor: C.surface, borderColor: C.border },
+              ]}
+              onPress={() => {
+                setIntakeNumInput('');
+                setIntakeYearsInput('');
+                setAddIntakeOpen(true);
+              }}
+              activeOpacity={0.75}
+            >
+              <View style={styles.iconSlot32}>
+                <Feather name="plus-circle" size={20} color={C.brand} />
+              </View>
+              <Text style={[styles.addIntakeBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.study2?.addIntake ?? 'Add Intake'}
+              </Text>
+              <Feather name="chevron-right" size={18} color={C.textMuted} style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
 
             {loading && intakes.length === 0 ? (
               <View style={styles.centerBox}>
@@ -1037,15 +1043,20 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
   centerBox: { paddingVertical: 40, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
-  newBtn: {
+  addIntakeBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    height: 34,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 10,
   } as ViewStyle,
-  newBtnTxt: { fontSize: 12.5 } as any,
+  addIntakeBarTxt: {
+    fontSize: 14.5,
+  } as any,
 
   deptScroll: {
     gap: 8,

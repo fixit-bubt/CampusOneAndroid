@@ -258,7 +258,7 @@ export function BottomTabNavigator() {
   const { profile } = useAuth();
   const { C } = useTheme();
   const isStudent = profile?.role === 'student';
-  const showStudyHub = profile?.role !== 'staff';
+  const showStudyHub = isStudent;
 
   const HomeComponent =
     profile?.role === 'admin' ? AdminDashboardScreen :
