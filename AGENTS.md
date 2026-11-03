@@ -3260,3 +3260,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across all source files (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 47s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched cleanly on physical phone `8734b5da`.
+
+
+---
+
+### 82. Manage Clubs 58dp Dropdown Architecture, Stat Box Removal & Full-Page Modal Creation (`ManageClubsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Removal of Redundant Stat Summary Boxes:**
+  - Completely purged the 4 stat metric boxes (`Total`, `Active`, `Inactive`, and `Members`) from `ManageClubsScreen`, eliminating visual clutter and providing an uncluttered management workflow.
+- **Header Action Bar Repositioning:**
+  - Removed the `+ New Club` header button from `SubBar`, establishing a dedicated full-width 58dp trigger bar (`height: 58, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: C.brand`) directly below the search and filter controls.
+- **58dp Category Filter Dropdown Bar:**
+  - Replaced the horizontal filter chips with a dedicated 58dp category selector dropdown bar (`styles.bar58`, `styles.dropdownBar`), opening a sleek bottom sheet modal featuring 58dp option bars across all club categories (`All`, `Tech`, `Cultural`, `Sports`, `Professional`, `Social`).
+- **Full-Page Modal Create Club Architecture:**
+  - Tapping the 58dp "Create New Club" bar launches a dedicated full-page creation view (`Modal animationType="slide"`) with:
+    - 58dp Club Name input (`styles.bar58`, `styles.fullPageInput`).
+    - 58dp Tagline input (`styles.bar58`, `styles.fullPageInput`).
+    - 58dp Category Dropdown Bar opening a category selection bottom sheet modal with 58dp option bars (`FORM_CATEGORIES`).
+    - 58dp Primary Create Club CTA button (`styles.bar58`, `styles.submitBtn58`).
+- **Strict 58dp Standard & Zero-Slop Compliance:**
+  - Standardized every input, dropdown bar, and trigger to strictly `height: 58, borderRadius: 16, borderWidth: 1` (`styles.bar58`).
+  - Pure monochrome 32dp icons inside transparent layout slots (`styles.thumb`), maintaining clean OLED dark mode contrast and Zero AI footprint.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.

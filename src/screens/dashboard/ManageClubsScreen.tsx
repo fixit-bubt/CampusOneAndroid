@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, RefreshControl, ActivityIndicator, KeyboardAvoidingView, Alert,
@@ -11,14 +11,17 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 
-const CATEGORIES = ['All', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
-type CategoryFilter = typeof CATEGORIES[number];
+const CATEGORY_LIST = ['All', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
+type CategoryFilter = typeof CATEGORY_LIST[number];
+
+const FORM_CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
+type FormCategory = typeof FORM_CATEGORIES[number];
 
 const CL_CATS: Record<string, string> = {
   Tech: Accent.purple,
@@ -27,6 +30,15 @@ const CL_CATS: Record<string, string> = {
   Professional: Accent.blue,
   Social: Accent.amber,
   other: Accent.slate,
+};
+
+const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
+  All: 'layers',
+  Tech: 'cpu',
+  Cultural: 'music',
+  Sports: 'activity',
+  Professional: 'briefcase',
+  Social: 'users',
 };
 
 interface ClubRow {
@@ -39,48 +51,6 @@ interface ClubRow {
   member_count?: number;
 }
 
-type StatusFilter = 'all' | 'active' | 'inactive';
-
-const StatCard = memo(function StatCard({
-  num,
-  label,
-  isSelected,
-  onPress,
-  C,
-}: {
-  num: number | string;
-  label: string;
-  isSelected?: boolean;
-  onPress?: () => void;
-  C: any;
-}) {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.statCard,
-        {
-          backgroundColor: isSelected ? `${C.brand}14` : C.surface,
-          borderColor: isSelected ? C.brand : C.border,
-          borderWidth: isSelected ? 1.5 : 1,
-        },
-      ]}
-      onPress={onPress}
-      disabled={!onPress}
-      activeOpacity={0.75}
-    >
-      <Text style={[styles.statNum, { color: isSelected ? C.brand : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-        {num}
-      </Text>
-      <Text
-        style={[styles.statLabel, { color: isSelected ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-});
-
 export function ManageClubsScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
@@ -91,16 +61,17 @@ export function ManageClubsScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Filter & Search states
+  // Search & Category filter
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('All');
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  // Create Club Sheet state
+  // Full-page Create Club state
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newTagline, setNewTagline] = useState('');
-  const [newCategory, setNewCategory] = useState<'Tech' | 'Cultural' | 'Sports' | 'Professional' | 'Social'>('Tech');
+  const [newCategory, setNewCategory] = useState<FormCategory>('Tech');
+  const [createCategoryModalVisible, setCreateCategoryModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
 
   // Assign President Sheet state
@@ -229,7 +200,7 @@ export function ManageClubsScreen({ navigation }: any) {
     if (!presTarget) return;
     Alert.alert(
       'Appoint President',
-      `Appoint ${student.full_name} as President of ${presTarget.name}? The previous president will be atomically reassigned as a member.`,
+      `Appoint ${student.full_name} as President of ${presTarget.name}? The previous president will be atomically demoted to a regular member.`,
       [
         { text: t.common.cancel, style: 'cancel' },
         {
@@ -262,19 +233,10 @@ export function ManageClubsScreen({ navigation }: any) {
   const filteredClubs = useMemo(() => {
     let result = clubs;
 
-    // Status filter
-    if (statusFilter === 'active') {
-      result = result.filter(c => c.is_active);
-    } else if (statusFilter === 'inactive') {
-      result = result.filter(c => !c.is_active);
-    }
-
-    // Category filter
     if (categoryFilter !== 'All') {
       result = result.filter(c => c.category === categoryFilter);
     }
 
-    // Search query
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       result = result.filter(c =>
@@ -286,16 +248,7 @@ export function ManageClubsScreen({ navigation }: any) {
     }
 
     return result;
-  }, [clubs, statusFilter, categoryFilter, searchQuery]);
-
-  // Aggregate stats
-  const stats = useMemo(() => {
-    const total = clubs.length;
-    const active = clubs.filter(c => c.is_active).length;
-    const inactive = total - active;
-    const totalMembers = clubs.reduce((acc, c) => acc + (c.member_count ?? 0), 0);
-    return { total, active, inactive, totalMembers };
-  }, [clubs]);
+  }, [clubs, categoryFilter, searchQuery]);
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -312,22 +265,7 @@ export function ManageClubsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      <SubBar
-        title={t.clubs.manageClubs}
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={[styles.newBtn, { backgroundColor: C.brand }]}
-            onPress={() => setCreateOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={14} color={C.white} />
-            <Text style={[styles.newBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-              {t.clubs.newClub}
-            </Text>
-          </TouchableOpacity>
-        }
-      />
+      <SubBar title={t.clubs.manageClubs} onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -335,38 +273,8 @@ export function ManageClubsScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {/* Top Stats Overview Row */}
-        <View style={styles.statsRow}>
-          <StatCard
-            num={stats.total}
-            label="Total"
-            isSelected={statusFilter === 'all'}
-            onPress={() => setStatusFilter('all')}
-            C={C}
-          />
-          <StatCard
-            num={stats.active}
-            label="Active"
-            isSelected={statusFilter === 'active'}
-            onPress={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
-            C={C}
-          />
-          <StatCard
-            num={stats.inactive}
-            label="Inactive"
-            isSelected={statusFilter === 'inactive'}
-            onPress={() => setStatusFilter(statusFilter === 'inactive' ? 'all' : 'inactive')}
-            C={C}
-          />
-          <StatCard
-            num={stats.totalMembers}
-            label="Members"
-            C={C}
-          />
-        </View>
-
-        {/* 58dp Search Bar Standard */}
-        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+        {/* 1. Standard 58dp Search Bar */}
+        <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 }]}>
           <Icon name="search" size={20} color={C.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -383,43 +291,67 @@ export function ManageClubsScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Category Horizontal Filter Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.catScroll}
+        {/* 2. Standard 58dp Category Filter Dropdown Bar */}
+        <TouchableOpacity
+          style={[
+            styles.bar58,
+            styles.dropdownBar,
+            {
+              backgroundColor: categoryFilter !== 'All' ? (isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff') : C.surface,
+              borderColor: categoryFilter !== 'All' ? C.brand : C.border,
+              marginBottom: 10,
+            },
+          ]}
+          onPress={() => setFilterModalVisible(true)}
+          activeOpacity={0.75}
         >
-          {CATEGORIES.map(cat => {
-            const isSelected = categoryFilter === cat;
-            return (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.filterPill,
-                  isSelected
-                    ? { backgroundColor: C.brand, borderColor: C.brand }
-                    : { backgroundColor: C.surface, borderColor: C.border },
-                ]}
-                onPress={() => setCategoryFilter(cat)}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.filterPillTxt,
-                    {
-                      color: isSelected ? C.white : C.text2,
-                      fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                    },
-                  ]}
-                >
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          <View style={styles.barLeft}>
+            <Feather
+              name={CATEGORY_ICONS[categoryFilter] ?? 'layers'}
+              size={18}
+              color={categoryFilter !== 'All' ? C.brand : C.textMuted}
+            />
+            <Text
+              style={[
+                styles.barTitle,
+                {
+                  color: categoryFilter !== 'All' ? C.brand : C.text,
+                  fontFamily: categoryFilter !== 'All' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                },
+              ]}
+            >
+              {categoryFilter === 'All' ? 'All Categories' : `Category: ${categoryFilter}`}
+            </Text>
+          </View>
+          <Feather name="chevron-down" size={18} color={categoryFilter !== 'All' ? C.brand : C.textMuted} />
+        </TouchableOpacity>
 
-        {/* Club Cards Listing */}
+        {/* 3. Standard 58dp Create New Club Bar */}
+        <TouchableOpacity
+          style={[
+            styles.bar58,
+            styles.dropdownBar,
+            {
+              backgroundColor: C.surface,
+              borderColor: C.brand,
+              borderLeftColor: C.brand,
+              borderLeftWidth: 4,
+              marginBottom: 14,
+            },
+          ]}
+          onPress={() => setCreateOpen(true)}
+          activeOpacity={0.75}
+        >
+          <View style={styles.barLeft}>
+            <Feather name="plus-circle" size={20} color={C.brand} />
+            <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.clubs.newClub}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={C.brand} />
+        </TouchableOpacity>
+
+        {/* 4. Club Cards Listing */}
         {loading && clubs.length === 0 ? (
           <View style={styles.center}>
             <ActivityIndicator color={C.brand} size="large" />
@@ -430,10 +362,10 @@ export function ManageClubsScreen({ navigation }: any) {
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {searchQuery ? 'No clubs match your search' : t.clubs.noClubs}
             </Text>
-            {searchQuery ? (
+            {searchQuery || categoryFilter !== 'All' ? (
               <TouchableOpacity
                 style={[styles.clearSearchBtn, { backgroundColor: C.surface2 }]}
-                onPress={() => { setSearchQuery(''); setStatusFilter('all'); setCategoryFilter('All'); }}
+                onPress={() => { setSearchQuery(''); setCategoryFilter('All'); }}
                 activeOpacity={0.8}
               >
                 <Text style={[styles.clearSearchTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
@@ -570,87 +502,233 @@ export function ManageClubsScreen({ navigation }: any) {
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Modern 58dp Create Club Sheet */}
-      <Modal visible={createOpen} transparent animationType="slide" onRequestClose={() => setCreateOpen(false)}>
-        <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setCreateOpen(false)} />
+      {/* ─────────────────────────────────────────────────────────────
+          FULL-PAGE CREATE CLUB MODAL (All 58dp Standard Bars)
+          ───────────────────────────────────────────────────────────── */}
+      <Modal visible={createOpen} animationType="slide" onRequestClose={() => setCreateOpen(false)}>
+        <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+          <SubBar title="Create New Club" onBack={() => setCreateOpen(false)} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1 }}
+          >
+            <ScrollView
+              contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Field 1: Club Name */}
+              <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginTop: 8 }]}>
+                CLUB NAME
+              </Text>
+              <TextInput
+                style={[
+                  styles.bar58,
+                  styles.fullPageInput,
+                  { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+                ]}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="e.g. BUBT Robotics Club"
+                placeholderTextColor={C.textMuted}
+                autoFocus
+              />
+
+              {/* Field 2: Tagline */}
+              <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginTop: 16 }]}>
+                TAGLINE
+              </Text>
+              <TextInput
+                style={[
+                  styles.bar58,
+                  styles.fullPageInput,
+                  { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium },
+                ]}
+                value={newTagline}
+                onChangeText={setNewTagline}
+                placeholder="One-line summary for campus directory"
+                placeholderTextColor={C.textMuted}
+              />
+
+              {/* Field 3: Category Dropdown Bar (58dp) */}
+              <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginTop: 16 }]}>
+                CATEGORY
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.bar58,
+                  styles.dropdownBar,
+                  { backgroundColor: C.surface, borderColor: C.border },
+                ]}
+                onPress={() => setCreateCategoryModalVisible(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.barLeft}>
+                  <View style={[styles.dot10, { backgroundColor: CL_CATS[newCategory] ?? C.brand }]} />
+                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {newCategory}
+                  </Text>
+                </View>
+                <Feather name="chevron-down" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+
+              {/* Submit CTA Button (58dp) */}
+              <TouchableOpacity
+                style={[
+                  styles.bar58,
+                  styles.submitBtn58,
+                  { backgroundColor: C.brand, opacity: newName.trim() && !creating ? 1 : 0.55, marginTop: 24 },
+                ]}
+                onPress={handleCreateClub}
+                disabled={!newName.trim() || creating}
+                activeOpacity={0.8}
+              >
+                {creating ? (
+                  <ActivityIndicator color={C.white} size="small" />
+                ) : (
+                  <Text style={[styles.submitBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                    Create Club
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* ─────────────────────────────────────────────────────────────
+          CREATE CATEGORY PICKER BOTTOM SHEET (58dp Bars)
+          ───────────────────────────────────────────────────────────── */}
+      <Modal
+        visible={createCategoryModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCreateCategoryModalVisible(false)}
+      >
+        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setCreateCategoryModalVisible(false)} />
           <View style={[styles.sheet, { backgroundColor: C.surface }]}>
             <View style={styles.sheetHandle} />
-            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.clubs.newClub}
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 14 }]}>
+              Select Club Category
             </Text>
 
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t.clubs.clubName}
-            </Text>
-            <TextInput
-              style={[styles.input58, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="e.g. BUBT IT Club"
-              placeholderTextColor={C.textMuted}
-            />
-
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t.clubs.tagline}
-            </Text>
-            <TextInput
-              style={[styles.input58, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={newTagline}
-              onChangeText={setNewTagline}
-              placeholder="One-line summary for students"
-              placeholderTextColor={C.textMuted}
-            />
-
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t.clubs.category}
-            </Text>
-            <View style={styles.catChipsRow}>
-              {(['Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const).map(cat => {
-                const on = newCategory === cat;
+            <View style={{ gap: 8 }}>
+              {FORM_CATEGORIES.map(cat => {
+                const isSelected = newCategory === cat;
+                const catColor = CL_CATS[cat] ?? C.brand;
                 return (
                   <TouchableOpacity
                     key={cat}
                     style={[
-                      styles.modalCatChip,
-                      on
-                        ? { backgroundColor: C.brand, borderColor: C.brand }
-                        : { backgroundColor: C.bg, borderColor: C.border },
+                      styles.bar58,
+                      styles.dropdownBar,
+                      {
+                        backgroundColor: isSelected ? (isDark ? `${catColor}20` : '#eff6ff') : C.bg,
+                        borderColor: isSelected ? catColor : C.border,
+                      },
                     ]}
-                    onPress={() => setNewCategory(cat)}
+                    onPress={() => {
+                      setNewCategory(cat);
+                      setCreateCategoryModalVisible(false);
+                    }}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.modalCatChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {cat}
-                    </Text>
+                    <View style={styles.barLeft}>
+                      <View style={[styles.dot10, { backgroundColor: catColor }]} />
+                      <Text
+                        style={[
+                          styles.barTitle,
+                          {
+                            color: isSelected ? catColor : C.text,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {cat}
+                      </Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={18} color={catColor} />}
                   </TouchableOpacity>
                 );
               })}
             </View>
-
-            <TouchableOpacity
-              style={[styles.submitBtn58, { backgroundColor: C.brand, opacity: newName.trim() && !creating ? 1 : 0.55 }]}
-              onPress={handleCreateClub}
-              disabled={!newName.trim() || creating}
-              activeOpacity={0.8}
-            >
-              {creating ? (
-                <ActivityIndicator color={C.white} size="small" />
-              ) : (
-                <Text style={[styles.submitBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                  Create Club
-                </Text>
-              )}
-            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Modern 58dp Assign President Sheet */}
+      {/* ─────────────────────────────────────────────────────────────
+          MAIN SCREEN CATEGORY FILTER BOTTOM SHEET (58dp Bars)
+          ───────────────────────────────────────────────────────────── */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setFilterModalVisible(false)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 14 }]}>
+              Filter by Category
+            </Text>
+
+            <View style={{ gap: 8 }}>
+              {CATEGORY_LIST.map(cat => {
+                const isSelected = categoryFilter === cat;
+                const catColor = cat === 'All' ? C.brand : (CL_CATS[cat] ?? C.brand);
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[
+                      styles.bar58,
+                      styles.dropdownBar,
+                      {
+                        backgroundColor: isSelected ? (isDark ? 'rgba(59, 130, 246, 0.18)' : '#eff6ff') : C.bg,
+                        borderColor: isSelected ? C.brand : C.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCategoryFilter(cat);
+                      setFilterModalVisible(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.barLeft}>
+                      <Feather
+                        name={CATEGORY_ICONS[cat] ?? 'layers'}
+                        size={18}
+                        color={isSelected ? C.brand : C.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.barTitle,
+                          {
+                            color: isSelected ? C.brand : C.text,
+                            fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          },
+                        ]}
+                      >
+                        {cat === 'All' ? 'All Categories' : cat}
+                      </Text>
+                    </View>
+                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ─────────────────────────────────────────────────────────────
+          ASSIGN PRESIDENT SHEET (58dp Search & Student Selection)
+          ───────────────────────────────────────────────────────────── */}
       <Modal visible={!!presTarget} transparent animationType="slide" onRequestClose={() => setPresTarget(null)}>
         <KeyboardAvoidingView style={styles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setPresTarget(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '80%' }]}>
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '82%' }]}>
             <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
               Appoint President
@@ -659,7 +737,7 @@ export function ManageClubsScreen({ navigation }: any) {
               {presTarget?.name}
             </Text>
 
-            <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border, marginTop: 12 }]}>
+            <View style={[styles.bar58, { backgroundColor: C.bg, borderColor: C.border, marginTop: 12, marginBottom: 8 }]}>
               <Icon name="search" size={20} color={C.textMuted} />
               <TextInput
                 style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -676,7 +754,7 @@ export function ManageClubsScreen({ navigation }: any) {
               )}
             </View>
 
-            <ScrollView style={{ maxHeight: 300, marginTop: 8 }} keyboardShouldPersistTaps="handled">
+            <ScrollView style={{ maxHeight: 300, marginTop: 4 }} keyboardShouldPersistTaps="handled">
               {assigning ? (
                 <ActivityIndicator color={C.brand} style={{ paddingVertical: 24 }} />
               ) : studentResults.map(r => (
@@ -718,29 +796,53 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 24 } as ViewStyle,
 
-  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 36, borderRadius: 12 } as ViewStyle,
-  newBtnTxt: { fontSize: 13 } as TextStyle,
-
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 } as ViewStyle,
-  statCard: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  statNum: { fontSize: 16 } as TextStyle,
-  statLabel: { fontSize: 11, marginTop: 2 } as TextStyle,
-
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  // Universal 58dp Bar Standard
+  bar58: {
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 16,
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
   } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
+  dropdownBar: {
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  barLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  } as ViewStyle,
+  barTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+  searchInput: {
+    flex: 1,
+    fontSize: 14.5,
+    paddingVertical: 0,
+    marginLeft: 8,
+  } as TextStyle,
+  fullPageInput: {
+    marginTop: 6,
+  } as TextStyle,
 
-  catScroll: { gap: 8, paddingBottom: 12 } as ViewStyle,
-  filterPill: { paddingHorizontal: 14, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  filterPillTxt: { fontSize: 12.5 } as TextStyle,
+  fieldLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+  } as TextStyle,
+  dot10: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  } as ViewStyle,
+
+  submitBtn58: {
+    justifyContent: 'center',
+  } as ViewStyle,
+  submitBtnTxt: {
+    fontSize: 15.5,
+  } as TextStyle,
 
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50, gap: 10 } as ViewStyle,
   emptyTitle: { fontSize: 15 } as TextStyle,
@@ -793,13 +895,6 @@ const styles = StyleSheet.create({
   sheetHandle: { width: 38, height: 4, borderRadius: 2, backgroundColor: '#888', alignSelf: 'center', marginBottom: 16 } as ViewStyle,
   sheetTitle: { fontSize: 18 } as TextStyle,
   sheetSub: { fontSize: 13, marginTop: 2, marginBottom: 8 } as TextStyle,
-  fieldLabel: { fontSize: 11, letterSpacing: 0.7, marginTop: 12, marginBottom: 6 } as TextStyle,
-  input58: { height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 14.5 } as TextStyle,
-  catChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 } as ViewStyle,
-  modalCatChip: { paddingHorizontal: 14, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  modalCatChipTxt: { fontSize: 12.5 } as TextStyle,
-  submitBtn58: { height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 22 } as ViewStyle,
-  submitBtnTxt: { fontSize: 15 } as TextStyle,
 
   studentResultCard: {
     flexDirection: 'row',
