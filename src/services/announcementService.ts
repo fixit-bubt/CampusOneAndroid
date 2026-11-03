@@ -288,10 +288,9 @@ export async function fetchCuratedBannerSlides(forceRefresh = false): Promise<Ba
         .order('banner_order', { ascending: true })
         .order('date', { ascending: true })
         .limit(6),
-      (supabase.from('clubs') as any)
-        .select('id, name, category, logo_url, cover_url, in_banner, banner_order')
+      (supabase.from('club_posts') as any)
+        .select('id, club_id, title, body, image_url, in_banner, banner_order, clubs(id, name, category, logo_url)')
         .eq('in_banner', true)
-        .eq('is_active', true)
         .order('banner_order', { ascending: true })
         .limit(6),
     ]);
@@ -335,17 +334,17 @@ export async function fetchCuratedBannerSlides(forceRefresh = false): Promise<Ba
     }
 
     if (clRes?.data && clRes.data.length > 0) {
-      clRes.data.forEach((c: any) => {
+      clRes.data.forEach((cp: any) => {
         slides.push({
-          id: `club-${c.id}`,
-          sourceId: c.id,
+          id: `club-${cp.id}`,
+          sourceId: cp.id,
           type: 'Club',
-          title: c.name,
-          subtitle: `${c.category || 'Official Club'} · BUBT`,
-          imageUri: c.cover_url || c.logo_url || null,
+          title: cp.title || 'Club Announcement',
+          subtitle: cp.clubs?.name ? `${cp.clubs.name} · Club News` : 'BUBT Club News',
+          imageUri: cp.image_url || cp.clubs?.logo_url || null,
           route: 'ClubDetail',
-          params: { clubId: c.id },
-          bannerOrder: c.banner_order ?? 0,
+          params: { clubId: cp.club_id },
+          bannerOrder: cp.banner_order ?? 0,
           inBanner: true,
         });
       });
@@ -403,14 +402,14 @@ export async function updateClubBannerStatus(
   bannerOrder = 0
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await (supabase.rpc as any)('set_club_banner', {
+    const { error } = await (supabase.rpc as any)('set_club_post_banner', {
       p_id: id,
       p_in_banner: inBanner,
       p_order: bannerOrder,
     });
 
     if (error) {
-      const { error: directErr } = await (supabase.from('clubs') as any)
+      const { error: directErr } = await (supabase.from('club_posts') as any)
         .update({ in_banner: inBanner, banner_order: inBanner ? bannerOrder : 0 })
         .eq('id', id);
       if (directErr) throw directErr;
@@ -420,7 +419,7 @@ export async function updateClubBannerStatus(
     await removeCache(CacheKeys.HOME_BANNER);
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message || 'Failed to update club banner status' };
+    return { success: false, error: err.message || 'Failed to update club post banner status' };
   }
 }
 
@@ -438,7 +437,7 @@ export async function saveBannerOrder(
         if (item.type === 'event') {
           await supabase.from('events').update({ in_banner: true, banner_order: item.order }).eq('id', item.id);
         } else if (item.type === 'club') {
-          await (supabase.from('clubs') as any).update({ in_banner: true, banner_order: item.order }).eq('id', item.id);
+          await (supabase.from('club_posts') as any).update({ in_banner: true, banner_order: item.order }).eq('id', item.id);
         } else {
           await supabase.from('announcements').update({ in_banner: true, banner_order: item.order }).eq('id', item.id);
         }
@@ -481,12 +480,11 @@ export async function fetchAdminBannerPool(): Promise<{
         .order('banner_order', { ascending: true })
         .order('date', { ascending: true })
         .limit(40),
-      (supabase.from('clubs') as any)
-        .select('*')
-        .eq('is_active', true)
+      (supabase.from('club_posts') as any)
+        .select('id, club_id, title, body, image_url, in_banner, banner_order, created_at, clubs(id, name, category, logo_url)')
         .order('banner_order', { ascending: true })
-        .order('name', { ascending: true })
-        .limit(40),
+        .order('created_at', { ascending: false })
+        .limit(50),
     ]);
 
     if (annRes.error) throw annRes.error;
@@ -531,17 +529,17 @@ export async function fetchAdminBannerPool(): Promise<{
       });
     });
 
-    allClubs.filter((c: any) => c.in_banner).forEach((c: any) => {
+    allClubs.filter((cp: any) => cp.in_banner).forEach((cp: any) => {
       activeSlides.push({
-        id: `club-${c.id}`,
-        sourceId: c.id,
+        id: `club-${cp.id}`,
+        sourceId: cp.id,
         type: 'Club',
-        title: c.name,
-        subtitle: `${c.category || 'Official Club'} · BUBT`,
-        imageUri: c.cover_url || c.logo_url || null,
+        title: cp.title || 'Club Announcement',
+        subtitle: cp.clubs?.name ? `${cp.clubs.name} · Club News` : 'BUBT Club News',
+        imageUri: cp.image_url || cp.clubs?.logo_url || null,
         route: 'ClubDetail',
-        params: { clubId: c.id },
-        bannerOrder: c.banner_order ?? 0,
+        params: { clubId: cp.club_id },
+        bannerOrder: cp.banner_order ?? 0,
         inBanner: true,
       });
     });

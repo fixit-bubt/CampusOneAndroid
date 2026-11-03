@@ -341,7 +341,9 @@ export function ManageClubsScreen({ navigation }: any) {
           activeOpacity={0.75}
         >
           <View style={styles.barLeft}>
-            <Feather name="plus-circle" size={28} color={C.text} />
+            <View style={styles.iconSlot32}>
+              <Feather name="plus-circle" size={32} color={C.text} />
+            </View>
             <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.clubs.newClub}
             </Text>
@@ -527,7 +529,9 @@ export function ManageClubsScreen({ navigation }: any) {
                 activeOpacity={0.75}
               >
                 <View style={styles.barLeft}>
-                  <Feather name={CATEGORY_ICONS[newCategory] ?? 'layers'} size={28} color={C.text} />
+                  <View style={styles.iconSlot32}>
+                    <Feather name={CATEGORY_ICONS[newCategory] ?? 'layers'} size={32} color={C.text} />
+                  </View>
                   <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {newCategory}
                   </Text>
@@ -597,7 +601,9 @@ export function ManageClubsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.barLeft}>
-                      <Feather name={CATEGORY_ICONS[cat] ?? 'layers'} size={28} color={C.text} />
+                      <View style={styles.iconSlot32}>
+                        <Feather name={CATEGORY_ICONS[cat] ?? 'layers'} size={32} color={C.text} />
+                      </View>
                       <Text
                         style={[
                           styles.barTitle,
@@ -610,7 +616,7 @@ export function ManageClubsScreen({ navigation }: any) {
                         {cat}
                       </Text>
                     </View>
-                    {isSelected && <Feather name="check" size={20} color={C.text} />}
+                    {isSelected && <Feather name="check" size={22} color={C.text} />}
                   </TouchableOpacity>
                 );
               })}
@@ -746,7 +752,9 @@ export function ManageClubsScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.barLeft}>
-                <Feather name={activeDeptItem.icon} size={28} color={C.text} />
+                <View style={styles.iconSlot32}>
+                  <Feather name={activeDeptItem.icon} size={32} color={C.text} />
+                </View>
                 <Text
                   style={[
                     styles.barTitle,
@@ -868,7 +876,9 @@ export function ManageClubsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.barLeft}>
-                      <Feather name={dept.icon} size={28} color={C.text} />
+                      <View style={styles.iconSlot32}>
+                        <Feather name={dept.icon} size={32} color={C.text} />
+                      </View>
                       <Text
                         style={[
                           styles.barTitle,
@@ -917,6 +927,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     flex: 1,
+  } as ViewStyle,
+  iconSlot32: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
   } as ViewStyle,
   barTitle: {
     fontSize: 14.5,

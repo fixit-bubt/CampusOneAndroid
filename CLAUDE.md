@@ -3648,23 +3648,21 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified clean startup (`ReactNativeJS: Running "main"`).
 
+-
 ---
 
-### 86. Club Category Dropdown Monochrome Polish, Vector Icon Enlarge to 28dp & Zero-Slop White Line Removal (ManageClubsScreen.tsx, ClubManageScreen.tsx, ClubsScreen.tsx, ClubDetailScreen.tsx) (/zero-slop, /performance-optimization, /code-review-and-quality)
-- **Eliminated Left-Edge White Line on `+ New Club` (ManageClubsScreen.tsx):**
-  - Removed accidental `borderLeftColor: C.text, borderLeftWidth: 4` on the 58dp `+ New Club` trigger bar. The bar now uses uniform `borderColor: C.border`, restoring visual symmetry with adjacent dropdown bars.
-- **Fixed Category Mismatch across Club Screens (ClubManageScreen.tsx & ClubDetailScreen.tsx):**
-  - Purged legacy `CL_CATS` dictionary containing rainbow accent colors (`Accent.purple`, `Accent.pink`, `Accent.teal`, `Accent.blue`, `Accent.amber`) and removed colored indicator dots (`dot10`).
-  - Standardized `ClubManageScreen.tsx` to match `ManageClubsScreen.tsx`:
-    - Dropdown bar and "Select Club Category" bottom sheet use pure monochrome styling (`CATEGORY_ICONS`, `C.surface2` active background, `C.text` active border).
-    - Removed rainbow color dots and colored borders from category picker options.
-  - Cleaned up category labeling in `ClubDetailScreen.tsx` to eliminate unused color maps.
-- **Enlarged Vector Icons to Prominent 28dp Tier Standard:**
-  - Upgraded vector icons across all 58dp category bars, dropdown sheets, and department selectors from small `size={20}` to bold, high-contrast `size={28}` (Feather `cpu`, `music`, `activity`, `briefcase`, `users`, `layers`, `globe`, `zap`, `shield`, `book-open`, `compass`, `trending-up`).
-  - Increased `barLeft` spacing to `gap: 14` for comfortable breathing room alongside typography.
-  - Upgraded selection checkmarks to `size={20}` and chevrons to `size={20}` for tactile clarity.
+### 86. Club News/Posts Banner Architecture & 32dp Prominent Icon Standard (`ManageBannerScreen.tsx`, `ManageClubsScreen.tsx`, `announcementService.ts`, `20261103040000_club_posts_hero_banner.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Transition from Club Profiles to Club News & Posts Only (`public.club_posts`):**
+  - **Accurate Candidate Pool Representation:** Replaced the club organization profiles (which previously showed 19/20 items) with actual published **Club News & Announcements** (`public.club_posts`). If clubs have not published any news posts yet, the candidate filter now accurately displays `Student Clubs (0)`.
+  - **Database Migration (`20261103040000_club_posts_hero_banner.sql`):** Added `in_banner` and `banner_order` to `public.club_posts`, partial index `club_posts_banner_idx`, updated `club_posts_select` to authenticated campus-wide visibility, created `set_club_post_banner` RPC, and updated `reorder_banner_items` to reorder `club_posts` when `type = 'club'`.
+  - **Service & Screen Alignment (`announcementService.ts`, `ManageBannerScreen.tsx`):** `fetchCuratedBannerSlides()` and `fetchAdminBannerPool()` query `club_posts` joining parent club info (`clubs(id, name, category, logo_url)`). When added, club news items display club name, news headline, and navigate directly to `ClubDetail`.
+- **Enlarged 32dp Icon Standard in 58dp Dropdowns & Sheets:**
+  - **Department Selection Sheet (`ManageClubsScreen.tsx`):** Fixed the small/thin department icons by wrapping each in a dedicated 38x38dp centered slot (`styles.iconSlot32`) with bold **32dp vector icons** (`size={32}`) across all 9 BUBT departments, plus larger 22dp selection checkmarks.
+  - **Appoint President & Category Sheets (`ManageClubsScreen.tsx`):** Upgraded active department bar, main category selector bar, and Create Club category sheets to use 32dp vector icons inside 38x38 slots.
+  - **Banner Category Dropdown Bar & Modal Sheet (`ManageBannerScreen.tsx`):** Upgraded 58dp dropdown bar and candidate source filter sheet with 38x38 slots and prominent 30dp vector icons.
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
-  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
-  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
-  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main`.
+  - Unit Tests: 18 test suites passed, 140/140 tests passing (`npm test`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 48s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat confirmed clean execution (`ReactNativeJS: Running "main"`).
+  - Remote Database Push: Successfully pushed migration `20261103040000_club_posts_hero_banner.sql` to Supabase remote (`xhgpxvyqrufbbuivttmi`).
