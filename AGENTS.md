@@ -3532,3 +3532,17 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (	sc --noEmit).
   - Native Release APK: Locally compiled via Gradle (ssembleRelease) with local release keystore (BUILD SUCCESSFUL in 1m 4s).
   - Direct ADB Deployment: Streamed install (db install -r) and launched on physical phone 8734b5da (Performing Streamed Install -> Success).
+
+
+---
+
+### 93. Club Members Management Action Bar Relocation from TopBar to 58dp Centered Bar (ClubDetailScreen.tsx) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Problem Solved:** In ClubDetailScreen.tsx, navigating to club member management was previously anchored as a small users icon in the right slot of the top SubBar. This caused UI clutter in the header and made it less obvious for club presidents/VPs to find their roster management controls on mobile screens.
+- **Architectural & UI/UX Resolution:**
+  - **Top Bar De-cluttering:** Stripped the users icon from SubBar.rightSlot, leaving only the club settings sliders icon for authorized officers.
+  - **58dp Centered Action Bar:** Moved the member management action down directly into the screen layout alongside 'Create Club Post' (above SegmentedTabs), styled with styles.bar58Center (height: 58, justifyContent: 'center', lignItems: 'center', 24dp vector icon users, 15px bold centered title Manage Members).
+  - **Strict Officer Governance Guard:** Rendered conditionally on canManageMembers (myRole === 'president' || myRole === 'vp'), ensuring general club members see only the clean segmented feed/member list without administrative buttons.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (	sc --noEmit).
+  - Native Release APK: Locally compiled via Gradle (ssembleRelease) with local release keystore (BUILD SUCCESSFUL in 56s).
+  - Direct ADB Deployment: Streamed install (db install -r) and launched on physical phone 8734b5da (Performing Streamed Install -> Success).
