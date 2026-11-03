@@ -1,3 +1,51 @@
+export interface AcademicCalendarDoc {
+  id: string;
+  title: string;
+  description?: string | null;
+  file_url: string;
+  file_type: 'pdf' | 'image';
+  semester?: string | null;
+  is_active?: boolean;
+  event_date?: string;
+  created_at?: string;
+}
+
+export const OFFICIAL_CALENDAR_DOCS: AcademicCalendarDoc[] = [
+  {
+    id: 'bubt-cal-fall-2026',
+    title: 'Fall 2026 Academic Calendar',
+    description: 'Official BUBT Academic Calendar for Fall 2026 Semester',
+    file_url: 'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf',
+    file_type: 'pdf',
+    semester: 'Fall 2026',
+    is_active: true,
+    event_date: '2026-09-05',
+    created_at: '2026-09-01T00:00:00Z',
+  },
+  {
+    id: 'bubt-cal-sum-2026',
+    title: 'Summer 2026 Academic Calendar',
+    description: 'Official BUBT Academic Calendar for Summer 2026 Semester',
+    file_url: 'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf',
+    file_type: 'pdf',
+    semester: 'Summer 2026',
+    is_active: false,
+    event_date: '2026-05-06',
+    created_at: '2026-05-01T00:00:00Z',
+  },
+  {
+    id: 'bubt-cal-spr-2026',
+    title: 'Spring 2026 Academic Calendar',
+    description: 'Official BUBT Academic Calendar for Spring 2026 Semester',
+    file_url: 'https://campusonebubt.vercel.app/bubt-academic-calendar-summer-2026.pdf',
+    file_type: 'pdf',
+    semester: 'Spring 2026',
+    is_active: false,
+    event_date: '2026-01-10',
+    created_at: '2026-01-05T00:00:00Z',
+  },
+];
+
 export interface AcademicEvent {
   id: string;
   title: string;

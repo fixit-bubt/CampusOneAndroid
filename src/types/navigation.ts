@@ -151,6 +151,7 @@ export type AppStackParams = {
   ManageStudyHub: undefined;
   ManageBanner:   undefined;
   ManageAnnouncements: undefined;
+  ManageAcademicCalendar: undefined;
   AllReports:     undefined;
 
   // Legal & Policy

@@ -3878,3 +3878,29 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Compilation: `npx tsc --noEmit` passed with 0 errors.
   - Native Release Build: `cd android; .\gradlew assembleRelease` succeeded with local release keystore (BUILD SUCCESSFUL in 47s).
   - ADB Deployment: Installed via ADB and launched on physical phone `8734b5da`.
+
+
+---
+
+### 97. Simplified Document-First Academic Calendar & Admin Management Hub (`AcademicCalendarScreen.tsx`, `ManageAcademicCalendarScreen.tsx`, `academicCalendarService.ts`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Problem Solved:** The previous academic calendar implementation was heavily over-engineered (2,300+ lines of day-by-day event pickers, monthly radar circles, gantt ribbons, and manual date inputs) that required teachers/admins to enter 40+ individual calendar dates manually. In real university life at BUBT, students and faculty simply want to open and view the official academic calendar notice (PDF or circular photo) released by the Registrar.
+- **Architectural & UI/UX Resolution:**
+  - **Database Migration (`20261104010000_academic_calendar_documents.sql`):** Added `file_url`, `file_type` (`'pdf'` | `'image'`), `semester`, and `is_active` to `public.academic_calendar` with fast ordering index `academic_calendar_created_at_idx`. Pushed migration to remote Supabase (`xhgpxvyqrufbbuivttmi`).
+  - **Dedicated Service Layer (`academicCalendarService.ts`):** Created clean service handling document-based operations: `fetchAcademicCalendars()`, `uploadAcademicCalendar()`, `deleteAcademicCalendar()` with Supabase Storage integration (`attachments` bucket) and instant local cache hydration (`CacheKeys.ACADEMIC_CALENDAR`).
+  - **Admin Calendar Management Hub (`ManageAcademicCalendarScreen.tsx`):**
+    - Accessible directly from `ExploreScreen`'s Administration section (elevated `count={10}`) and `AcademicCalendarScreen` for admins.
+    - **Bar 1 — File Picker Bar (Top):** 64dp interactive picker bar with 32dp monochrome icon (`upload-cloud` / `file-text` / `image`) and bottom sheet source selector supporting both official PDF documents (`expo-document-picker`) and notice photos from device gallery (`expo-image-picker`).
+    - **Bar 2 — Calendar Title Bar (Middle):** Standard 54dp text input bar with 22dp `calendar` vector icon for naming the circular (e.g. "Fall 2026 Academic Calendar").
+    - **Bar 3 — Primary Action Button:** 50dp Electric Brand Blue button (`#275EFE`) with 18dp `upload` icon and loading state.
+    - **Bottom Published List:** Chronological list of **58dp bars** (`height: 58`, `borderRadius: Radius.lg`) with **enlarged 32dp monochrome vector icons** (`file-text` for PDF, `image` for photo), active term badge, subtitle metadata, and action icons (`eye` to preview, `trash-2` in danger tone to delete).
+  - **Simplified Student Calendar Screen (`AcademicCalendarScreen.tsx`):**
+    - Reduced codebase from 2,324 lines to ~470 lines of clean, zero-slop code.
+    - **Featured Hero Card:** Highlights the latest active official academic calendar with active badge, title, Registrar provenance line, and 1-tap "Open Full Document" button.
+    - **All Semester Calendars:** Chronological list of **58dp bars** for past and current terms (Fall 2026, Summer 2026, Spring 2026).
+    - **Instant Full View:** Tapping opens the document in `CampusPdfViewerModal` (with Google Docs Viewer streaming / local engine) or full-screen image viewer for notice photos.
+    - **Admin Shortcut Strip:** If logged in as an administrator, renders an admin navigation banner and top header settings shortcut leading directly to `ManageAcademicCalendar`.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+  - Clean Runtime Verification: Verified `adb logcat` with 0 JavascriptExceptions and clean `Running "main"` initialization.
