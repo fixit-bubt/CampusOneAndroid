@@ -1,7 +1,7 @@
 // Club member management - president/VP only. Add students by search, change
 // member roles (vp / editor / member), remove members. Presidency itself is
 // transferred from the Manage screen.
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, Alert, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
@@ -39,14 +39,12 @@ const ROLE_RANK: Record<string, number> = { president: 0, vp: 1, editor: 2, memb
 const ASSIGNABLE = ['vp', 'editor', 'member'];
 
 export function ClubMembersScreen({ route, navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
   const clubId: string = route.params?.clubId;
   const [members, setMembers] = useState<Member[]>([]);
   const [requests, setRequests] = useState<JoinReq[]>([]);
-  // Latest members for the search exclusion, without making the search effect
-  // re-run (and refetch) every time the member list mutates.
   const membersRef = useRef<Member[]>([]);
   membersRef.current = members;
   const [addOpen, setAddOpen] = useState(false);
@@ -58,14 +56,12 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const load = useCallback(async () => {
     const [memRes, reqRes] = await Promise.all([
       supabase.from('club_members').select('*').eq('club_id', clubId),
-      // Pending join requests. RLS returns rows only to this club's officers/admins.
       supabase.from('club_join_requests')
         .select('id, user_id, message, created_at')
         .eq('club_id', clubId).eq('status', 'pending')
         .order('created_at', { ascending: true }),
     ]);
-    // Names/avatars come from the roster RPC - profiles itself is RLS-locked to
-    // the caller's own row, so an embed here would blank every member.
+
     const rows = [...((memRes.data as any[]) ?? []), ...((reqRes.data as any[]) ?? [])];
     const people = await fetchPeople(rows.map(r => r.user_id));
     const hydrate = (r: any) => ({
@@ -107,6 +103,8 @@ export function ClubMembersScreen({ route, navigation }: any) {
       .insert({ club_id: clubId, user_id: userId, role: 'member', added_by: user?.id });
     if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setQuery('');
+    setAddOpen(false);
+    toast({ type: 'success', title: 'Member Added', message: 'Student enrolled in club roster.' });
     await load();
   }
 
@@ -114,6 +112,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
     const { error } = await supabase.from('club_members').update({ role }).eq('id', m.id);
     if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     setRoleTarget(null);
+    toast({ type: 'success', title: 'Role Updated', message: `Role changed to ${role}.` });
     await load();
   }
 
@@ -131,8 +130,6 @@ export function ClubMembersScreen({ route, navigation }: any) {
     ]);
   }
 
-  // Approve = add the member first, then stamp the request, so a failure can't
-  // strand an approved request without a membership. 23505 = already a member.
   async function decide(req: JoinReq, approve: boolean) {
     if (approve) {
       const { error: memErr } = await supabase.from('club_members')
@@ -148,12 +145,12 @@ export function ClubMembersScreen({ route, navigation }: any) {
     if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
     if (!rows || rows.length === 0) { toast({ type: 'error', title: t.common.error }); return; }
     setRequests(prev => prev.filter(r => r.id !== req.id));
+    toast({ type: approve ? 'success' : 'info', title: approve ? 'Request Approved' : 'Request Declined' });
     load();
   }
 
   const myRole = members.find(m => m.user_id === user?.id)?.role ?? null;
   const canManage = myRole === 'president' || myRole === 'vp' || profile?.role === 'admin';
-  // RLS: VPs can add/remove members but only presidents/admins can change roles.
   const canSetRole = myRole === 'president' || profile?.role === 'admin';
 
   return (
@@ -249,33 +246,49 @@ export function ClubMembersScreen({ route, navigation }: any) {
         <View style={{ height: 16 }} />
       </ScrollView>
 
-      {/* Add member sheet */}
+      {/* Add Member Sheet (Universal 58dp Search Bar) */}
       <Modal visible={addOpen} transparent animationType="slide" onRequestClose={() => setAddOpen(false)}>
-        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddOpen(false)} />
           <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
               {t.clubs.addMembers}
             </Text>
-            <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border }]}>
-              <Icon name="search" size={18} color={C.textMuted} />
+
+            <View style={[styles.bar58, { backgroundColor: C.bg, borderColor: C.border, marginTop: 12, marginBottom: 12 }]}>
+              <Icon name="search" size={20} color={C.textMuted} />
               <TextInput
-                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-                placeholder={t.common.search + '...'}
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder={t.common.search + ' students...'}
                 placeholderTextColor={C.textMuted}
                 value={query}
                 onChangeText={setQuery}
                 autoFocus
               />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} activeOpacity={0.7}>
+                  <Feather name="x-circle" size={18} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
             </View>
+
             <ScrollView style={{ maxHeight: 320 }} keyboardShouldPersistTaps="handled">
               {results.map(r => (
-                <TouchableOpacity key={r.id} style={styles.resultRow} onPress={() => addMember(r.id)} activeOpacity={0.7}>
+                <TouchableOpacity
+                  key={r.id}
+                  style={[styles.resultRow, { backgroundColor: C.bg, borderColor: C.border }]}
+                  onPress={() => addMember(r.id)}
+                  activeOpacity={0.7}
+                >
                   <Avatar uri={r.avatar_url} name={r.full_name} size="sm" />
                   <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]} numberOfLines={1}>
                     {r.full_name}
                   </Text>
-                  <Feather name="plus" size={17} color={C.brand} />
+                  <View style={[styles.addPill, { backgroundColor: C.brand }]}>
+                    <Feather name="plus" size={14} color={C.white} />
+                    <Text style={[styles.addPillTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>Add</Text>
+                  </View>
                 </TouchableOpacity>
               ))}
               {query.trim().length >= 2 && results.length === 0 && (
@@ -288,27 +301,55 @@ export function ClubMembersScreen({ route, navigation }: any) {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Role picker sheet */}
+      {/* Role Picker Sheet (Universal 58dp Option Bars) */}
       <Modal visible={!!roleTarget} transparent animationType="slide" onRequestClose={() => setRoleTarget(null)}>
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setRoleTarget(null)} />
-        <View style={[styles.sheet, { backgroundColor: C.surface }]}>
-          <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {roleTarget?.profiles?.full_name ?? ''}
-          </Text>
-          {ASSIGNABLE.map(r => (
-            <TouchableOpacity
-              key={r}
-              style={[styles.roleOption, { borderColor: C.border, backgroundColor: roleTarget?.role === r ? C.surface2 : 'transparent' }]}
-              onPress={() => roleTarget && setRole(roleTarget, r)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.clubs.roleLabels[r] ?? r}
-              </Text>
-              {roleTarget?.role === r && <Feather name="check" size={16} color={C.brand} />}
-            </TouchableOpacity>
-          ))}
-        </View>
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }} behavior="padding">
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setRoleTarget(null)} />
+          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {roleTarget?.profiles?.full_name ?? 'Set Member Role'}
+            </Text>
+            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              Assign club executive permissions
+            </Text>
+
+            <View style={{ gap: 8, marginTop: 12 }}>
+              {ASSIGNABLE.map(r => {
+                const isSelected = roleTarget?.role === r;
+                return (
+                  <TouchableOpacity
+                    key={r}
+                    style={[
+                      styles.bar58,
+                      styles.dropdownBar,
+                      {
+                        borderColor: isSelected ? C.brand : C.border,
+                        backgroundColor: isSelected ? (isDark ? 'rgba(59, 130, 246, 0.18)' : '#eff6ff') : C.bg,
+                      },
+                    ]}
+                    onPress={() => roleTarget && setRole(roleTarget, r)}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.name,
+                        {
+                          color: isSelected ? C.brand : C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                          textTransform: 'capitalize',
+                        },
+                      ]}
+                    >
+                      {t.clubs.roleLabels[r] ?? r}
+                    </Text>
+                    {isSelected && <Feather name="check" size={18} color={C.brand} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -316,9 +357,16 @@ export function ClubMembersScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
+  scroll: { paddingTop: 10, paddingBottom: 24 } as ViewStyle,
 
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10 } as ViewStyle,
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    height: 36,
+    borderRadius: 10,
+  } as ViewStyle,
   addBtnTxt: { fontSize: 12 } as TextStyle,
 
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
@@ -331,24 +379,60 @@ const styles = StyleSheet.create({
   rolePill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 } as ViewStyle,
   roleTxt: { fontSize: 11 } as TextStyle,
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
+  // Universal 58dp Bar Standard
+  bar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  } as ViewStyle,
+  dropdownBar: {
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  searchInput: {
+    flex: 1,
+    fontSize: 14.5,
+    paddingVertical: 0,
+    marginLeft: 8,
+  } as TextStyle,
+
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: Layout.screenPadding,
-    paddingTop: 20,
-    paddingBottom: 34,
+    paddingTop: 12,
+    paddingBottom: 36,
   } as ViewStyle,
-  sheetTitle: { fontSize: 17, marginBottom: 12 } as TextStyle,
-  searchBar: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, borderRadius: 16, borderWidth: 1, marginBottom: 12 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 10 } as ViewStyle,
-  emptyTxt: { fontSize: 13, textAlign: 'center', paddingVertical: 18 } as TextStyle,
-  roleOption: {
+  sheetHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#888',
+    alignSelf: 'center',
+    marginBottom: 16,
+  } as ViewStyle,
+  sheetTitle: { fontSize: 18 } as TextStyle,
+  sheetSub: { fontSize: 13, marginTop: 2 } as TextStyle,
+
+  resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 11,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
   } as ViewStyle,
+  addPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  } as ViewStyle,
+  addPillTxt: { fontSize: 12 } as TextStyle,
+  emptyTxt: { fontSize: 13, textAlign: 'center', paddingVertical: 24 } as TextStyle,
 });
