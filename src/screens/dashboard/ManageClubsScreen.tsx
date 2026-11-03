@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { fetchPeople } from '../../services/peopleService';
 
 const CATEGORY_LIST = ['All', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
 type CategoryFilter = typeof CATEGORY_LIST[number];
@@ -108,16 +109,23 @@ export function ManageClubsScreen({ navigation }: any) {
     try {
       const [clubsRes, membersRes] = await Promise.all([
         supabase.from('clubs').select('*').order('name'),
-        supabase.from('club_members').select('club_id, role, profiles:profiles!user_id(full_name)'),
+        supabase.from('club_members').select('club_id, user_id, role'),
       ]);
 
       if (clubsRes.data) {
         const members = (membersRes.data ?? []) as any[];
-        setClubs((clubsRes.data as any[]).map(c => ({
-          ...c,
-          member_count: members.filter(m => m.club_id === c.id).length,
-          president_name: members.find(m => m.club_id === c.id && m.role === 'president')?.profiles?.full_name ?? null,
-        })));
+        const presUserIds = members.filter(m => m.role === 'president').map(m => m.user_id);
+        const people = await fetchPeople(presUserIds);
+
+        setClubs((clubsRes.data as any[]).map(c => {
+          const pres = members.find(m => m.club_id === c.id && m.role === 'president');
+          const presName = pres ? (people[pres.user_id]?.full_name ?? null) : null;
+          return {
+            ...c,
+            member_count: members.filter(m => m.club_id === c.id).length,
+            president_name: presName,
+          };
+        }));
       }
     } finally {
       setLoading(false);

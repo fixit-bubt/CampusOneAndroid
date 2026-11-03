@@ -3426,3 +3426,19 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 48s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat confirmed clean execution (`ReactNativeJS: Running "main"`).
   - Remote Database Push: Successfully pushed migration `20261103040000_club_posts_hero_banner.sql` to Supabase remote (`xhgpxvyqrufbbuivttmi`).
+
+-
+---
+
+### 87. Club Posts Cover Schema Alignment & Anon Permission Hardening (`ManageBannerScreen.tsx`, `announcementService.ts`, `20261103050000_club_posts_anon_select.sql`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Eliminated `logo_url` Schema Bug on Remote Supabase (`ManageBannerScreen.tsx`, `announcementService.ts`):**
+  - **Root-Cause Analysis:** The `public.clubs` table defines `cover_url`, NOT `logo_url`. Queries requesting `clubs(id, name, category, logo_url)` triggered a fatal Postgres error `column clubs_1.logo_url does not exist` (code 42703), causing `Promise.all` inside `fetchCuratedBannerSlides()` and `fetchAdminBannerPool()` to fail and display an error card on the admin dashboard banner screen.
+  - **Correction:** Replaced `logo_url` with `cover_url` across all 4 query occurrences in `announcementService.ts` and in `ManageBannerScreen.tsx`. Fallback image resolution now correctly uses `cp.image_url || cp.clubs?.cover_url || null`.
+- **Anon Read Grant for Home Carousel (`20261103050000_club_posts_anon_select.sql`):**
+  - Added public read policy on `public.club_posts` for the `anon` role (`grant select on public.club_posts to anon` and policy `club_posts_select_anon`) so unauthenticated guest sessions and home preview carousels never fail with permission denied (code 42501).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Unit Tests: 18 test suites passed, 140/140 tests passing (`npm test`).
+  - Direct Remote Supabase Query Verification: Confirmed with live query `SELECT id, title, clubs(id, name, cover_url) FROM club_posts` returning `success: true`.
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat confirmed clean execution (`ReactNativeJS: Running "main"`).

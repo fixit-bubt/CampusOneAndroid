@@ -289,7 +289,7 @@ export async function fetchCuratedBannerSlides(forceRefresh = false): Promise<Ba
         .order('date', { ascending: true })
         .limit(6),
       (supabase.from('club_posts') as any)
-        .select('id, club_id, title, body, image_url, in_banner, banner_order, clubs(id, name, category, logo_url)')
+        .select('id, club_id, title, body, image_url, in_banner, banner_order, clubs(id, name, category, cover_url)')
         .eq('in_banner', true)
         .order('banner_order', { ascending: true })
         .limit(6),
@@ -341,7 +341,7 @@ export async function fetchCuratedBannerSlides(forceRefresh = false): Promise<Ba
           type: 'Club',
           title: cp.title || 'Club Announcement',
           subtitle: cp.clubs?.name ? `${cp.clubs.name} · Club News` : 'BUBT Club News',
-          imageUri: cp.image_url || cp.clubs?.logo_url || null,
+          imageUri: cp.image_url || cp.clubs?.cover_url || null,
           route: 'ClubDetail',
           params: { clubId: cp.club_id },
           bannerOrder: cp.banner_order ?? 0,
@@ -481,7 +481,7 @@ export async function fetchAdminBannerPool(): Promise<{
         .order('date', { ascending: true })
         .limit(40),
       (supabase.from('club_posts') as any)
-        .select('id, club_id, title, body, image_url, in_banner, banner_order, created_at, clubs(id, name, category, logo_url)')
+        .select('id, club_id, title, body, image_url, in_banner, banner_order, created_at, clubs(id, name, category, cover_url)')
         .order('banner_order', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(50),
@@ -536,7 +536,7 @@ export async function fetchAdminBannerPool(): Promise<{
         type: 'Club',
         title: cp.title || 'Club Announcement',
         subtitle: cp.clubs?.name ? `${cp.clubs.name} · Club News` : 'BUBT Club News',
-        imageUri: cp.image_url || cp.clubs?.logo_url || null,
+        imageUri: cp.image_url || cp.clubs?.cover_url || null,
         route: 'ClubDetail',
         params: { clubId: cp.club_id },
         bannerOrder: cp.banner_order ?? 0,

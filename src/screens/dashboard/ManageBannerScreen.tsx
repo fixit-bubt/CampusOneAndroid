@@ -86,7 +86,8 @@ export function ManageBannerScreen({ navigation }: any) {
     } else if (item.type === 'Event') {
       navigation.navigate('EventDetail', { eventId: targetId });
     } else if (item.type === 'Club') {
-      navigation.navigate('ClubDetail', { clubId: targetId });
+      const clubId = (item as any).raw?.club_id || (item as any).params?.clubId || targetId;
+      navigation.navigate('ClubDetail', { clubId });
     } else if (item.route) {
       navigation.navigate(item.route, item.params);
     }
@@ -215,10 +216,10 @@ export function ManageBannerScreen({ navigation }: any) {
         sourceId: candidate.id,
         type: 'Club',
         title: candidate.title,
-        subtitle: `${candidate.raw.category || 'Official Club'} · BUBT`,
+        subtitle: candidate.subtitle,
         imageUri: candidate.image,
         route: 'ClubDetail',
-        params: { clubId: candidate.id },
+        params: { clubId: candidate.raw?.club_id || candidate.id },
         bannerOrder: nextOrder,
         inBanner: true,
       };
@@ -329,21 +330,22 @@ export function ManageBannerScreen({ navigation }: any) {
     }
 
     if (candidateTab === 'all' || candidateTab === 'clubs') {
-      availableClubs.forEach((c) => {
-        if (activeSourceIds.has(c.id)) return;
+      availableClubs.forEach((cp) => {
+        if (activeSourceIds.has(cp.id)) return;
         if (q) {
-          const matchName = (c.name || '').toLowerCase().includes(q);
-          const matchCat = (c.category || '').toLowerCase().includes(q);
-          if (!matchName && !matchCat) return;
+          const matchTitle = (cp.title || '').toLowerCase().includes(q);
+          const matchBody = (cp.body || '').toLowerCase().includes(q);
+          const matchClub = (cp.clubs?.name || '').toLowerCase().includes(q);
+          if (!matchTitle && !matchBody && !matchClub) return;
         }
         result.push({
-          id: c.id,
-          title: c.name,
-          subtitle: `${c.category || 'Official Club'} · BUBT`,
+          id: cp.id,
+          title: cp.title || 'Club Announcement',
+          subtitle: cp.clubs?.name ? `${cp.clubs.name} · Club News` : 'BUBT Club News',
           type: 'Club',
-          priority: c.category,
-          image: c.cover_url || c.logo_url || null,
-          raw: c,
+          priority: cp.clubs?.category || 'Club News',
+          image: cp.image_url || cp.clubs?.cover_url || null,
+          raw: cp,
         });
       });
     }
