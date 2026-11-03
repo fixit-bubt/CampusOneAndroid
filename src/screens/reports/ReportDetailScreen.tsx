@@ -389,9 +389,9 @@ export function ReportDetailScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {/* Top Badges Row: Category + Status (32dp Symmetrical Standard) */}
-        <View style={styles.topBadgesRow}>
-          <View style={[styles.categoryPill32, { backgroundColor: C.surface, borderColor: C.border }]}>
+        {/* Standard 58dp Status & Category Header Bar */}
+        <View style={[styles.statusHeaderBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={[styles.categoryPill32, { backgroundColor: C.surface2, borderColor: C.border }]}>
             <Icon name={cat.icon} size={15} color={C.text} />
             <Text style={[styles.categoryPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {report.category}
@@ -842,12 +842,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
 
-  // Top Badges Row (32dp Symmetrical Standard)
-  topBadgesRow: {
+  // Standard 58dp Status & Category Header Bar
+  statusHeaderBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    marginBottom: 14,
     marginTop: 4,
   } as ViewStyle,
   categoryPill32: {

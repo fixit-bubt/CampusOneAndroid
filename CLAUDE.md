@@ -3159,9 +3159,9 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 ---
 
 ### 77. Symmetrical 32dp Badges, 58dp Spring-Animated SegmentedTabs & Full-Page Staff Assignment Architecture (`ReportDetailScreen.tsx`, `AdminDashboardScreen.tsx`, `AllReportsScreen.tsx`, `tradeMatcher.ts`) (/performance-optimization, /code-review-and-quality)
-- **Standardized Symmetrical 32dp Top Badges (`ReportDetailScreen.tsx`):**
-  - Resolved the asymmetrical box mismatch where Category was 32dp with border and Status was ~24dp without border.
-  - Standardized both `categoryPill32` and `statusPill32` to strict `height: 32`, `borderRadius: 16`, `borderWidth: 1`, and `paddingHorizontal: 12`.
+- **Standardized Symmetrical 32dp Badges in 58dp Header Bar (`ReportDetailScreen.tsx`):**
+  - Resolved the asymmetrical box mismatch by enclosing the category and status badges within a standardized 58dp status header bar (`statusHeaderBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 12`, `backgroundColor: C.surface`, `borderColor: C.border`).
+  - Standardized both `categoryPill32` (with trade icon + category name) and `statusPill32` (with 6dp status dot + status label) to strict `height: 32`, `borderRadius: 16`, `borderWidth: 1`, and `paddingHorizontal: 12`.
   - Added vector status dot indicator (`statusDot`, 6dp) and subtle themed border (`statusStyle.text + '35'`) to the status badge for cohesive visual hierarchy.
 - **Full-Screen Staff Assignment Experience (`ReportDetailScreen.tsx`, `AdminDashboardScreen.tsx`, `AllReportsScreen.tsx`):**
   - Replaced the cramped 80% bottom sheet modal with a dedicated full-screen modal (`presentationStyle="fullScreen"`, `<SafeAreaView>`).
