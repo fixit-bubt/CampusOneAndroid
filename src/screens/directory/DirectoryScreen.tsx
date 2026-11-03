@@ -558,14 +558,14 @@ export function DirectoryScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.sectors.directory} onBack={() => navigation.goBack()} />
-      <OfflineBanner
-        visible={isOffline}
-        message="Showing cached student directory. Connect to internet to manage connection requests."
-      />
 
       {/* Reciprocal Privacy Guard: Profile Hidden State */}
       {isHidden ? (
         <View style={styles.hiddenContainer}>
+          <OfflineBanner
+            visible={isOffline}
+            message="Showing cached student directory. Connect to internet to manage connection requests."
+          />
           <View style={[styles.hiddenIconBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
             <Icon name="eyeOff" size={32} color={C.brand} />
           </View>
@@ -601,6 +601,10 @@ export function DirectoryScreen({ route, navigation }: any) {
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
+              <OfflineBanner
+                visible={isOffline}
+                message="Showing cached student directory. Connect to internet to manage connection requests."
+              />
               <View style={{ marginBottom: 10 }}>
                 <SegmentedTabs<TabKey>
                   tabs={TABS}

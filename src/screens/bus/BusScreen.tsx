@@ -227,57 +227,6 @@ export function BusScreen({ navigation }: any) {
         }
       />
 
-      {/* 52dp Admin Add Bus Route Bar */}
-      {isAdmin && (
-        <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
-          <TouchableOpacity
-            style={[
-              styles.addBusBar52,
-              {
-                backgroundColor: C.surface,
-                borderColor: C.border,
-              },
-            ]}
-            onPress={() => openEditor()}
-            activeOpacity={0.75}
-          >
-            <Feather name="plus-circle" size={20} color={C.text} />
-            <Text style={[styles.addBusBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.bus2.addBusBar}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* 58dp Direction Switcher */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: isAdmin ? 0 : 4, marginBottom: 8 }}>
-        <SegmentedTabs<'to' | 'from'>
-          tabs={directionTabs}
-          activeTab={direction}
-          onTabChange={setDirection}
-        />
-      </View>
-
-      {/* 58dp Search Bar */}
-      <View style={[styles.searchWrapper, { paddingHorizontal: Layout.screenPadding, marginBottom: 8 }]}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={24} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder={isBn ? 'রুট, স্টপেজ বা এলাকা খুঁজুন…' : 'Search route, stop, or area…'}
-            placeholderTextColor={C.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
-              <Icon name="x" size={15} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -286,6 +235,57 @@ export function BusScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <OfflineBanner visible={isOffline} onRetry={load} />
+
+        {/* 52dp Admin Add Bus Route Bar */}
+        {isAdmin && (
+          <View style={{ marginTop: 4, marginBottom: 8 }}>
+            <TouchableOpacity
+              style={[
+                styles.addBusBar52,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                },
+              ]}
+              onPress={() => openEditor()}
+              activeOpacity={0.75}
+            >
+              <Feather name="plus-circle" size={20} color={C.text} />
+              <Text style={[styles.addBusBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {t.bus2.addBusBar}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 58dp Direction Switcher */}
+        <View style={{ marginTop: isAdmin ? 0 : 4, marginBottom: 8 }}>
+          <SegmentedTabs<'to' | 'from'>
+            tabs={directionTabs}
+            activeTab={direction}
+            onTabChange={setDirection}
+          />
+        </View>
+
+        {/* 58dp Search Bar */}
+        <View style={[styles.searchWrapper, { marginBottom: 12 }]}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Icon name="search" size={24} color={C.textMuted} />
+            <TextInput
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              placeholder={isBn ? 'রুট, স্টপেজ বা এলাকা খুঁজুন…' : 'Search route, stop, or area…'}
+              placeholderTextColor={C.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
+                <Icon name="x" size={15} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
         {/* Friday Notice Banner */}
         {isFriday && (

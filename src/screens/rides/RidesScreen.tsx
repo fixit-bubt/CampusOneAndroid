@@ -226,57 +226,6 @@ export function RidesScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
       />
 
-      <OfflineBanner
-        visible={isOffline}
-        message="Showing cached campus rides. Connect to the internet to request seats or post rides."
-      />
-
-      {/* Prominent Hero Action Bar (Universal 58dp Standard) */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 6 }}>
-        <TouchableOpacity
-          style={[styles.heroActBtn, { backgroundColor: RIDE_COLOR }]}
-          onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
-          activeOpacity={0.85}
-        >
-          <Feather name="plus-circle" size={18} color="#fff" />
-          <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-            {t.rides2.postRideHeroBtn ?? 'Post a Campus Ride'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Single Unified 58dp Segmented Tab Bar: [ To Campus ] [ From Campus ] [ My Rides ] */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
-        <SegmentedTabs<TabKey>
-          tabs={DIRECTION_TABS}
-          activeTab={tab}
-          onTabChange={setTab}
-        />
-      </View>
-
-      {/* Universal 58dp Full-Width Search Bar */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <TouchableOpacity onPress={() => searchInputRef.current?.focus()}>
-            <Icon name="search" size={24} color={C.textMuted} />
-          </TouchableOpacity>
-          <TextInput
-            ref={searchInputRef}
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder={t.rides2.searchPlaceholder ?? 'Search pickup, destination, or driver…'}
-            placeholderTextColor={C.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
-              <Icon name="x" size={15} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -284,6 +233,56 @@ export function RidesScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner
+          visible={isOffline}
+          message="Showing cached campus rides. Connect to the internet to request seats or post rides."
+        />
+
+        {/* Prominent Hero Action Bar (Universal 58dp Standard) */}
+        <View style={{ paddingTop: 6, paddingBottom: 8 }}>
+          <TouchableOpacity
+            style={[styles.heroActBtn, { backgroundColor: RIDE_COLOR }]}
+            onPress={() => navigation.navigate('RidePost', { postType: 'offer' })}
+            activeOpacity={0.85}
+          >
+            <Feather name="plus-circle" size={18} color="#fff" />
+            <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+              {t.rides2.postRideHeroBtn ?? 'Post a Campus Ride'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Single Unified 58dp Segmented Tab Bar: [ To Campus ] [ From Campus ] [ My Rides ] */}
+        <View style={{ marginBottom: 10 }}>
+          <SegmentedTabs<TabKey>
+            tabs={DIRECTION_TABS}
+            activeTab={tab}
+            onTabChange={setTab}
+          />
+        </View>
+
+        {/* Universal 58dp Full-Width Search Bar */}
+        <View style={{ marginBottom: 12 }}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <TouchableOpacity onPress={() => searchInputRef.current?.focus()}>
+              <Icon name="search" size={24} color={C.textMuted} />
+            </TouchableOpacity>
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              placeholder={t.rides2.searchPlaceholder ?? 'Search pickup, destination, or driver…'}
+              placeholderTextColor={C.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
+                <Icon name="x" size={15} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
         {loading ? (
           <View style={{ paddingTop: 60, alignItems: 'center' }}>
             <ActivityIndicator color={RIDE_COLOR} />

@@ -368,17 +368,13 @@ export function ManageEventsScreen({ navigation }: any) {
       />
 
       <View style={styles.body}>
-        {loading ? (
-          <View style={styles.loaderWrap}>
-            <ActivityIndicator size="small" color={C.brand} />
-          </View>
-        ) : (
-          <FlatList
-            data={filteredEvents}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listContent}
-            keyboardShouldPersistTaps="handled"
+        <FlatList
+          data={filteredEvents}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -488,23 +484,28 @@ export function ManageEventsScreen({ navigation }: any) {
               </View>
             }
             ListEmptyComponent={
-              <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={styles.iconSlot32}>
-                  <Feather name="calendar" size={36} color={C.textMuted} />
+              loading && events.length === 0 ? (
+                <View style={[styles.loaderWrap, { paddingVertical: 48 }]}>
+                  <ActivityIndicator size="small" color={C.brand} />
                 </View>
-                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  No events found
-                </Text>
-                <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {searchQuery.trim() || selectedCategory !== 'All'
-                    ? 'No campus events match your query or category filter.'
-                    : 'No campus events found. Tap above to post or sync events.'}
-                </Text>
-              </View>
+              ) : (
+                <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="calendar" size={36} color={C.textMuted} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    No events found
+                  </Text>
+                  <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {searchQuery.trim() || selectedCategory !== 'All'
+                      ? 'No campus events match your query or category filter.'
+                      : 'No campus events found. Tap above to post or sync events.'}
+                  </Text>
+                </View>
+              )
             }
           />
-        )}
-      </View>
+        </View>
 
       {/* 8. Bottom Sheet: Category Selection Modal Sheet */}
       <Modal

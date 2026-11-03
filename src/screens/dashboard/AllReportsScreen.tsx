@@ -1,7 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, Modal, StyleSheet,
-  RefreshControl, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+  Modal,
+  StyleSheet,
+  RefreshControl,
+  Platform,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,38 +32,223 @@ import type { Report, Profile } from '../../types/database';
 
 type StatusFilter = 'all' | Report['status'];
 
-const STATUS_TABS: { id: StatusFilter; label: string }[] = [
-  { id: 'all',         label: 'All' },
-  { id: 'Open',        label: 'Open' },
-  { id: 'In Progress', label: 'In Progress' },
-  { id: 'Resolved',    label: 'Resolved' },
-  { id: 'Rejected',    label: 'Rejected' },
-  { id: 'Closed',      label: 'Closed' },
+interface StatusOption {
+  id: StatusFilter;
+  label: string;
+  icon: string;
+}
+
+const STATUS_OPTIONS: StatusOption[] = [
+  { id: 'all',         label: 'All Statuses', icon: 'layers' },
+  { id: 'Open',        label: 'Open',         icon: 'alert' },
+  { id: 'In Progress', label: 'In Progress',  icon: 'clock' },
+  { id: 'Resolved',    label: 'Resolved',     icon: 'checkAll' },
+  { id: 'Rejected',    label: 'Rejected',     icon: 'close' },
+  { id: 'Closed',      label: 'Closed',       icon: 'inbox' },
 ];
 
-const CATEGORIES = ['All', 'Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'];
+interface CategoryOption {
+  id: string;
+  label: string;
+  icon: string;
+}
 
-function statusTone(C: any, status: string): { text: string; bg: string; border?: string } {
+const CATEGORY_OPTIONS: CategoryOption[] = [
+  { id: 'All',               label: 'All Categories',   icon: 'layers' },
+  { id: 'Electrical',        label: 'Electrical',        icon: 'bolt' },
+  { id: 'Plumbing',          label: 'Plumbing',          icon: 'droplets' },
+  { id: 'Cleanliness',       label: 'Cleanliness',       icon: 'sparkles' },
+  { id: 'IT / Network',      label: 'IT / Network',      icon: 'wifi' },
+  { id: 'Furniture',         label: 'Furniture',         icon: 'box' },
+  { id: 'Safety / Security', label: 'Safety / Security', icon: 'shield' },
+  { id: 'Other',             label: 'Other',             icon: 'sliders' },
+];
+
+const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
+  electrical: { icon: 'bolt',     fg: Accent.gold },
+  plumbing:   { icon: 'droplets', fg: Accent.sky },
+  cleanliness:{ icon: 'sparkles', fg: Accent.teal },
+  it_network: { icon: 'wifi',     fg: Accent.purple },
+  furniture:  { icon: 'box',      fg: Accent.amber },
+  safety:     { icon: 'shield',   fg: Accent.red },
+  other:      { icon: 'sliders',  fg: Accent.slate },
+};
+
+function issueKey(cat?: string): string {
+  const c = (cat ?? '').toLowerCase();
+  if (c.includes('it') || c.includes('network')) return 'it_network';
+  if (c.includes('safety') || c.includes('security')) return 'safety';
+  if (c.includes('clean')) return 'cleanliness';
+  if (c.includes('plumb')) return 'plumbing';
+  if (c.includes('electric')) return 'electrical';
+  if (c.includes('furnitur')) return 'furniture';
+  return 'other';
+}
+
+function statusTone(C: any, status: string): { fg: string; bg: string; border: string } {
   switch (status) {
-    case 'In Progress': return { text: C.brand,     bg: C.brand + '14', border: C.brand + '30' };
-    case 'Resolved':    return { text: C.textMuted, bg: C.surface2,     border: C.border };
-    case 'Closed':      return { text: C.textMuted, bg: C.surface2,     border: C.border };
-    case 'Rejected':    return { text: C.danger,    bg: C.dangerBg,     border: C.danger + '30' };
+    case 'In Progress':
+      return { fg: C.brand, bg: C.brand + '18', border: C.brand + '40' };
+    case 'Resolved':
+      return { fg: C.success, bg: C.successBg, border: C.success + '40' };
+    case 'Closed':
+      return { fg: C.textMuted, bg: C.surface2, border: C.border };
+    case 'Rejected':
+      return { fg: C.danger, bg: C.dangerBg, border: C.danger + '40' };
     case 'Open':
-    default:            return { text: C.text,      bg: C.surface2,     border: C.border };
+    default:
+      return { fg: C.warn, bg: C.warnBg, border: C.warn + '40' };
   }
 }
 
-interface ReportWithProfile extends Report {
-  profiles: { full_name: string } | null;
+function timeAgo(iso?: string): string {
+  if (!iso) return '';
+  const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (secs < 60) return 'just now';
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return `${Math.floor(secs / 86400)}d ago`;
 }
 
+interface ReportWithProfile extends Report {
+  profiles: { full_name: string; avatar_url?: string | null } | null;
+  assignee: { full_name: string; avatar_url?: string | null; expertise?: string | null } | null;
+}
+
+const ReportAdminCard = memo(function ReportAdminCard({
+  r,
+  voteCount,
+  onPress,
+  onAssign,
+  isAdmin,
+  C,
+}: {
+  r: ReportWithProfile;
+  voteCount: number;
+  onPress: (id: string) => void;
+  onAssign: (r: ReportWithProfile) => void;
+  isAdmin: boolean;
+  C: any;
+}) {
+  const issueConf = ISSUE_MAP[issueKey(r.category)] ?? ISSUE_MAP.other;
+  const statusConf = statusTone(C, r.status);
+  const code = r.code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
+  const reporterName = r.profiles?.full_name;
+  const assigneeName = r.assignee?.full_name;
+  const isResolvedOrClosed = r.status === 'Resolved' || r.status === 'Closed' || r.status === 'Rejected';
+
+  return (
+    <TouchableOpacity
+      style={[styles.reportCard, { backgroundColor: C.surface, borderColor: C.border }]}
+      onPress={() => onPress(r.id)}
+      activeOpacity={0.78}
+    >
+      {/* Top Header: 32dp Category Icon, Code, Title, Location & Status Badge */}
+      <View style={styles.cardTop}>
+        <View style={styles.issueIconSlot}>
+          <Icon name={issueConf.icon} size={32} color={C.text} />
+        </View>
+        <View style={styles.cardInfo}>
+          <View style={styles.codeRow}>
+            <Text style={[styles.cardCode, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {code}
+            </Text>
+          </View>
+          <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
+            {r.description.split('\n')[0]}
+          </Text>
+          <View style={styles.locRow}>
+            <Icon name="pin" size={12} color={C.textMuted} />
+            <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+              {r.building}{r.room ? ` · Room ${r.room}` : ''}
+              {r.created_at ? ` · ${timeAgo(r.created_at)}` : ''}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.statusPill, { backgroundColor: statusConf.bg, borderColor: statusConf.border, borderWidth: 1 }]}>
+          {r.status === 'Resolved' || r.status === 'Closed' ? (
+            <Icon name="check" size={11} color={statusConf.fg} />
+          ) : (
+            <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
+          )}
+          <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>
+            {r.status}
+          </Text>
+        </View>
+      </View>
+
+      {/* Meta Row: Reporter info and upvotes */}
+      <View style={[styles.metaRow, { borderTopColor: C.border }]}>
+        <View style={styles.reporterInfo}>
+          <Avatar name={reporterName} size="xs" uri={r.profiles?.avatar_url} />
+          <Text style={[styles.reporterTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            {reporterName || 'Student'}
+          </Text>
+        </View>
+
+        {voteCount > 0 && (
+          <View style={[styles.meTooPill, { backgroundColor: C.surface2 }]}>
+            <Feather name="thumbs-up" size={11} color={C.textMuted} />
+            <Text style={[styles.meTooTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {voteCount}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Technician / Assignment Row */}
+      {!isResolvedOrClosed && (
+        r.assigned_staff_id ? (
+          <View style={[styles.staffRow, { borderTopColor: C.border }]}>
+            <View style={styles.staffInfo}>
+              <Avatar name={assigneeName || 'Staff'} size="xs" uri={r.assignee?.avatar_url} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={[styles.staffLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Assigned Technician
+                </Text>
+                <Text style={[styles.staffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {assigneeName || 'Staff Member'}
+                  {r.assignee?.expertise ? ` (${r.assignee.expertise})` : ''}
+                </Text>
+              </View>
+            </View>
+            {isAdmin && (
+              <TouchableOpacity
+                style={[styles.reassignCompactBtn, { borderColor: C.brand, backgroundColor: C.brand + '14' }]}
+                onPress={() => onAssign(r)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.reassignCompactTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  Reassign
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: C.brand }]}
+            onPress={() => onAssign(r)}
+            activeOpacity={0.8}
+          >
+            <Icon name="userPlus" size={16} color="#ffffff" />
+            <Text style={[styles.actionTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+              Assign Staff
+            </Text>
+          </TouchableOpacity>
+        )
+      )}
+    </TouchableOpacity>
+  );
+});
+
 export function AllReportsScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
+
   const [reports, setReports] = useState<ReportWithProfile[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [category, setCategory] = useState('All');
@@ -64,52 +259,89 @@ export function AllReportsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
 
+  // 58dp Dropdown bottom sheet visibility states
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+
   const load = useCallback(async () => {
     const [rRes, sRes, vRes] = await Promise.all([
       supabase
         .from('reports')
-        .select('*, profiles!reporter_id(full_name)')
+        .select('*, profiles!reporter_id(full_name, avatar_url), assignee:profiles!assigned_staff_id(full_name, avatar_url, expertise)')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(200),
       supabase.from('profiles').select('*').eq('role', 'staff').limit(100),
       getReportVoteCounts(),
     ]);
-    if (rRes.data) setReports(rRes.data as ReportWithProfile[]);
+    if (rRes.data) setReports(rRes.data as unknown as ReportWithProfile[]);
     if (sRes.data) setStaff(sRes.data as Profile[]);
     if (vRes.ok) setVoteCounts(vRes.data);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function onRefresh() {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-  }
+  }, [load]);
 
-  async function assignReport(reportId: string, staffId: string) {
+  const assignReport = useCallback(async (reportId: string, staffId: string) => {
+    const chosenStaff = staff.find((s) => s.id === staffId);
     const { error } = await supabase.from('reports').update({
       assigned_staff_id: staffId,
     }).eq('id', reportId);
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
-    // Only apply the optimistic mutation after a confirmed write.
-    setReports(prev => prev.map(r =>
-      r.id === reportId ? { ...r, assigned_staff_id: staffId } : r
-    ));
-    setAssignTarget(null);
-  }
 
-  const q = query.trim().toLowerCase();
-  const list = reports
-    .filter(r => filter === 'all' || r.status === filter)
-    .filter(r => category === 'All' || r.category === category)
-    .filter(r => {
-      if (!q) return true;
-      const code = r.code ?? '';
-      return [r.category, r.description, r.building, code]
-        .filter(Boolean).join(' ').toLowerCase().includes(q);
-    });
+    if (error) {
+      toast({ type: 'error', title: t.common.error, message: error.message });
+      return;
+    }
+
+    setReports((prev) => prev.map((r) =>
+      r.id === reportId
+        ? {
+            ...r,
+            assigned_staff_id: staffId,
+            assignee: chosenStaff
+              ? {
+                  full_name: chosenStaff.full_name,
+                  avatar_url: chosenStaff.avatar_url,
+                  expertise: chosenStaff.expertise,
+                }
+              : r.assignee,
+          }
+        : r
+    ));
+    toast({ type: 'success', title: 'Staff Assigned', message: `Assigned to ${chosenStaff?.full_name ?? 'staff'}` });
+    setAssignTarget(null);
+  }, [staff, t.common.error, toast]);
+
+  const filteredReports = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return reports
+      .filter((r) => filter === 'all' || r.status === filter)
+      .filter((r) => category === 'All' || r.category === category)
+      .filter((r) => {
+        if (!q) return true;
+        const code = r.code ?? '';
+        return [r.category, r.description, r.building, code, r.profiles?.full_name, r.assignee?.full_name]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q);
+      });
+  }, [reports, filter, category, query]);
+
+  const currentStatusOption = useMemo(
+    () => STATUS_OPTIONS.find((s) => s.id === filter) ?? STATUS_OPTIONS[0],
+    [filter]
+  );
+
+  const currentCategoryOption = useMemo(
+    () => CATEGORY_OPTIONS.find((c) => c.id === category) ?? CATEGORY_OPTIONS[0],
+    [category]
+  );
 
   const assignCat = assignTarget?.category;
   const tradeLabel = useMemo(() => getTradeLabel(assignCat), [assignCat]);
@@ -143,6 +375,26 @@ export function AllReportsScreen({ navigation }: any) {
     return staff;
   }, [assignTab, matchingStaff, staff]);
 
+  const handleCardPress = useCallback((id: string) => {
+    navigation.navigate('ReportDetail', { reportId: id });
+  }, [navigation]);
+
+  const handleAssignTrigger = useCallback((r: ReportWithProfile) => {
+    setAssignTab('trade');
+    setAssignTarget(r);
+  }, []);
+
+  const renderItem = useCallback(({ item: r }: { item: ReportWithProfile }) => (
+    <ReportAdminCard
+      r={r}
+      voteCount={voteCounts[r.id] || 0}
+      onPress={handleCardPress}
+      onAssign={handleAssignTrigger}
+      isAdmin={isAdmin}
+      C={C}
+    />
+  ), [voteCounts, handleCardPress, handleAssignTrigger, isAdmin, C]);
+
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -161,184 +413,246 @@ export function AllReportsScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="All Reports" onBack={() => navigation.goBack()} />
 
-      {/* Search */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8 }}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.dash.searchReportsPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={query}
-            onChangeText={setQuery}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-              <Icon name="x" size={16} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Status chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        style={{ flexGrow: 0 }}
-        contentContainerStyle={[styles.chips, { paddingHorizontal: Layout.screenPadding }]}
-      >
-        {STATUS_TABS.map(tab => {
-          const count = tab.id === 'all' ? reports.length : reports.filter(r => r.status === tab.id).length;
-          const on = filter === tab.id;
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.chip, on
-                ? { backgroundColor: C.brand, borderColor: C.brand }
-                : { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => setFilter(tab.id)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                {tab.label}
-              </Text>
-              <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {count}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* Category chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        style={{ flexGrow: 0 }}
-        contentContainerStyle={[styles.catChips, { paddingHorizontal: Layout.screenPadding }]}
-      >
-        {CATEGORIES.map(c => {
-          const on = category === c;
-          return (
-            <TouchableOpacity
-              key={c}
-              style={[styles.catChip, on
-                ? { backgroundColor: C.surface2, borderColor: C.text2 }
-                : { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => setCategory(c)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.catChipTxt, { color: on ? C.text : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {c}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
       <FlatList
-        data={list}
-        keyExtractor={r => r.id}
+        data={filteredReports}
+        keyExtractor={(r) => r.id}
+        renderItem={renderItem}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        ListEmptyComponent={
-          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', marginTop: 24 }}>
-            {t.common.noResults}
-          </Text>
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={C.brand}
+            colors={[C.brand]}
+          />
         }
-        ListFooterComponent={<View style={{ height: 20 }} />}
-        renderItem={({ item: r }) => {
-          const tone = statusTone(C, r.status);
-          const code = r.code ?? ('RPT-' + r.id.replace(/\D/g, '').padStart(4, '0').slice(-4));
-          return (
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            {/* 1. Strict 58dp Search Bar */}
+            <View style={[styles.searchBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.iconSlot32}>
+                <Icon name="search" size={20} color={C.text} />
+              </View>
+              <TextInput
+                style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder={t.dash.searchReportsPlaceholder || 'Search reports, category, location, or code...'}
+                placeholderTextColor={C.textMuted}
+                value={query}
+                onChangeText={setQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} style={{ padding: 4 }}>
+                  <Icon name="close" size={16} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* 2. Strict 58dp Status Dropdown Bar */}
             <TouchableOpacity
-              style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-              onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
+              style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setStatusModalOpen(true)}
               activeOpacity={0.75}
             >
-              <View style={styles.cardTop}>
-                <View style={styles.cardInfo}>
-                  <Text style={[styles.cardCode, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    {code}
-                  </Text>
-                  <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
-                    {r.description.split('\n')[0]}
-                  </Text>
-                  <View style={styles.locRow}>
-                    <Icon name="pin" size={11} color={C.textMuted} />
-                    <Text style={[styles.loc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {r.building}{r.room ? ` · ${t.dash.roomLabel(r.room)}` : ''}
-                    </Text>
-                  </View>
-                </View>
-                <View style={[styles.statusPill, { backgroundColor: tone.bg, borderColor: tone.border ?? C.border, borderWidth: 1 }]}>
-                  {r.status === 'Resolved' || r.status === 'Closed' ? (
-                    <Icon name="check" size={11} color={tone.text} />
-                  ) : null}
-                  <Text style={[styles.statusTxt, { color: tone.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {r.status}
-                  </Text>
-                </View>
+              <View style={styles.iconSlot32}>
+                <Icon name={currentStatusOption.icon} size={24} color={C.text} />
               </View>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {currentStatusOption.label}
+                </Text>
+              </View>
+              <Icon name="chevD" size={18} color={C.textMuted} />
+            </TouchableOpacity>
 
-              <View style={styles.cardFooter}>
-                <View style={styles.byRow}>
-                  <Avatar name={r.profiles?.full_name} size="xs" />
-                  <Text style={[styles.byName, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                    {r.profiles?.full_name ?? t.dash.unknown}
-                  </Text>
-                  {voteCounts[r.id] > 0 && (
-                    <View style={[styles.meTooPill, { backgroundColor: C.surface2 }]}>
-                      <Feather name="thumbs-up" size={11} color={C.textMuted} />
-                      <Text style={[styles.meTooTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                        {voteCounts[r.id]}
+            {/* 3. Strict 58dp Category Dropdown Bar */}
+            <TouchableOpacity
+              style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => setCategoryModalOpen(true)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.iconSlot32}>
+                <Icon name={currentCategoryOption.icon} size={24} color={C.text} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {currentCategoryOption.label}
+                </Text>
+              </View>
+              <Icon name="chevD" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={styles.emptyIconSlot}>
+              <Icon name="report" size={36} color={C.textMuted} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.common.noResults || 'No Reports Found'}
+            </Text>
+            <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {query.trim() || filter !== 'all' || category !== 'All'
+                ? 'No reports match your active search or filter criteria.'
+                : 'There are currently no reported issues on campus.'}
+            </Text>
+            {(query.trim() || filter !== 'all' || category !== 'All') && (
+              <TouchableOpacity
+                style={[styles.resetBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                onPress={() => {
+                  setQuery('');
+                  setFilter('all');
+                  setCategory('All');
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.resetBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Clear All Filters
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        }
+        ListFooterComponent={<View style={{ height: 24 }} />}
+      />
+
+      {/* Status Bottom Sheet Modal */}
+      <Modal
+        visible={statusModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setStatusModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={() => setStatusModalOpen(false)}
+            activeOpacity={1}
+          />
+          <View style={[styles.modalBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.handleBar, { backgroundColor: C.border }]} />
+            <View style={[styles.sheetHeader, { borderBottomColor: C.border }]}>
+              <Text style={[styles.sheetTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Filter by Status
+              </Text>
+              <TouchableOpacity
+                onPress={() => setStatusModalOpen(false)}
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2 }]}
+                hitSlop={8}
+              >
+                <Icon name="close" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ gap: 8, padding: 16 }} showsVerticalScrollIndicator={false}>
+              {STATUS_OPTIONS.map((opt) => {
+                const isSelected = filter === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[
+                      styles.bar58,
+                      {
+                        backgroundColor: isSelected ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : C.surface,
+                        borderColor: isSelected ? C.text : C.border,
+                        marginBottom: 0,
+                      },
+                    ]}
+                    onPress={() => {
+                      setFilter(opt.id);
+                      setStatusModalOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.iconSlot32}>
+                      <Icon name={opt.icon} size={22} color={C.text} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {opt.label}
                       </Text>
                     </View>
-                  )}
-                </View>
-                {r.status !== 'Rejected' && r.status !== 'Closed' && r.status !== 'Resolved' && (
-                  r.assigned_staff_id ? (
-                    // Reassigning to a THIRD staff member is admin-only server-side
-                    // (a non-admin's update is only permitted when the new
-                    // assigned_staff_id is their own uid) -- hide it for staff so
-                    // the picker isn't a dead end once a report is already assigned
-                    // to someone else.
-                    isAdmin && (
-                      <TouchableOpacity
-                        style={[styles.assignBtn, { backgroundColor: C.surface2 }]}
-                        onPress={() => {
-                          setAssignTab('trade');
-                          setAssignTarget(r);
-                        }}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.assignTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>{t.dash.reassign}</Text>
-                      </TouchableOpacity>
-                    )
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.assignBtn, { backgroundColor: C.brand }]}
-                      onPress={() => {
-                        setAssignTab('trade');
-                        setAssignTarget(r);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.assignTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>{t.dash.assignBtn}</Text>
-                    </TouchableOpacity>
-                  )
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-      />
+                    {isSelected && <Icon name="check" size={18} color={C.brand} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Category Bottom Sheet Modal */}
+      <Modal
+        visible={categoryModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCategoryModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={() => setCategoryModalOpen(false)}
+            activeOpacity={1}
+          />
+          <View style={[styles.modalBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.handleBar, { backgroundColor: C.border }]} />
+            <View style={[styles.sheetHeader, { borderBottomColor: C.border }]}>
+              <Text style={[styles.sheetTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Filter by Category
+              </Text>
+              <TouchableOpacity
+                onPress={() => setCategoryModalOpen(false)}
+                style={[styles.sheetCloseBtn, { backgroundColor: C.surface2 }]}
+                hitSlop={8}
+              >
+                <Icon name="close" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ gap: 8, padding: 16 }} showsVerticalScrollIndicator={false}>
+              {CATEGORY_OPTIONS.map((opt) => {
+                const isSelected = category === opt.id;
+                return (
+                  <TouchableOpacity
+                    key={opt.id}
+                    style={[
+                      styles.bar58,
+                      {
+                        backgroundColor: isSelected ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)') : C.surface,
+                        borderColor: isSelected ? C.text : C.border,
+                        marginBottom: 0,
+                      },
+                    ]}
+                    onPress={() => {
+                      setCategory(opt.id);
+                      setCategoryModalOpen(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.iconSlot32}>
+                      <Icon name={opt.icon} size={22} color={C.text} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                      <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        {opt.label}
+                      </Text>
+                    </View>
+                    {isSelected && <Icon name="check" size={18} color={C.brand} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Full-Screen Staff Assignment Modal */}
       <Modal
@@ -355,7 +669,7 @@ export function AllReportsScreen({ navigation }: any) {
               style={styles.modalBackBtn}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Icon name="arrow-left" size={20} color={C.text} />
+              <Icon name="arrowL" size={20} color={C.text} />
             </TouchableOpacity>
             <View style={styles.modalHeaderTitleBlock}>
               <Text style={[styles.modalHeaderTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
@@ -389,7 +703,7 @@ export function AllReportsScreen({ navigation }: any) {
             </View>
           )}
 
-          {/* 58dp Segmented Tab Bar with Native Spring Animation */}
+          {/* 58dp Segmented Tab Bar with Spring Animation */}
           <View style={styles.tabContainer58}>
             <SegmentedTabs<'trade' | 'all'>
               tabs={assignTabs}
@@ -423,7 +737,7 @@ export function AllReportsScreen({ navigation }: any) {
                   <Avatar uri={s.avatar_url} name={s.full_name} size="sm" />
                   <View style={styles.staffCardBody}>
                     <View style={styles.staffCardTopRow}>
-                      <Text style={[styles.staffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      <Text style={[styles.modalStaffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         {s.full_name}
                       </Text>
                       {isMatch && (
@@ -452,7 +766,7 @@ export function AllReportsScreen({ navigation }: any) {
             {/* Empty State when no specialists found */}
             {assignTab === 'trade' && matchingStaff.length === 0 && (
               <View style={[styles.emptySpecialistCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Icon name="userX" size={28} color={C.textMuted} />
+                <Icon name="user" size={28} color={C.textMuted} />
                 <Text style={[styles.emptySpecialistTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   No Registered {tradeLabel}
                 </Text>
@@ -480,106 +794,264 @@ export function AllReportsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
-  chips: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 10,
+  scroll: {
+    paddingTop: 8,
+    paddingBottom: 24,
   } as ViewStyle,
 
-  chip: {
+  listHeader: {
+    marginBottom: 6,
+  } as ViewStyle,
+
+  // Strict 58dp Search Bar & Dropdown Bars
+  searchBar58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    marginBottom: 10,
+  } as ViewStyle,
+  searchInputTxt: {
+    flex: 1,
+    fontSize: 14.5,
+    paddingVertical: 0,
+  } as TextStyle,
+  bar58: {
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 10,
   } as ViewStyle,
-
-  chipTxt: { fontSize: 13 } as any,
-  chipCount: { fontSize: 12 } as any,
-
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, height: 58, borderRadius: 16, borderWidth: 1 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
-  catChips: { flexDirection: 'row', gap: 7, paddingBottom: 10 } as ViewStyle,
-  catChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderWidth: 1 } as ViewStyle,
-  catChipTxt: { fontSize: 11.5 } as any,
-
-  scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
-
-  cardList: {
-    gap: 10,
+  iconSlot32: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   } as ViewStyle,
+  barTitleTxt: {
+    fontSize: 14,
+    letterSpacing: -0.1,
+  } as TextStyle,
 
-  card: {
+  // Home / Dashboard styled Report Card
+  reportCard: {
     borderRadius: 16,
     borderWidth: 1,
     padding: 14,
-    gap: 12,
+    gap: 10,
   } as ViewStyle,
-
   cardTop: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'flex-start',
   } as ViewStyle,
-
-  cardInfo: { flex: 1 } as ViewStyle,
-
+  issueIconSlot: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  cardInfo: {
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  codeRow: {
+    marginBottom: 2,
+  } as ViewStyle,
   cardCode: {
     fontSize: 11,
     letterSpacing: 0.3,
-    marginBottom: 2,
-  } as any,
-
+  } as TextStyle,
   cardTitle: {
-    fontSize: 14,
+    fontSize: 14.5,
     lineHeight: 20,
-  } as any,
-
+  } as TextStyle,
   locRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginTop: 4,
   } as ViewStyle,
-
-  loc: { fontSize: 11.5 } as any,
-
+  loc: {
+    fontSize: 11.5,
+  } as TextStyle,
   statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 20,
     flexShrink: 0,
   } as ViewStyle,
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  } as ViewStyle,
+  statusTxt: {
+    fontSize: 11,
+  } as TextStyle,
 
-  statusTxt: { fontSize: 11 } as any,
-
-  cardFooter: {
+  // Card Meta Row: Reporter & Upvotes
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    marginTop: 2,
   } as ViewStyle,
-
-  byRow: {
+  reporterInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
+    flex: 1,
+    minWidth: 0,
   } as ViewStyle,
+  reporterTxt: {
+    fontSize: 12,
+  } as TextStyle,
+  meTooPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 999,
+  } as ViewStyle,
+  meTooTxt: {
+    fontSize: 11,
+  } as TextStyle,
 
-  byName: { fontSize: 12 } as any,
-  meTooPill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999 } as ViewStyle,
-  meTooTxt: { fontSize: 11 } as any,
-
-  assignBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+  // Technician / Assignment Row
+  staffRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    gap: 10,
+  } as ViewStyle,
+  staffInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  } as ViewStyle,
+  staffLabelTxt: {
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+  } as TextStyle,
+  staffNameTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+  reassignCompactBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 10,
+    borderWidth: 1,
   } as ViewStyle,
-
-  assignTxt: {
+  reassignCompactTxt: {
+    fontSize: 12,
+  } as TextStyle,
+  actionBtn: {
+    height: 44,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
+  } as ViewStyle,
+  actionTxt: {
     fontSize: 13,
-  } as any,
+  } as TextStyle,
+
+  // Empty State Wrap
+  emptyWrap: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 28,
+    alignItems: 'center',
+    marginTop: 16,
+  } as ViewStyle,
+  emptyIconSlot: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  } as ViewStyle,
+  emptyTitle: {
+    fontSize: 15,
+    marginBottom: 4,
+  } as TextStyle,
+  emptySub: {
+    fontSize: 12.5,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 12,
+  } as TextStyle,
+  resetBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  } as ViewStyle,
+  resetBtnTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+
+  // Bottom Sheet Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  } as ViewStyle,
+  modalBox: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingBottom: 24,
+    maxHeight: '75%',
+    overflow: 'hidden',
+  } as ViewStyle,
+  handleBar: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  } as ViewStyle,
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  } as ViewStyle,
+  sheetTitleTxt: {
+    fontSize: 16,
+  } as TextStyle,
+  sheetCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   // Full-Screen Staff Assignment Modal & 58dp Cards
   modalHeader: {
@@ -675,7 +1147,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
   } as ViewStyle,
-  staffNameTxt: {
+  modalStaffNameTxt: {
     fontSize: 14,
     letterSpacing: -0.1,
     flexShrink: 1,

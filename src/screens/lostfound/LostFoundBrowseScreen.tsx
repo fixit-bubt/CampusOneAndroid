@@ -327,104 +327,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.lf.title} onBack={() => navigation.goBack()} />
 
-      <OfflineBanner
-        visible={isOffline}
-        message="Showing cached lost & found items. Connect to the internet to post items or submit claims."
-      />
-
-      {/* Prominent Hero Action Bar (Parity with Blood Donation) */}
-      {isStudent && (
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 4 }}>
-          <TouchableOpacity
-            style={[styles.actBtn, { backgroundColor: SectorColors.lostfound }]}
-            onPress={() => navigation.navigate('LostFoundPost')}
-            activeOpacity={0.85}
-          >
-            <Feather name="plus-circle" size={18} color="#fff" />
-            <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-              {t.lf.reportHeroBtn}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
-        <SegmentedTabs<TabFilter>
-          tabs={TABS}
-          activeTab={filter}
-          onTabChange={setFilter}
-        />
-      </View>
-
-      {/* Unified Single Row: Search Input + Filter Trigger (Zero Clutter) */}
-      <View style={[styles.searchFilterRow, { paddingHorizontal: Layout.screenPadding }]}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <TouchableOpacity
-            onPress={() => searchInputRef.current?.focus()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
-          >
-            <Feather name="search" size={24} color={C.textMuted} />
-          </TouchableOpacity>
-          <TextInput
-            ref={searchInputRef}
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder={t.lf.searchPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-            onSubmitEditing={() => Keyboard.dismiss()}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearchQuery('')}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Feather name="x" size={14} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Filters Trigger Button (Prominent 44dp, never squashed) */}
-        <TouchableOpacity
-          style={[
-            styles.filterBtn,
-            appliedFiltersCount > 0
-              ? { backgroundColor: `${SectorColors.lostfound}18`, borderColor: SectorColors.lostfound }
-              : { backgroundColor: C.surface, borderColor: C.border },
-          ]}
-          onPress={openFilterModal}
-          activeOpacity={0.75}
-        >
-          <Feather
-            name="sliders"
-            size={16}
-            color={appliedFiltersCount > 0 ? SectorColors.lostfound : C.text2}
-          />
-          <Text
-            style={[
-              styles.filterBtnTxt,
-              {
-                color: appliedFiltersCount > 0 ? SectorColors.lostfound : C.text,
-                fontFamily: FontFamily.jakartaBold,
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {categoryFilter !== 'All' ? categoryFilter : t.lf.filterBtn}
-          </Text>
-          {appliedFiltersCount > 0 ? (
-            <View style={[styles.filterCountBadge, { backgroundColor: SectorColors.lostfound }]}>
-              <Text style={styles.filterCountBadgeTxt}>{appliedFiltersCount}</Text>
-            </View>
-          ) : (
-            <Feather name="chevron-down" size={13} color={C.textMuted} />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Main Feed of Cards (Starts Immediately Below Single Row) */}
+      {/* Main Feed of Cards with Natural Native Scrolling */}
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -432,6 +335,102 @@ export function LostFoundBrowseScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={SectorColors.lostfound} />}
       >
+        <OfflineBanner
+          visible={isOffline}
+          message="Showing cached lost & found items. Connect to the internet to post items or submit claims."
+        />
+
+        {/* Prominent Hero Action Bar (Parity with Blood Donation) */}
+        {isStudent && (
+          <View style={{ paddingTop: 6, paddingBottom: 8 }}>
+            <TouchableOpacity
+              style={[styles.actBtn, { backgroundColor: SectorColors.lostfound }]}
+              onPress={() => navigation.navigate('LostFoundPost')}
+              activeOpacity={0.85}
+            >
+              <Feather name="plus-circle" size={18} color="#fff" />
+              <Text style={[styles.actBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                {t.lf.reportHeroBtn}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Unified Segmented Track Switcher with Native Spring Animation & Colors */}
+        <View style={{ marginBottom: 10 }}>
+          <SegmentedTabs<TabFilter>
+            tabs={TABS}
+            activeTab={filter}
+            onTabChange={setFilter}
+          />
+        </View>
+
+        {/* Unified Single Row: Search Input + Filter Trigger (Zero Clutter) */}
+        <View style={styles.searchFilterRow}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <TouchableOpacity
+              onPress={() => searchInputRef.current?.focus()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
+            >
+              <Feather name="search" size={24} color={C.textMuted} />
+            </TouchableOpacity>
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              placeholder={t.lf.searchPlaceholder}
+              placeholderTextColor={C.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+              onSubmitEditing={() => Keyboard.dismiss()}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Feather name="x" size={14} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Filters Trigger Button (Prominent 44dp, never squashed) */}
+          <TouchableOpacity
+            style={[
+              styles.filterBtn,
+              appliedFiltersCount > 0
+                ? { backgroundColor: `${SectorColors.lostfound}18`, borderColor: SectorColors.lostfound }
+                : { backgroundColor: C.surface, borderColor: C.border },
+            ]}
+            onPress={openFilterModal}
+            activeOpacity={0.75}
+          >
+            <Feather
+              name="sliders"
+              size={16}
+              color={appliedFiltersCount > 0 ? SectorColors.lostfound : C.text2}
+            />
+            <Text
+              style={[
+                styles.filterBtnTxt,
+                {
+                  color: appliedFiltersCount > 0 ? SectorColors.lostfound : C.text,
+                  fontFamily: FontFamily.jakartaBold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {categoryFilter !== 'All' ? categoryFilter : t.lf.filterBtn}
+            </Text>
+            {appliedFiltersCount > 0 ? (
+              <View style={[styles.filterCountBadge, { backgroundColor: SectorColors.lostfound }]}>
+                <Text style={styles.filterCountBadgeTxt}>{appliedFiltersCount}</Text>
+              </View>
+            ) : (
+              <Feather name="chevron-down" size={13} color={C.textMuted} />
+            )}
+          </TouchableOpacity>
+        </View>
         {!isStudent && !isAdmin ? (
           <View style={styles.empty}>
             <Icon name="found" size={28} color={C.textMuted} />

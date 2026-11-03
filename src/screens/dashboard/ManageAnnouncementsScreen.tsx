@@ -374,7 +374,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
         }
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderHeader()}
         renderItem={({ item }) => {
           const isBusy = busyId === item.id;
           const isOfficial = item.source !== 'manual';

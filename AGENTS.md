@@ -3998,4 +3998,42 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 46s`).
   - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
 
+---
+
+### 113. Admin All Reports Modernization: Strict 58dp Dropdowns, Slide-Up Bottom Sheets, Natural Native Scrolling & Dashboard-Parity Cards (`AllReportsScreen.tsx`, `ManageMarketScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Double Horizontal Scrollbar Eradication:**
+  - Completely purged the outdated double horizontal scrolling chip strips (stacked status chips and category chips) that occupied excessive vertical viewport space and caused awkward horizontal swiping.
+  - Replaced with two separate, high-touch 58dp dropdown bars (`styles.bar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`) in `ListHeaderComponent`:
+    1. **Status Dropdown Bar (58dp):** Displays active status (`All Statuses`, `Open`, `In Progress`, `Resolved`, `Rejected`, `Closed`) with leading vector icon (`layers`, `alert`, `clock`, `checkAll`, `close`, `inbox`) and trailing `chevron-down`.
+    2. **Category Dropdown Bar (58dp):** Displays active category (`All Categories`, `Electrical`, `Plumbing`, `Cleanliness`, `IT / Network`, `Furniture`, `Safety / Security`, `Other`) with leading vector icon (`layers`, `bolt`, `droplets`, `sparkles`, `wifi`, `box`, `shield`, `sliders`) and trailing `chevron-down`.
+- **Slide-Up Bottom Sheet Filter Modals:**
+  - Tapping either 58dp bar opens a native slide-up bottom modal sheet (`Modal transparent animationType="slide"`, `modalOverlay`, `modalBox` with 24dp top radius and grab handle bar `handleBar: 38x4dp`).
+  - Contains title, close button, and full-width 58dp selectable option rows (`styles.bar58`) with 22dp monochrome vector icons, bold labels, and active checkmarks (`check`).
+- **Natural Native Scrolling Architecture (`ListHeaderComponent`):**
+  - Integrated the 58dp Search Bar (`searchBar58`) and both 58dp Dropdown Bars (`bar58`) into `FlatList`'s `ListHeaderComponent`.
+  - All filter controls naturally scroll off-screen as the administrator reviews reports, maximizing screen real estate on mobile and maintaining smooth pull-to-refresh (`RefreshControl`).
+- **Dashboard-Parity Report Cards (`ReportAdminCard`):**
+  - Upgraded cards from plain text blocks to the app's top-tier card design:
+    - **Big 32dp Monochrome Static Vector Icons:** Category vector icon (`bolt`, `droplets`, `sparkles`, `wifi`, `box`, `shield`, `sliders`) floating cleanly in a transparent 36dp slot (`issueIconSlot`) without colored box backgrounds.
+    - **Location & Relative Timestamp:** Pin icon with building, room, and relative time (`timeAgo`: `just now`, `15m ago`, `2h ago`, `3d ago`).
+    - **Status Badges with Glowing Status Dots:** Squircle status pills with color tone and vector check/dot indicators.
+    - **Reporter & Upvote Strip:** Reporter avatar (`Avatar size="xs"`), reporter name, and thumbs-up vote badge.
+    - **Technician & Assignment Visibility:**
+      - Query joins `profiles!reporter_id(full_name, avatar_url)` and `assignee:profiles!assigned_staff_id(full_name, avatar_url, expertise)`.
+      - If assigned: Displays dedicated technician row with staff avatar, label "Assigned Technician", staff name with expertise, and a compact outline `[Reassign]` button.
+      - If unassigned / Open: Displays prominent full-width brand blue 44dp `Assign Staff` action button.
+- **Empty State Upgrade:**
+  - Replaced single-line text with full empty container (`emptyWrap`): 36dp vector icon, bold title ("No Reports Found"), contextual subtitle, and a "Clear All Filters" button when filters/search are active.
+- **ManageMarketScreen Syntax Fix:**
+  - Resolved extraneous closing token error on line 454 of `ManageMarketScreen.tsx`.
+- **Performance Optimization & Code Quality:**
+  - Wrapped `ReportAdminCard` in `React.memo` to eliminate unnecessary re-renders across 200 items during search and modal interactions.
+  - Configured `FlatList` with `initialNumToRender={10}`, `maxToRenderPerBatch={10}`, `windowSize={5}`, `removeClippedSubviews={Platform.OS === 'android'}`.
+  - Strict type checking with 0 TypeScript compilation errors (`tsc --noEmit`).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx.cmd tsc --noEmit`).
+  - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 42s`).
+  - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
+
+
 

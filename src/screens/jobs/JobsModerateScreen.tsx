@@ -156,20 +156,21 @@ export function JobsModerateScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.jobs.moderation} onBack={() => navigation.goBack()} />
 
-      {/* Tabs */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4 }}>
-        <SegmentedTabs
-          tabs={moderateTabs}
-          activeTab={tab}
-          onTabChange={setTab}
-        />
-      </View>
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        {/* Tabs */}
+        <View style={{ paddingTop: 4, marginBottom: 10 }}>
+          <SegmentedTabs
+            tabs={moderateTabs}
+            activeTab={tab}
+            onTabChange={setTab}
+          />
+        </View>
         {loading && jobs.length === 0 ? (
           <ActivityIndicator style={{ marginTop: 50 }} color={C.brand} />
         ) : list.length === 0 ? (

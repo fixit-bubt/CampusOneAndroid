@@ -565,112 +565,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         }
       />
 
-      {/* 1. Animated Segmented Switcher (3 Tabs: All | Urgent | Saved) */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4 }}>
-        <SegmentedTabs
-          tabs={ANNOUNCEMENT_TABS}
-          activeTab={mainTab}
-          onTabChange={handleTabChange}
-        />
-      </View>
-
-      {/* 2. Global Search Bar */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 6 }}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Icon name="search" size={24} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.announce2.searchPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={query}
-            onChangeText={setQuery}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-              <Feather name="x" size={15} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* 3. Dual Dropdown Selector Bars */}
-      <View style={[styles.dualBarRow, { paddingHorizontal: Layout.screenPadding }]}>
-        {/* Category Dropdown Bar */}
-        <TouchableOpacity
-          style={[
-            styles.dualBarBtn,
-            categoryFilter !== 'all'
-              ? { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.16)' : '#e0edff', borderColor: C.brand }
-              : { backgroundColor: C.surface, borderColor: C.border },
-          ]}
-          onPress={() => setCategoryModalVisible(true)}
-          activeOpacity={0.75}
-        >
-          <View style={styles.dualBarLeft}>
-            <Feather
-              name="layers"
-              size={16}
-              color={categoryFilter !== 'all' ? C.brand : C.textMuted}
-            />
-            <Text
-              style={[
-                styles.dualBarTxt,
-                {
-                  color: categoryFilter !== 'all' ? C.brand : C.text,
-                  fontFamily: categoryFilter !== 'all' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {activeCategoryLabel}
-            </Text>
-          </View>
-          <Feather
-            name="chevron-down"
-            size={16}
-            color={categoryFilter !== 'all' ? C.brand : C.textMuted}
-          />
-        </TouchableOpacity>
-
-        {/* Department Dropdown Bar */}
-        <TouchableOpacity
-          style={[
-            styles.dualBarBtn,
-            deptFilter !== 'ALL'
-              ? { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.16)' : '#e0f4f0', borderColor: SectorColors.jobs }
-              : { backgroundColor: C.surface, borderColor: C.border },
-          ]}
-          onPress={() => setDeptModalVisible(true)}
-          activeOpacity={0.75}
-        >
-          <View style={styles.dualBarLeft}>
-            <Feather
-              name="shield"
-              size={16}
-              color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
-            />
-            <Text
-              style={[
-                styles.dualBarTxt,
-                {
-                  color: deptFilter !== 'ALL' ? SectorColors.jobs : C.text,
-                  fontFamily: deptFilter !== 'ALL' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {activeDeptLabel}
-            </Text>
-          </View>
-          <Feather
-            name="chevron-down"
-            size={16}
-            color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Main Announcements Virtualized List (Locked 60 FPS) */}
+      {/* Main Announcements Virtualized List with Natural Native Scrolling */}
       <FlatList
         data={displayedItems}
         keyExtractor={(item) => item.id}
@@ -685,7 +580,116 @@ export function AnnouncementsScreen({ navigation }: any) {
         windowSize={7}
         removeClippedSubviews={Platform.OS === 'android'}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        ListHeaderComponent={<OfflineBanner visible={isOffline} onRetry={load} />}
+        ListHeaderComponent={
+          <View style={{ marginBottom: 6 }}>
+            <OfflineBanner visible={isOffline} onRetry={load} />
+
+            {/* 1. Animated Segmented Switcher (3 Tabs: All | Urgent | Saved) */}
+            <View style={{ paddingTop: 4 }}>
+              <SegmentedTabs
+                tabs={ANNOUNCEMENT_TABS}
+                activeTab={mainTab}
+                onTabChange={handleTabChange}
+              />
+            </View>
+
+            {/* 2. Global Search Bar */}
+            <View style={{ paddingTop: 6, paddingBottom: 6 }}>
+              <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <Icon name="search" size={24} color={C.textMuted} />
+                <TextInput
+                  style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                  placeholder={t.announce2.searchPlaceholder}
+                  placeholderTextColor={C.textMuted}
+                  value={query}
+                  onChangeText={setQuery}
+                />
+                {query.length > 0 && (
+                  <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                    <Feather name="x" size={15} color={C.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* 3. Dual Dropdown Selector Bars */}
+            <View style={styles.dualBarRow}>
+              {/* Category Dropdown Bar */}
+              <TouchableOpacity
+                style={[
+                  styles.dualBarBtn,
+                  categoryFilter !== 'all'
+                    ? { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.16)' : '#e0edff', borderColor: C.brand }
+                    : { backgroundColor: C.surface, borderColor: C.border },
+                ]}
+                onPress={() => setCategoryModalVisible(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.dualBarLeft}>
+                  <Feather
+                    name="layers"
+                    size={16}
+                    color={categoryFilter !== 'all' ? C.brand : C.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.dualBarTxt,
+                      {
+                        color: categoryFilter !== 'all' ? C.brand : C.text,
+                        fontFamily: categoryFilter !== 'all' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {activeCategoryLabel}
+                  </Text>
+                </View>
+                <Feather
+                  name="chevron-down"
+                  size={16}
+                  color={categoryFilter !== 'all' ? C.brand : C.textMuted}
+                />
+              </TouchableOpacity>
+
+              {/* Department Dropdown Bar */}
+              <TouchableOpacity
+                style={[
+                  styles.dualBarBtn,
+                  deptFilter !== 'ALL'
+                    ? { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.16)' : '#e0f4f0', borderColor: SectorColors.jobs }
+                    : { backgroundColor: C.surface, borderColor: C.border },
+                ]}
+                onPress={() => setDeptModalVisible(true)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.dualBarLeft}>
+                  <Feather
+                    name="shield"
+                    size={16}
+                    color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.dualBarTxt,
+                      {
+                        color: deptFilter !== 'ALL' ? SectorColors.jobs : C.text,
+                        fontFamily: deptFilter !== 'ALL' ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {activeDeptLabel}
+                  </Text>
+                </View>
+                <Feather
+                  name="chevron-down"
+                  size={16}
+                  color={deptFilter !== 'ALL' ? SectorColors.jobs : C.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           loading ? (
             <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>

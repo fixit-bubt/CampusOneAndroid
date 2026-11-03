@@ -698,8 +698,8 @@ export function ManageFacultyScreen({ navigation }: any) {
             C={C}
           />
         )}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
+        ListHeaderComponent={renderHeader()}
+        ListEmptyComponent={renderEmpty()}
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={5}

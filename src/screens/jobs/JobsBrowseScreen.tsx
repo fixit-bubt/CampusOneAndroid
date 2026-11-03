@@ -464,176 +464,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         }
       />
 
-      {/* Admin Action Bars (Height 58dp) vs Student Primary Segmented Tabs */}
-      {isAdmin ? (
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, gap: 8 }}>
-          {/* 58dp Bar 1: Post an Opportunity */}
-          <TouchableOpacity
-            style={[styles.adminBar58, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => navigation.navigate('JobPost')}
-            activeOpacity={0.75}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flex: 1 }}>
-              <Feather name="plus-circle" size={32} color={C.brand} />
-              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 15 }]}>
-                Post an Opportunity
-              </Text>
-            </View>
-            <View style={{ position: 'absolute', right: 16 }}>
-              <Feather name="chevron-right" size={20} color={C.textMuted} />
-            </View>
-          </TouchableOpacity>
-
-          {/* 58dp Bar 2: Job Moderation */}
-          <TouchableOpacity
-            style={[styles.adminBar58, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => navigation.navigate('JobsModerate')}
-            activeOpacity={0.75}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flex: 1 }}>
-              <Feather name="shield" size={32} color={C.text} />
-              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 15 }]}>
-                Job Moderation
-              </Text>
-            </View>
-            <View style={{ position: 'absolute', right: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {reportedCount > 0 ? (
-                <View style={[styles.reportBadge, { backgroundColor: C.dangerBg }]}>
-                  <Feather name="flag" size={11} color={C.danger} />
-                  <Text style={[styles.reportBadgeTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                    {reportedCount}
-                  </Text>
-                </View>
-              ) : null}
-              <Feather name="chevron-right" size={20} color={C.textMuted} />
-            </View>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        /* 1. Primary Segmented Tabs for Students (Browse | Saved | Applied) - Height 58dp */
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
-          <SegmentedTabs
-            tabs={mainTabs}
-            activeTab={mainTab}
-            onTabChange={setMainTab}
-          />
-        </View>
-      )}
-
-      {/* 2. Structured 50/50 Dual Control Bar (Job Type & Department) - Height 58dp */}
-      {mainTab !== 'my_applications' && (
-        <View style={[styles.dualBarRow, { paddingHorizontal: Layout.screenPadding, paddingTop: 8 }]}>
-          {/* Job Type Dropdown Button */}
-          <TouchableOpacity
-            style={[
-              styles.dualBarBtn,
-              typeFilter !== 'all'
-                ? [
-                    styles.dualBarBtnActive,
-                    {
-                      backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
-                      borderColor: SectorColors.jobs,
-                    },
-                  ]
-                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
-            ]}
-            onPress={() => setTypeModalVisible(true)}
-            activeOpacity={0.75}
-          >
-            <AnimatedIcon
-              family="feather"
-              name={typeFilter === 'all' ? 'briefcase' : currentTypeConfig.icon}
-              size={22}
-              color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
-            />
-            <Text
-              style={[
-                styles.dualBarTxt,
-                {
-                  color: typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {typeFilter === 'all'
-                ? (includeExpired ? 'All (+ Expired)' : 'All Types')
-                : currentTypeConfig.label}
-            </Text>
-            <Feather
-              name="chevron-down"
-              size={18}
-              color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
-            />
-          </TouchableOpacity>
-
-          {/* Department Dropdown Button */}
-          <TouchableOpacity
-            style={[
-              styles.dualBarBtn,
-              deptFilter !== 'ALL'
-                ? [
-                    styles.dualBarBtnActive,
-                    {
-                      backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
-                      borderColor: SectorColors.jobs,
-                    },
-                  ]
-                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
-            ]}
-            onPress={() => setDeptModalVisible(true)}
-            activeOpacity={0.75}
-          >
-            <AnimatedIcon
-              family="feather"
-              name={deptFilter === 'ALL' ? 'book-open' : currentDeptConfig.icon}
-              size={22}
-              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
-            />
-            <Text
-              style={[
-                styles.dualBarTxt,
-                {
-                  color: deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {deptFilter === 'ALL' ? 'All Depts' : deptFilter}
-            </Text>
-            <Feather
-              name="chevron-down"
-              size={18}
-              color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
-            />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* 3. Search Bar (Directly Above Results Feed) - Height 58dp */}
-      {mainTab !== 'my_applications' && (
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 8, paddingBottom: 4 }}>
-          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="search" size={24} color={C.textMuted} />
-            <TextInput
-              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder={t.jobs?.searchPlaceholder ?? 'Search opportunities...'}
-              placeholderTextColor={C.textMuted}
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-                <Feather name="x" size={16} color={C.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Main Content Scroll View */}
+      {/* Main Content Scroll View with Natural Native Scrolling */}
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -642,6 +473,175 @@ export function JobsBrowseScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <OfflineBanner visible={isOffline} onRetry={load} />
+
+        {/* Admin Action Bars (Height 58dp) vs Student Primary Segmented Tabs */}
+        {isAdmin ? (
+          <View style={{ paddingTop: 6, gap: 8, marginBottom: 8 }}>
+            {/* 58dp Bar 1: Post an Opportunity */}
+            <TouchableOpacity
+              style={[styles.adminBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('JobPost')}
+              activeOpacity={0.75}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flex: 1 }}>
+                <Feather name="plus-circle" size={32} color={C.brand} />
+                <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 15 }]}>
+                  Post an Opportunity
+                </Text>
+              </View>
+              <View style={{ position: 'absolute', right: 16 }}>
+                <Feather name="chevron-right" size={20} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {/* 58dp Bar 2: Job Moderation */}
+            <TouchableOpacity
+              style={[styles.adminBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+              onPress={() => navigation.navigate('JobsModerate')}
+              activeOpacity={0.75}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flex: 1 }}>
+                <Feather name="shield" size={32} color={C.text} />
+                <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 15 }]}>
+                  Job Moderation
+                </Text>
+              </View>
+              <View style={{ position: 'absolute', right: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {reportedCount > 0 ? (
+                  <View style={[styles.reportBadge, { backgroundColor: C.dangerBg }]}>
+                    <Feather name="flag" size={11} color={C.danger} />
+                    <Text style={[styles.reportBadgeTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                      {reportedCount}
+                    </Text>
+                  </View>
+                ) : null}
+                <Feather name="chevron-right" size={20} color={C.textMuted} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* 1. Primary Segmented Tabs for Students (Browse | Saved | Applied) - Height 58dp */
+          <View style={{ paddingTop: 6, marginBottom: 8 }}>
+            <SegmentedTabs
+              tabs={mainTabs}
+              activeTab={mainTab}
+              onTabChange={setMainTab}
+            />
+          </View>
+        )}
+
+        {/* 2. Structured 50/50 Dual Control Bar (Job Type & Department) - Height 58dp */}
+        {mainTab !== 'my_applications' && (
+          <View style={[styles.dualBarRow, { marginBottom: 8 }]}>
+            {/* Job Type Dropdown Button */}
+            <TouchableOpacity
+              style={[
+                styles.dualBarBtn,
+                typeFilter !== 'all'
+                  ? [
+                      styles.dualBarBtnActive,
+                      {
+                        backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
+                        borderColor: SectorColors.jobs,
+                      },
+                    ]
+                  : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+              ]}
+              onPress={() => setTypeModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <AnimatedIcon
+                family="feather"
+                name={typeFilter === 'all' ? 'briefcase' : currentTypeConfig.icon}
+                size={22}
+                color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
+              />
+              <Text
+                style={[
+                  styles.dualBarTxt,
+                  {
+                    color: typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {typeFilter === 'all'
+                  ? (includeExpired ? 'All (+ Expired)' : 'All Types')
+                  : currentTypeConfig.label}
+              </Text>
+              <Feather
+                name="chevron-down"
+                size={18}
+                color={typeFilter !== 'all' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
+              />
+            </TouchableOpacity>
+
+            {/* Department Dropdown Button */}
+            <TouchableOpacity
+              style={[
+                styles.dualBarBtn,
+                deptFilter !== 'ALL'
+                  ? [
+                      styles.dualBarBtnActive,
+                      {
+                        backgroundColor: isDark ? 'rgba(14, 156, 138, 0.18)' : '#e0f4f0',
+                        borderColor: SectorColors.jobs,
+                      },
+                    ]
+                  : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+              ]}
+              onPress={() => setDeptModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <AnimatedIcon
+                family="feather"
+                name={deptFilter === 'ALL' ? 'book-open' : currentDeptConfig.icon}
+                size={22}
+                color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text2}
+              />
+              <Text
+                style={[
+                  styles.dualBarTxt,
+                  {
+                    color: deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.text,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {deptFilter === 'ALL' ? 'All Depts' : deptFilter}
+              </Text>
+              <Feather
+                name="chevron-down"
+                size={18}
+                color={deptFilter !== 'ALL' ? (isDark ? '#fff' : SectorColors.jobs) : C.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 3. Search Bar (Directly Above Results Feed) - Height 58dp */}
+        {mainTab !== 'my_applications' && (
+          <View style={{ paddingBottom: 10 }}>
+            <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <Icon name="search" size={24} color={C.textMuted} />
+              <TextInput
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                placeholder={t.jobs?.searchPlaceholder ?? 'Search opportunities...'}
+                placeholderTextColor={C.textMuted}
+                value={query}
+                onChangeText={setQuery}
+                autoCapitalize="none"
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                  <Feather name="x" size={16} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {loading && jobs.length === 0 ? (
           <SkeletonList />

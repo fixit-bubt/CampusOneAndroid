@@ -313,139 +313,144 @@ export function ManageUsersScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="Users" onBack={() => navigation.goBack()} />
 
-      {/* Main Container */}
+      {/* Main Container with Natural Native Scrolling */}
       <View style={[styles.contentContainer, { paddingHorizontal: Layout.screenPadding }]}>
-        {/* 58dp Search Bar */}
-        <View
-          style={[
-            styles.searchBar58,
-            {
-              backgroundColor: C.surface,
-              borderColor: C.border,
-            },
-          ]}
-        >
-          <Feather name="search" size={20} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={
-              activeTab === 'student'
-                ? 'Search students by name, ID, intake...'
-                : activeTab === 'staff'
-                ? 'Search staff by name, trade, email...'
-                : 'Search administrators...'
-            }
-            placeholderTextColor={C.textMuted}
-            autoCapitalize="none"
-            clearButtonMode="while-editing"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Feather name="x" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+        <FlatList
+          data={displayedUsers}
+          keyExtractor={(item) => item.id}
+          renderItem={renderUserItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
+          }
+          initialNumToRender={15}
+          maxToRenderPerBatch={15}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
+          ListHeaderComponent={
+            <View>
+              {/* 58dp Search Bar */}
+              <View
+                style={[
+                  styles.searchBar58,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    marginTop: 4,
+                  },
+                ]}
+              >
+                <Feather name="search" size={20} color={C.textMuted} />
+                <TextInput
+                  style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={
+                    activeTab === 'student'
+                      ? 'Search students by name, ID, intake...'
+                      : activeTab === 'staff'
+                      ? 'Search staff by name, trade, email...'
+                      : 'Search administrators...'
+                  }
+                  placeholderTextColor={C.textMuted}
+                  autoCapitalize="none"
+                  clearButtonMode="while-editing"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Feather name="x" size={18} color={C.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
 
-        {/* 58dp Segmented Tab Bar: [ Student | Staff | Admin ] */}
-        <View style={styles.tabsWrapper}>
-          <SegmentedTabs<UserTab>
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={(tId) => {
-              setActiveTab(tId);
-            }}
-            size="md"
-          />
-        </View>
+              {/* 58dp Segmented Tab Bar: [ Student | Staff | Admin ] */}
+              <View style={styles.tabsWrapper}>
+                <SegmentedTabs<UserTab>
+                  tabs={tabs}
+                  activeTab={activeTab}
+                  onTabChange={(tId) => {
+                    setActiveTab(tId);
+                  }}
+                  size="md"
+                />
+              </View>
 
-        {/* 58dp Department Dropdown Bar (Student Tab Only) */}
-        {activeTab === 'student' && (
-          <TouchableOpacity
-            style={[
-              styles.deptDropdownBar58,
-              {
-                backgroundColor: C.surface,
-                borderColor: selectedDept !== 'All' ? C.brand : C.border,
-              },
-            ]}
-            onPress={() => setDeptModalVisible(true)}
-            activeOpacity={0.75}
-          >
-            <View style={styles.deptBarLeading}>
-              <Icon name={activeDeptItem.icon} size={32} color={selectedDept !== 'All' ? C.brand : C.text} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text
+              {/* 58dp Department Dropdown Bar (Student Tab Only) */}
+              {activeTab === 'student' && (
+                <TouchableOpacity
                   style={[
-                    styles.deptBarTitle,
+                    styles.deptDropdownBar58,
                     {
-                      color: selectedDept !== 'All' ? C.brand : C.text,
-                      fontFamily: FontFamily.jakartaBold,
+                      backgroundColor: C.surface,
+                      borderColor: selectedDept !== 'All' ? C.brand : C.border,
                     },
                   ]}
-                  numberOfLines={1}
+                  onPress={() => setDeptModalVisible(true)}
+                  activeOpacity={0.75}
                 >
-                  {selectedDept === 'All' ? 'All Departments' : activeDeptItem.name}
+                  <View style={styles.deptBarLeading}>
+                    <Icon name={activeDeptItem.icon} size={32} color={selectedDept !== 'All' ? C.brand : C.text} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.deptBarTitle,
+                          {
+                            color: selectedDept !== 'All' ? C.brand : C.text,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {selectedDept === 'All' ? 'All Departments' : activeDeptItem.name}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.deptBarTrailing}>
+                    {selectedDept !== 'All' && (
+                      <View style={[styles.deptCountPill, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}>
+                        <Text style={[styles.deptCountPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {displayedUsers.length}
+                        </Text>
+                      </View>
+                    )}
+                    <Feather name="chevron-down" size={18} color={selectedDept !== 'All' ? C.brand : C.textMuted} />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          }
+          ListEmptyComponent={
+            loading && users.length === 0 ? (
+              <View style={[styles.centerContainer, { paddingVertical: 48 }]}>
+                <ActivityIndicator size="large" color={C.brand} />
+                <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  Loading users...
                 </Text>
               </View>
-            </View>
-            <View style={styles.deptBarTrailing}>
-              {selectedDept !== 'All' && (
-                <View style={[styles.deptCountPill, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}>
-                  <Text style={[styles.deptCountPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {displayedUsers.length}
+            ) : errorMsg && users.length === 0 ? (
+              <View style={[styles.errorCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <Feather name="alert-circle" size={32} color={C.danger} />
+                <Text style={[styles.errorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Could Not Load Users
+                </Text>
+                <Text style={[styles.errorDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                  {errorMsg}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.retryBtn, { backgroundColor: C.brand }]}
+                  onPress={loadUsers}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="refresh-cw" size={16} color="#ffffff" />
+                  <Text style={[styles.retryBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                    Retry
                   </Text>
-                </View>
-              )}
-              <Feather name="chevron-down" size={18} color={selectedDept !== 'All' ? C.brand : C.textMuted} />
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* Users List with FlatList Performance */}
-        {loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={C.brand} />
-            <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              Loading users...
-            </Text>
-          </View>
-        ) : errorMsg ? (
-          <View style={[styles.errorCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Feather name="alert-circle" size={32} color={C.danger} />
-            <Text style={[styles.errorTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              Could Not Load Users
-            </Text>
-            <Text style={[styles.errorDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-              {errorMsg}
-            </Text>
-            <TouchableOpacity
-              style={[styles.retryBtn, { backgroundColor: C.brand }]}
-              onPress={loadUsers}
-              activeOpacity={0.8}
-            >
-              <Feather name="refresh-cw" size={16} color="#ffffff" />
-              <Text style={[styles.retryBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                Retry
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <FlatList
-            data={displayedUsers}
-            keyExtractor={(item) => item.id}
-            renderItem={renderUserItem}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
-            }
-            initialNumToRender={15}
-            maxToRenderPerBatch={15}
-            windowSize={5}
-            removeClippedSubviews={Platform.OS === 'android'}
-            ListEmptyComponent={
+                </TouchableOpacity>
+              </View>
+            ) : (
               <View style={styles.emptyContainer}>
                 <View style={styles.emptyIconWrap}>
                   <Icon name={activeTab === 'student' ? 'users' : activeTab === 'staff' ? 'briefcase' : 'shield'} size={44} color={C.textMuted} />
@@ -476,9 +481,9 @@ export function ManageUsersScreen({ navigation }: any) {
                   </TouchableOpacity>
                 )}
               </View>
-            }
-          />
-        )}
+            )
+          }
+        />
       </View>
 
       {/* Department Picker Bottom Sheet Modal */}

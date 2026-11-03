@@ -260,14 +260,8 @@ export function CampusIssuesScreen({ navigation, route }: any) {
   const currentCount = counts[filter] ?? 0;
   const filterLabel = filter === 'All' ? t.common.all ?? 'All Statuses' : (t.status[filter] ?? filter);
 
-  return (
-    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
-      {/* Permanent Header - Title never changes on tab switch */}
-      <SubBar
-        title={t.reports?.reportIssuesTitle ?? 'Report Issues'}
-        onBack={() => navigation.goBack()}
-      />
-
+  const listHeader = (
+    <View>
       {/* 58dp Dual Tab Switcher - 0ms Instant Toggle */}
       <View style={styles.tabContainer}>
         <SegmentedTabs<TabKey>
@@ -307,17 +301,19 @@ export function CampusIssuesScreen({ navigation, route }: any) {
           <Feather name="chevron-down" size={18} color={C.textMuted} />
         </TouchableOpacity>
       </View>
+    </View>
+  );
 
-      {/* Feed Container */}
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <SkeletonList rows={4} />
-        </View>
-      ) : loadError ? (
-        <View style={styles.errorContainer}>
-          <LoadError onRetry={loadAll} />
-        </View>
-      ) : activeTab === 'Campus' ? (
+  return (
+    <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
+      {/* Permanent Header - Title never changes on tab switch */}
+      <SubBar
+        title={t.reports?.reportIssuesTitle ?? 'Report Issues'}
+        onBack={() => navigation.goBack()}
+      />
+
+      {/* Feed Container with Natural Native Scrolling */}
+      {activeTab === 'Campus' ? (
         /* CAMPUS BOARD FEED */
         <FlatList
           data={filteredCampus}
@@ -327,6 +323,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -335,28 +332,39 @@ export function CampusIssuesScreen({ navigation, route }: any) {
               colors={[C.brand]}
             />
           }
+          ListHeaderComponent={listHeader}
           ListEmptyComponent={
-            <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.emptyIconSlot}>
-                <Feather name="check-circle" size={32} color={C.textMuted} />
+            isLoading && campusIssues.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <SkeletonList rows={4} />
               </View>
-              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.campusIssues.emptyTitle ?? 'No issues on the board'}
-              </Text>
-              <Text style={[styles.emptyBody, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.campusIssues.emptyBody ?? 'When students share issues publicly, they show up here.'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.emptyCtaBtn, { backgroundColor: C.brand }]}
-                onPress={() => navigation.navigate('ReportForm')}
-                activeOpacity={0.85}
-              >
-                <Feather name="plus" size={16} color="#ffffff" />
-                <Text style={[styles.emptyCtaTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                  {t.reports.newReport ?? 'Report an Issue'}
+            ) : loadError && campusIssues.length === 0 ? (
+              <View style={styles.errorContainer}>
+                <LoadError onRetry={loadAll} />
+              </View>
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <View style={styles.emptyIconSlot}>
+                  <Feather name="check-circle" size={32} color={C.textMuted} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.campusIssues.emptyTitle ?? 'No issues on the board'}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={[styles.emptyBody, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.campusIssues.emptyBody ?? 'When students share issues publicly, they show up here.'}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.emptyCtaBtn, { backgroundColor: C.brand }]}
+                  onPress={() => navigation.navigate('ReportForm')}
+                  activeOpacity={0.85}
+                >
+                  <Feather name="plus" size={16} color="#ffffff" />
+                  <Text style={[styles.emptyCtaTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                    {t.reports.newReport ?? 'Report an Issue'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )
           }
           renderItem={({ item: r }) => {
             const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];
@@ -482,6 +490,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -490,28 +499,39 @@ export function CampusIssuesScreen({ navigation, route }: any) {
               colors={[C.brand]}
             />
           }
+          ListHeaderComponent={listHeader}
           ListEmptyComponent={
-            <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.emptyIconSlot}>
-                <Feather name="file-text" size={32} color={C.textMuted} />
+            isLoading && myReports.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <SkeletonList rows={4} />
               </View>
-              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.reports.noReportsTitle ?? 'No reports submitted'}
-              </Text>
-              <Text style={[styles.emptyBody, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
-                {t.reports.noReportsBody ?? 'Track campus issues and maintenance requests you reported.'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.emptyCtaBtn, { backgroundColor: C.brand }]}
-                onPress={() => navigation.navigate('ReportForm')}
-                activeOpacity={0.85}
-              >
-                <Feather name="plus" size={16} color="#ffffff" />
-                <Text style={[styles.emptyCtaTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                  {t.reports.newReport ?? 'Report an Issue'}
+            ) : loadError && myReports.length === 0 ? (
+              <View style={styles.errorContainer}>
+                <LoadError onRetry={loadAll} />
+              </View>
+            ) : (
+              <View style={[styles.emptyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <View style={styles.emptyIconSlot}>
+                  <Feather name="file-text" size={32} color={C.textMuted} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.reports.noReportsTitle ?? 'No reports submitted'}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <Text style={[styles.emptyBody, { color: C.text3, fontFamily: FontFamily.jakartaMedium }]}>
+                  {t.reports.noReportsBody ?? 'Track campus issues and maintenance requests you reported.'}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.emptyCtaBtn, { backgroundColor: C.brand }]}
+                  onPress={() => navigation.navigate('ReportForm')}
+                  activeOpacity={0.85}
+                >
+                  <Feather name="plus" size={16} color="#ffffff" />
+                  <Text style={[styles.emptyCtaTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                    {t.reports.newReport ?? 'Report an Issue'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )
           }
           renderItem={({ item: r }) => {
             const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];

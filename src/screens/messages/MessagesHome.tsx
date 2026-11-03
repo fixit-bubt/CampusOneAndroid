@@ -261,76 +261,6 @@ export function MessagesHome({ navigation }: any) {
         }
       />
 
-      {/* Search Bar */}
-      <View style={[styles.searchBoxWrap, { paddingHorizontal: Layout.screenPadding }]}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Feather name="search" size={24} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.messages.searchInbox ?? 'Search conversations…'}
-            placeholderTextColor={C.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} activeOpacity={0.7}>
-              <Feather name="x-circle" size={16} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Category Filter Pills */}
-      <View style={styles.pillRow}>
-        {tabs.map(tab => {
-          const isActive = activeTab === tab.key;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key)}
-              style={[
-                styles.pill,
-                isActive
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border },
-              ]}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.pillText,
-                  {
-                    color: isActive ? C.white : C.text2,
-                    fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                  },
-                ]}
-              >
-                {tab.label}
-              </Text>
-              {tab.unread > 0 && (
-                <View
-                  style={[
-                    styles.pillBadge,
-                    { backgroundColor: isActive ? C.white : C.brand },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.pillBadgeText,
-                      { color: isActive ? C.brand : C.white, fontFamily: FontFamily.jakartaExtraBold },
-                    ]}
-                  >
-                    {tab.unread > 9 ? '9+' : tab.unread}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
       <FlatList
         data={filteredRows}
         keyExtractor={r => r.key}
@@ -339,6 +269,8 @@ export function MessagesHome({ navigation }: any) {
         windowSize={7}
         contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -348,6 +280,79 @@ export function MessagesHome({ navigation }: any) {
           />
         }
         ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: C.border }]} />}
+        ListHeaderComponent={
+          <View style={{ marginBottom: 4 }}>
+            {/* Search Bar */}
+            <View style={{ paddingBottom: 8 }}>
+              <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Feather name="search" size={24} color={C.textMuted} />
+                <TextInput
+                  style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                  placeholder={t.messages.searchInbox ?? 'Search conversations…'}
+                  placeholderTextColor={C.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  returnKeyType="search"
+                  autoCorrect={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} activeOpacity={0.7}>
+                    <Feather name="x-circle" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Category Filter Pills */}
+            <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 6 }}>
+              {tabs.map(tab => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    onPress={() => setActiveTab(tab.key)}
+                    style={[
+                      styles.pill,
+                      isActive
+                        ? { backgroundColor: C.brand, borderColor: C.brand }
+                        : { backgroundColor: C.surface, borderColor: C.border },
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.pillText,
+                        {
+                          color: isActive ? C.white : C.text2,
+                          fontFamily: isActive ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                    >
+                      {tab.label}
+                    </Text>
+                    {tab.unread > 0 && (
+                      <View
+                        style={[
+                          styles.pillBadge,
+                          { backgroundColor: isActive ? C.white : C.brand },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pillBadgeText,
+                            { color: isActive ? C.brand : C.white, fontFamily: FontFamily.jakartaExtraBold },
+                          ]}
+                        >
+                          {tab.unread > 9 ? '9+' : tab.unread}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           loading && !refreshing ? (
             <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>

@@ -888,23 +888,24 @@ export function ManageStudyHubScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
       />
 
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 6, marginBottom: 10 }}>
-        <SegmentedTabs
-          size="md"
-          tabs={[
-            { id: 'catalogue', label: t.study2?.catalogue ?? 'Catalogue' },
-            { id: 'pending', label: 'Pending Requests', count: pendingRequests.length },
-          ]}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-      </View>
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.textMuted} colors={[C.textMuted]} />}
       >
+        <View style={{ marginTop: 6, marginBottom: 12 }}>
+          <SegmentedTabs
+            size="md"
+            tabs={[
+              { id: 'catalogue', label: t.study2?.catalogue ?? 'Catalogue' },
+              { id: 'pending', label: 'Pending Requests', count: pendingRequests.length },
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </View>
         {activeTab === 'catalogue' ? (
           <>
             {/* 58dp Department Dropdown Bar */}

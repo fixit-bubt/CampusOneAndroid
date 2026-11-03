@@ -416,146 +416,148 @@ export function EventsBrowseScreen({ navigation }: any) {
         }
       />
 
-      {/* Instant Search Bar */}
-      <View style={[styles.searchBoxWrap, { paddingHorizontal: Layout.screenPadding }]}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <Feather name="search" size={24} color={C.textMuted} style={{ marginRight: 8 }} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder="Search events..."
-            placeholderTextColor={C.textMuted}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}>
-              <Feather name="x-circle" size={16} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Universal Segmented Navigation Standard */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingVertical: 6 }}>
-        <SegmentedTabs<EventTab>
-          tabs={EVENT_TABS}
-          activeTab={tab}
-          onTabChange={setTab}
-        />
-      </View>
-
-      {/* Category Bar (72dp Standard matching Explore Community Bar) */}
-      <View style={[styles.catBarRow, { paddingHorizontal: Layout.screenPadding }]}>
-        <TouchableOpacity
-          style={[
-            styles.catDropdownBtn,
-            isCatActive
-              ? {
-                  backgroundColor: isDark ? `${activeCatColor}16` : `${activeCatColor}0e`,
-                  borderColor: isDark ? `${activeCatColor}85` : `${activeCatColor}65`,
-                  borderWidth: 1.5,
-                }
-              : {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderWidth: 1,
-                },
-          ]}
-          onPress={() => setCategoryModalVisible(true)}
-          activeOpacity={0.75}
-        >
-          <View style={styles.catIconBox}>
-            <AnimatedIcon
-              family="feather"
-              name={activeCatObj.icon}
-              size={32}
-              color={C.text}
-            />
-          </View>
-
-          <View style={styles.catTextWrap}>
-            <Text
-              style={[
-                styles.catTitleTxt,
-                {
-                  color: isCatActive ? activeCatColor : C.text,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {activeCatObj.label}
-            </Text>
-            <Text
-              style={[
-                styles.catSubTxt,
-                {
-                  color: C.text3,
-                  fontFamily: FontFamily.jakartaMedium,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {activeCatObj.desc ?? 'Filter campus events'}
-            </Text>
-          </View>
-
-          <View style={[styles.catDivider, { backgroundColor: C.border }]} />
-
-          <View style={styles.catStatCol}>
-            <Text
-              style={[
-                styles.catStatVal,
-                {
-                  color: isCatActive ? activeCatColor : C.text,
-                  fontFamily: FontFamily.jakartaExtraBold,
-                },
-              ]}
-            >
-              {catCounts[category] ?? 0}
-            </Text>
-            <Text
-              style={[
-                styles.catStatSub,
-                {
-                  color: C.text3,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-            >
-              EVENTS
-            </Text>
-          </View>
-
-          <View style={styles.catDropdownRight}>
-            {isCatActive && (
-              <TouchableOpacity
-                onPress={() => setCategory('All')}
-                hitSlop={8}
-                style={{ padding: 4, marginRight: 2 }}
-              >
-                <Feather name="x" size={15} color={activeCatColor} />
-              </TouchableOpacity>
-            )}
-            <View style={styles.chevBox}>
-              <Icon
-                name="chevD"
-                size={18}
-                color={isCatActive ? activeCatColor : C.textMuted}
-              />
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Main Events Feed & Agenda */}
+      {/* Main Events Feed & Agenda with Natural Native Scrolling */}
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
         <OfflineBanner visible={isOffline} onRetry={load} />
+
+        {/* Instant Search Bar */}
+        <View style={{ paddingTop: 4, paddingBottom: 6 }}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <Feather name="search" size={24} color={C.textMuted} style={{ marginRight: 8 }} />
+            <TextInput
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              placeholder="Search events..."
+              placeholderTextColor={C.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={10}>
+                <Feather name="x-circle" size={16} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Universal Segmented Navigation Standard */}
+        <View style={{ paddingBottom: 8 }}>
+          <SegmentedTabs<EventTab>
+            tabs={EVENT_TABS}
+            activeTab={tab}
+            onTabChange={setTab}
+          />
+        </View>
+
+        {/* Category Bar (72dp Standard matching Explore Community Bar) */}
+        <View style={[styles.catBarRow, { marginBottom: 12 }]}>
+          <TouchableOpacity
+            style={[
+              styles.catDropdownBtn,
+              isCatActive
+                ? {
+                    backgroundColor: isDark ? `${activeCatColor}16` : `${activeCatColor}0e`,
+                    borderColor: isDark ? `${activeCatColor}85` : `${activeCatColor}65`,
+                    borderWidth: 1.5,
+                  }
+                : {
+                    backgroundColor: C.surface,
+                    borderColor: C.border,
+                    borderWidth: 1,
+                  },
+            ]}
+            onPress={() => setCategoryModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.catIconBox}>
+              <AnimatedIcon
+                family="feather"
+                name={activeCatObj.icon}
+                size={32}
+                color={C.text}
+              />
+            </View>
+
+            <View style={styles.catTextWrap}>
+              <Text
+                style={[
+                  styles.catTitleTxt,
+                  {
+                    color: isCatActive ? activeCatColor : C.text,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {activeCatObj.label}
+              </Text>
+              <Text
+                style={[
+                  styles.catSubTxt,
+                  {
+                    color: C.text3,
+                    fontFamily: FontFamily.jakartaMedium,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {activeCatObj.desc ?? 'Filter campus events'}
+              </Text>
+            </View>
+
+            <View style={[styles.catDivider, { backgroundColor: C.border }]} />
+
+            <View style={styles.catStatCol}>
+              <Text
+                style={[
+                  styles.catStatVal,
+                  {
+                    color: isCatActive ? activeCatColor : C.text,
+                    fontFamily: FontFamily.jakartaExtraBold,
+                  },
+                ]}
+              >
+                {catCounts[category] ?? 0}
+              </Text>
+              <Text
+                style={[
+                  styles.catStatSub,
+                  {
+                    color: C.text3,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+              >
+                EVENTS
+              </Text>
+            </View>
+
+            <View style={styles.catDropdownRight}>
+              {isCatActive && (
+                <TouchableOpacity
+                  onPress={() => setCategory('All')}
+                  hitSlop={8}
+                  style={{ padding: 4, marginRight: 2 }}
+                >
+                  <Feather name="x" size={15} color={activeCatColor} />
+                </TouchableOpacity>
+              )}
+              <View style={styles.chevBox}>
+                <Icon
+                  name="chevD"
+                  size={18}
+                  color={isCatActive ? activeCatColor : C.textMuted}
+                />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
 
         {loadState === 'loading' && events.length === 0 ? (
           <SkeletonList />

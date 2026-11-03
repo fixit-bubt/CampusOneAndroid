@@ -422,274 +422,276 @@ export function MarketScreen({ navigation }: any) {
     );
   }, [cardWidth, savedIds, peopleMap, isDark, C, navigation, t]);
 
+  const listHeader = (
+    <View>
+      <OfflineBanner visible={isOffline} onRetry={load} />
+
+      {/* 2. Prominent Emerald Hero Action Bar */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
+        <TouchableOpacity
+          style={[styles.heroActBtn, { backgroundColor: MARKET_COLOR }]}
+          onPress={() => navigation.navigate('MarketPost')}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus-circle" size={18} color="#fff" />
+          <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+            {t.market2.sellItem}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 3. Segmented Tab Switcher */}
+      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 10 }}>
+        <SegmentedTabs<Tab>
+          tabs={TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
+      </View>
+
+      {/* 4. Structured Dual Control Bar (Matches Directory Screen) */}
+      <View style={styles.dualBarRow}>
+        {/* Left: Quick 'All' Reset Button */}
+        <TouchableOpacity
+          style={[
+            styles.dualBarBtn,
+            category === 'all'
+              ? [
+                  styles.dualBarBtnActive,
+                  {
+                    backgroundColor: isDark ? `${MARKET_COLOR}22` : `${MARKET_COLOR}14`,
+                    borderColor: isDark ? `${MARKET_COLOR}66` : MARKET_COLOR,
+                  },
+                ]
+              : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+          ]}
+          onPress={() => setCategory('all')}
+          activeOpacity={0.75}
+        >
+          <Feather
+            name="grid"
+            size={16}
+            color={category === 'all' ? (isDark ? '#fff' : MARKET_COLOR) : C.text2}
+          />
+          <Text
+            style={[
+              styles.dualBarTxt,
+              {
+                color: category === 'all' ? (isDark ? '#fff' : MARKET_COLOR) : C.text,
+                fontFamily: FontFamily.jakartaBold,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {t.common.all}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Right: Category Picker Dropdown Button */}
+        <TouchableOpacity
+          style={[
+            styles.dualBarBtn,
+            category !== 'all'
+              ? [
+                  styles.dualBarBtnActive,
+                  {
+                    backgroundColor: isDark ? `${currentCategoryMeta.fg}22` : `${currentCategoryMeta.fg}14`,
+                    borderColor: isDark ? `${currentCategoryMeta.fg}66` : currentCategoryMeta.fg,
+                  },
+                ]
+              : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
+          ]}
+          onPress={() => setCategoryModalVisible(true)}
+          activeOpacity={0.75}
+        >
+          <Feather
+            name={currentCategoryMeta.icon}
+            size={16}
+            color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.text2}
+          />
+          <Text
+            style={[
+              styles.dualBarTxt,
+              {
+                color: category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.text,
+                fontFamily: FontFamily.jakartaBold,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {currentCategoryLabel}
+          </Text>
+          <Icon
+            name="chevD"
+            size={15}
+            color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.textMuted}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* 5. Search Bar & Secondary Filter Trigger */}
+      <View style={styles.searchRow}>
+        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Icon name="search" size={24} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+            placeholder={t.market2.searchItems}
+            placeholderTextColor={C.textMuted}
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} style={{ padding: 4 }}>
+              <Feather name="x" size={14} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.filterTriggerBtn,
+            hasSecondaryFilters
+              ? {
+                  backgroundColor: MARKET_COLOR,
+                  borderColor: MARKET_COLOR,
+                }
+              : {
+                  backgroundColor: isDark ? 'rgba(5, 150, 105, 0.16)' : 'rgba(5, 150, 105, 0.08)',
+                  borderColor: isDark ? 'rgba(5, 150, 105, 0.45)' : 'rgba(5, 150, 105, 0.35)',
+                },
+          ]}
+          onPress={() => setFilterModalVisible(true)}
+          activeOpacity={0.75}
+        >
+          <Feather
+            name="sliders"
+            size={16}
+            color={hasSecondaryFilters ? '#fff' : MARKET_COLOR}
+          />
+          <Text
+            style={[
+              styles.filterTriggerTxt,
+              {
+                color: hasSecondaryFilters ? '#fff' : MARKET_COLOR,
+                fontFamily: FontFamily.jakartaBold,
+              },
+            ]}
+          >
+            Filter
+          </Text>
+          {hasSecondaryFilters && (
+            <View style={[styles.filterActiveDot, { backgroundColor: '#fff' }]} />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Active Filter Clear Tag */}
+      {hasAnyActiveFilters && (
+        <View style={styles.activeFilterNoticeRow}>
+          <Text style={[styles.filterCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+            {filteredListings.length} {filteredListings.length === 1 ? 'item found' : 'items found'}
+          </Text>
+          <TouchableOpacity
+            style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={handleResetFilters}
+            activeOpacity={0.75}
+          >
+            <Feather name="rotate-ccw" size={11} color={C.brand} />
+            <Text style={[styles.clearPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {t.market2.clearFilters}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       {/* 1. Clean Top Header */}
       <SubBar title={t.market2.marketplace} onBack={() => navigation.goBack()} />
 
-      {/* Main Container */}
-      <View style={{ flex: 1 }}>
-        <OfflineBanner visible={isOffline} onRetry={load} />
-
-        {/* 2. Prominent Emerald Hero Action Bar */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
-          <TouchableOpacity
-            style={[styles.heroActBtn, { backgroundColor: MARKET_COLOR }]}
-            onPress={() => navigation.navigate('MarketPost')}
-            activeOpacity={0.85}
-          >
-            <Feather name="plus-circle" size={18} color="#fff" />
-            <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-              {t.market2.sellItem}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 3. Segmented Tab Switcher */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 10 }}>
-          <SegmentedTabs<Tab>
-            tabs={TABS}
-            activeTab={tab}
-            onTabChange={setTab}
-          />
-        </View>
-
-        {/* 4. Structured Dual Control Bar (Matches Directory Screen) */}
-        <View style={styles.dualBarRow}>
-          {/* Left: Quick 'All' Reset Button */}
-          <TouchableOpacity
-            style={[
-              styles.dualBarBtn,
-              category === 'all'
-                ? [
-                    styles.dualBarBtnActive,
-                    {
-                      backgroundColor: isDark ? `${MARKET_COLOR}22` : `${MARKET_COLOR}14`,
-                      borderColor: isDark ? `${MARKET_COLOR}66` : MARKET_COLOR,
-                    },
-                  ]
-                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
-            ]}
-            onPress={() => setCategory('all')}
-            activeOpacity={0.75}
-          >
-            <Feather
-              name="grid"
-              size={16}
-              color={category === 'all' ? (isDark ? '#fff' : MARKET_COLOR) : C.text2}
-            />
-            <Text
-              style={[
-                styles.dualBarTxt,
-                {
-                  color: category === 'all' ? (isDark ? '#fff' : MARKET_COLOR) : C.text,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {t.common.all}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Right: Category Picker Dropdown Button */}
-          <TouchableOpacity
-            style={[
-              styles.dualBarBtn,
-              category !== 'all'
-                ? [
-                    styles.dualBarBtnActive,
-                    {
-                      backgroundColor: isDark ? `${currentCategoryMeta.fg}22` : `${currentCategoryMeta.fg}14`,
-                      borderColor: isDark ? `${currentCategoryMeta.fg}66` : currentCategoryMeta.fg,
-                    },
-                  ]
-                : [styles.dualBarBtnInactive, { backgroundColor: C.surface, borderColor: C.border }],
-            ]}
-            onPress={() => setCategoryModalVisible(true)}
-            activeOpacity={0.75}
-          >
-            <Feather
-              name={currentCategoryMeta.icon}
-              size={16}
-              color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.text2}
-            />
-            <Text
-              style={[
-                styles.dualBarTxt,
-                {
-                  color: category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.text,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {currentCategoryLabel}
-            </Text>
-            <Icon
-              name="chevD"
-              size={15}
-              color={category !== 'all' ? (isDark ? '#fff' : currentCategoryMeta.fg) : C.textMuted}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* 5. Search Bar & Secondary Filter Trigger */}
-        <View style={styles.searchRow}>
-          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Icon name="search" size={24} color={C.textMuted} />
-            <TextInput
-              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder={t.market2.searchItems}
-              placeholderTextColor={C.textMuted}
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} style={{ padding: 4 }}>
-                <Feather name="x" size={14} color={C.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.filterTriggerBtn,
-              hasSecondaryFilters
-                ? {
-                    backgroundColor: MARKET_COLOR,
-                    borderColor: MARKET_COLOR,
-                  }
-                : {
-                    backgroundColor: isDark ? 'rgba(5, 150, 105, 0.16)' : 'rgba(5, 150, 105, 0.08)',
-                    borderColor: isDark ? 'rgba(5, 150, 105, 0.45)' : 'rgba(5, 150, 105, 0.35)',
-                  },
-            ]}
-            onPress={() => setFilterModalVisible(true)}
-            activeOpacity={0.75}
-          >
-            <Feather
-              name="sliders"
-              size={16}
-              color={hasSecondaryFilters ? '#fff' : MARKET_COLOR}
-            />
-            <Text
-              style={[
-                styles.filterTriggerTxt,
-                {
-                  color: hasSecondaryFilters ? '#fff' : MARKET_COLOR,
-                  fontFamily: FontFamily.jakartaBold,
-                },
-              ]}
-            >
-              Filter
-            </Text>
-            {hasSecondaryFilters && (
-              <View style={[styles.filterActiveDot, { backgroundColor: '#fff' }]} />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Active Filter Clear Tag */}
-        {hasAnyActiveFilters && (
-          <View style={styles.activeFilterNoticeRow}>
-            <Text style={[styles.filterCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {filteredListings.length} {filteredListings.length === 1 ? 'item found' : 'items found'}
-            </Text>
-            <TouchableOpacity
-              style={[styles.clearPill, { backgroundColor: C.surface2, borderColor: C.border }]}
-              onPress={handleResetFilters}
-              activeOpacity={0.75}
-            >
-              <Feather name="rotate-ccw" size={11} color={C.brand} />
-              <Text style={[styles.clearPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                {t.market2.clearFilters}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* 6. Virtualized 2-Column Grid */}
-        {loading && listings.length === 0 ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="large" color={MARKET_COLOR} />
-          </View>
-        ) : filteredListings.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            {tab === 'saved' ? (
-              <>
-                <View style={styles.emptyIconCircle}>
-                  <Feather name="heart" size={36} color={C.textMuted} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.market2.savedEmptyTitle}
-                </Text>
-                <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.market2.savedEmptyDesc}
-                </Text>
-              </>
-            ) : tab === 'mine' ? (
-              <>
-                <View style={styles.emptyIconCircle}>
-                  <Feather name="tag" size={36} color={C.textMuted} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.market2.noListingsYet}
-                </Text>
-                <TouchableOpacity
-                  style={[styles.emptyActionBtn, { backgroundColor: MARKET_COLOR }]}
-                  onPress={() => navigation.navigate('MarketPost')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.emptyActionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.market2.sellItem}
+      <FlatList
+        data={filteredListings}
+        keyExtractor={item => item.id}
+        renderItem={renderItem}
+        numColumns={2}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
+        columnWrapperStyle={{ gap: cardGap, paddingHorizontal: Layout.screenPadding }}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={MARKET_COLOR} />
+        }
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          loading && listings.length === 0 ? (
+            <View style={[styles.centerBox, { paddingVertical: 48 }]}>
+              <ActivityIndicator size="large" color={MARKET_COLOR} />
+            </View>
+          ) : (
+            <View style={[styles.emptyContainer, { paddingTop: 32 }]}>
+              {tab === 'saved' ? (
+                <>
+                  <View style={styles.emptyIconCircle}>
+                    <Feather name="heart" size={36} color={C.textMuted} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.savedEmptyTitle}
                   </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <View style={styles.emptyIconCircle}>
-                  <Icon name="market" size={36} color={C.textMuted} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {t.market2.noItemsAvailable}
-                </Text>
-                {hasAnyActiveFilters && (
+                  <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    {t.market2.savedEmptyDesc}
+                  </Text>
+                </>
+              ) : tab === 'mine' ? (
+                <>
+                  <View style={styles.emptyIconCircle}>
+                    <Feather name="tag" size={36} color={C.textMuted} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.noListingsYet}
+                  </Text>
                   <TouchableOpacity
-                    style={[styles.emptyActionBtn, { backgroundColor: C.surface2 }]}
-                    onPress={handleResetFilters}
+                    style={[styles.emptyActionBtn, { backgroundColor: MARKET_COLOR }]}
+                    onPress={() => navigation.navigate('MarketPost')}
                     activeOpacity={0.8}
                   >
-                    <Text style={[styles.emptyActionTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.market2.clearFilters}
+                    <Text style={[styles.emptyActionTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.market2.sellItem}
                     </Text>
                   </TouchableOpacity>
-                )}
-              </>
-            )}
-          </View>
-        ) : (
-          <FlatList
-            data={filteredListings}
-            keyExtractor={item => item.id}
-            renderItem={renderItem}
-            numColumns={2}
-            initialNumToRender={6}
-            maxToRenderPerBatch={6}
-            windowSize={5}
-            removeClippedSubviews={Platform.OS === 'android'}
-            columnWrapperStyle={{ gap: cardGap, paddingHorizontal: Layout.screenPadding }}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={MARKET_COLOR} />
-            }
-          />
-        )}
-      </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.emptyIconCircle}>
+                    <Icon name="market" size={36} color={C.textMuted} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.market2.noItemsAvailable}
+                  </Text>
+                  {hasAnyActiveFilters && (
+                    <TouchableOpacity
+                      style={[styles.emptyActionBtn, { backgroundColor: C.surface2 }]}
+                      onPress={handleResetFilters}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.emptyActionTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.market2.clearFilters}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+          )
+        }
+      />
 
       {/* 7. Category Bottom Sheet Modal (Exact Match to Directory Screen) */}
       <Modal

@@ -273,24 +273,25 @@ export function NotificationsScreen({ navigation }: any) {
         }
       />
 
-      <OfflineBanner
-        visible={isOffline}
-        message="Showing cached notifications."
-      />
-
-      {/* Segmented Filter Switcher */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
-        <SegmentedTabs
-          tabs={notifTabs}
-          activeTab={filter}
-          onTabChange={setFilter}
-        />
-      </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner
+          visible={isOffline}
+          message="Showing cached notifications."
+        />
+
+        {/* Segmented Filter Switcher */}
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
+          <SegmentedTabs
+            tabs={notifTabs}
+            activeTab={filter}
+            onTabChange={setFilter}
+          />
+        </View>
         {loading ? (
           <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size="small" color={C.brand} />

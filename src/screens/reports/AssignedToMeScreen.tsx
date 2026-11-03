@@ -209,59 +209,12 @@ export function AssignedToMeScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.reports.assignedTitle} onBack={() => navigation.goBack()} />
 
-      {/* Fixed Search Bar to avoid layout thrashing on keystrokes */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
-          <Icon name="search" size={18} color={C.textMuted} />
-          <TextInput
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-            placeholder={t.reports.searchPlaceholder}
-            placeholderTextColor={C.textMuted}
-            value={query}
-            onChangeText={setQuery}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-              <Icon name="close" size={16} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Status filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-          style={{ flexGrow: 0 }}
-        >
-          {STATUSES.map(s => {
-            const on = filter === s;
-            return (
-              <TouchableOpacity
-                key={s}
-                style={[styles.chip, on
-                  ? { backgroundColor: C.brand, borderColor: C.brand }
-                  : { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => setFilter(s)}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {s === 'All' ? t.common.all : (t.status[s] ?? s)}
-                </Text>
-                <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {counts[s] ?? 0}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
       <FlatList
         data={filtered}
         keyExtractor={keyExtractor}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
         ItemSeparatorComponent={Separator}
@@ -270,6 +223,57 @@ export function AssignedToMeScreen({ navigation }: any) {
         initialNumToRender={8}
         maxToRenderPerBatch={10}
         windowSize={5}
+        ListHeaderComponent={
+          <View style={{ marginBottom: 6 }}>
+            <View style={{ paddingTop: 6 }}>
+              <View style={[styles.searchBar, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Icon name="search" size={18} color={C.textMuted} />
+                <TextInput
+                  style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
+                  placeholder={t.reports.searchPlaceholder}
+                  placeholderTextColor={C.textMuted}
+                  value={query}
+                  onChangeText={setQuery}
+                />
+                {query.length > 0 && (
+                  <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
+                    <Icon name="close" size={16} color={C.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Status filter chips */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chips}
+                keyboardShouldPersistTaps="handled"
+                style={{ flexGrow: 0 }}
+              >
+                {STATUSES.map(s => {
+                  const on = filter === s;
+                  return (
+                    <TouchableOpacity
+                      key={s}
+                      style={[styles.chip, on
+                        ? { backgroundColor: C.brand, borderColor: C.brand }
+                        : { backgroundColor: C.surface, borderColor: C.border }]}
+                      onPress={() => setFilter(s)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[styles.chipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                        {s === 'All' ? t.common.all : (t.status[s] ?? s)}
+                      </Text>
+                      <Text style={[styles.chipCount, { color: on ? 'rgba(255,255,255,0.75)' : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                        {counts[s] ?? 0}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           loading && reports.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>

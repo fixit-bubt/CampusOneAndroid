@@ -197,112 +197,116 @@ export function ManageMarketScreen({ navigation }: any) {
       />
 
       <View style={styles.body}>
-        {/* 2. Strict 58dp Search Bar */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 8 }}>
-          <View style={[styles.searchBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.iconSlot32}>
-              <Feather name="search" size={20} color={C.text} />
-            </View>
-            <TextInput
-              style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search listings..."
-              placeholderTextColor={C.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              clearButtonMode="while-editing"
+        <FlatList
+          data={filteredListings}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.textMuted}
+              colors={[C.textMuted]}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
-                <Feather name="x" size={16} color={C.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+          }
+          ListHeaderComponent={
+            <View>
+              {/* 2. Strict 58dp Search Bar */}
+              <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 8 }}>
+                <View style={[styles.searchBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="search" size={20} color={C.text} />
+                  </View>
+                  <TextInput
+                    style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    placeholder="Search listings..."
+                    placeholderTextColor={C.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    clearButtonMode="while-editing"
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
+                      <Feather name="x" size={16} color={C.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
 
-        {/* 3. Strict 58dp Dropdown Category Bar */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 10 }}>
-          <TouchableOpacity
-            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => setCategoryModalOpen(true)}
-            activeOpacity={0.75}
-          >
-            <View style={styles.iconSlot32}>
-              <Feather name="filter" size={20} color={C.text} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {selectedCategoryLabel}
-              </Text>
-            </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
-          </TouchableOpacity>
-        </View>
-
-        {/* 4. Strict 58dp Filter Tabs Row */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 12 }}>
-          <View style={[styles.tabsRow58, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {(['all', 'Available', 'Sold'] as const).map((s) => {
-              const active = statusFilter === s;
-              const label = s === 'all' ? 'All Items' : s;
-              return (
+              {/* 3. Strict 58dp Dropdown Category Bar */}
+              <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 10 }}>
                 <TouchableOpacity
-                  key={s}
-                  style={[
-                    styles.tabItem58,
-                    active && {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                    },
-                  ]}
-                  onPress={() => setStatusFilter(s)}
+                  style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => setCategoryModalOpen(true)}
                   activeOpacity={0.75}
                 >
-                  <Text
-                    style={[
-                      styles.tabItemTxt,
-                      {
-                        color: active ? C.text : C.textMuted,
-                        fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {label}
-                  </Text>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="filter" size={20} color={C.text} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {selectedCategoryLabel}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-down" size={18} color={C.textMuted} />
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+              </View>
 
-        {/* 5. Count Label */}
-        <View style={styles.countRow}>
-          <Text style={[styles.countTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {filteredListings.length} {filteredListings.length === 1 ? 'listing' : 'listings'} found
-          </Text>
-        </View>
+              {/* 4. Strict 58dp Filter Tabs Row */}
+              <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 12 }}>
+                <View style={[styles.tabsRow58, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  {(['all', 'Available', 'Sold'] as const).map((s) => {
+                    const active = statusFilter === s;
+                    const label = s === 'all' ? 'All Items' : s;
+                    return (
+                      <TouchableOpacity
+                        key={s}
+                        style={[
+                          styles.tabItem58,
+                          active && {
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                          },
+                        ]}
+                        onPress={() => setStatusFilter(s)}
+                        activeOpacity={0.75}
+                      >
+                        <Text
+                          style={[
+                            styles.tabItemTxt,
+                            {
+                              color: active ? C.text : C.textMuted,
+                              fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                            },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
 
-        {/* 6. Listings Feed */}
-        {loading && listings.length === 0 ? (
-          <View style={styles.centerBox}>
-            <ActivityIndicator size="small" color={C.brand} />
-          </View>
-        ) : (
-          <FlatList
-            data={filteredListings}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={C.textMuted}
-                colors={[C.textMuted]}
-              />
-            }
-            ListEmptyComponent={
+              {/* 5. Count Label */}
+              <View style={styles.countRow}>
+                <Text style={[styles.countTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {filteredListings.length} {filteredListings.length === 1 ? 'listing' : 'listings'} found
+                </Text>
+              </View>
+            </View>
+          }
+          ListEmptyComponent={
+            loading && listings.length === 0 ? (
+              <View style={[styles.centerBox, { paddingVertical: 48 }]}>
+                <ActivityIndicator size="small" color={C.brand} />
+              </View>
+            ) : (
               <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <View style={styles.iconSlot32}>
                   <Feather name="inbox" size={32} color={C.textMuted} />
@@ -316,7 +320,8 @@ export function ManageMarketScreen({ navigation }: any) {
                     : 'No campus items currently match this status filter.'}
                 </Text>
               </View>
-            }
+            )
+          }
             renderItem={({ item }) => {
               const seller = peopleMap[item.seller_id];
               const isSold = item.status === 'Sold';
@@ -446,7 +451,6 @@ export function ManageMarketScreen({ navigation }: any) {
               );
             }}
           />
-        )}
       </View>
 
       {/* 7. Category Dropdown Modal (Strict 58dp Bars) */}

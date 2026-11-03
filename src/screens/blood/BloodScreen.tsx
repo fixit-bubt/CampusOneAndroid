@@ -535,150 +535,6 @@ export function BloodScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.blood2.bloodDonation} onBack={() => navigation.goBack()} />
-      <OfflineBanner
-        visible={isOffline}
-        message="Showing cached blood requests and donor directory. Connect to internet to respond or reveal contacts."
-      />
-
-      {/* Prominent Hero Action Bar (Universal 58dp Standard, Parity with Rides & Market) */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
-        <TouchableOpacity
-          style={[styles.heroActBtn, { backgroundColor: SectorColors.blood }]}
-          onPress={() => {
-            if (tab === 'donors' && !myDonor) {
-              navigation.navigate('DonorRegister');
-            } else {
-              navigation.navigate('BloodRequest');
-            }
-          }}
-          activeOpacity={0.85}
-        >
-          <Feather name="plus-circle" size={18} color="#fff" />
-          <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-            {tab === 'donors' && !myDonor
-              ? (t.blood2.registerAsDonorBtn ?? 'Register as Blood Donor')
-              : (t.blood2.requestBloodBtn ?? 'Emergency Blood Request')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Unified Segmented Tab Switcher with Colors */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 8 }}>
-        <SegmentedTabs<Tab>
-          tabs={BLOOD_TABS}
-          activeTab={tab}
-          onTabChange={setTab}
-        />
-      </View>
-
-      {/* Unified Search & Dhaka Location Trigger Row */}
-      <View style={[styles.searchAreaRow, { paddingHorizontal: Layout.screenPadding }]}>
-        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-          <TouchableOpacity
-            onPress={() => searchInputRef.current?.focus()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
-          >
-            <Feather name="search" size={24} color={C.textMuted} />
-          </TouchableOpacity>
-          <TextInput
-            ref={searchInputRef}
-            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-            placeholder={
-              tab === 'requests'
-                ? 'Search hospital, patient, or area...'
-                : 'Search donor name or living area...'
-            }
-            placeholderTextColor={C.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-            onSubmitEditing={() => Keyboard.dismiss()}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearchQuery('')}
-              hitSlop={{ top: 10, bottom: 10, left: 8, right: 10 }}
-            >
-              <Feather name="x" size={15} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View
-          style={[
-            styles.areaPickerTrigger,
-            areaFilter !== 'All'
-              ? {
-                  backgroundColor: isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)',
-                  borderColor: SectorColors.blood,
-                  borderWidth: 1.5,
-                }
-              : { backgroundColor: C.surface, borderColor: C.border },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.areaPickerBtn}
-            onPress={() => setAreaModalVisible(true)}
-            activeOpacity={0.75}
-          >
-            <View style={styles.areaIconBox}>
-              <AnimatedIcon
-                family={isHospitalFilter ? 'mci' : 'feather'}
-                name={isHospitalFilter ? 'hospital-building' : 'map-pin'}
-                size={24}
-                color={C.text}
-              />
-            </View>
-
-            <View style={styles.areaTextStack}>
-              <Text
-                style={[
-                  styles.areaMicroLabel,
-                  {
-                    color: areaFilter !== 'All' ? SectorColors.blood : C.textMuted,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
-                ]}
-              >
-                {isHospitalFilter ? 'HOSPITAL' : 'LOCATION'}
-              </Text>
-              <Text
-                style={[
-                  styles.areaPickerTriggerTxt,
-                  {
-                    color: areaFilter !== 'All' ? (isDark ? '#fff' : SectorColors.blood) : C.text,
-                    fontFamily: FontFamily.jakartaBold,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {displayAreaText}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          {areaFilter !== 'All' ? (
-            <TouchableOpacity
-              onPress={() => setAreaFilter('All')}
-              hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
-              style={styles.areaClearBtn}
-            >
-              <View style={[styles.clearPill, { backgroundColor: isDark ? 'rgba(199, 52, 74, 0.28)' : 'rgba(199, 52, 74, 0.14)', borderColor: SectorColors.blood, borderWidth: 1 }]}>
-                <Feather name="x" size={11} color={SectorColors.blood} />
-              </View>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setAreaModalVisible(true)}
-              hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
-              style={styles.areaClearBtn}
-            >
-              <Feather name="chevron-down" size={13} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -686,6 +542,149 @@ export function BloodScreen({ route, navigation }: any) {
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner
+          visible={isOffline}
+          message="Showing cached blood requests and donor directory. Connect to internet to respond or reveal contacts."
+        />
+
+        {/* Prominent Hero Action Bar (Universal 58dp Standard, Parity with Rides & Market) */}
+        <View style={{ paddingTop: 4, paddingBottom: 8 }}>
+          <TouchableOpacity
+            style={[styles.heroActBtn, { backgroundColor: SectorColors.blood }]}
+            onPress={() => {
+              if (tab === 'donors' && !myDonor) {
+                navigation.navigate('DonorRegister');
+              } else {
+                navigation.navigate('BloodRequest');
+              }
+            }}
+            activeOpacity={0.85}
+          >
+            <Feather name="plus-circle" size={18} color="#fff" />
+            <Text style={[styles.heroActBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+              {tab === 'donors' && !myDonor
+                ? (t.blood2.registerAsDonorBtn ?? 'Register as Blood Donor')
+                : (t.blood2.requestBloodBtn ?? 'Emergency Blood Request')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Unified Segmented Tab Switcher with Colors */}
+        <View style={{ marginBottom: 10 }}>
+          <SegmentedTabs<Tab>
+            tabs={BLOOD_TABS}
+            activeTab={tab}
+            onTabChange={setTab}
+          />
+        </View>
+
+        {/* Unified Search & Dhaka Location Trigger Row */}
+        <View style={[styles.searchAreaRow, { marginBottom: 12 }]}>
+          <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <TouchableOpacity
+              onPress={() => searchInputRef.current?.focus()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
+            >
+              <Feather name="search" size={24} color={C.textMuted} />
+            </TouchableOpacity>
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              placeholder={
+                tab === 'requests'
+                  ? 'Search hospital, patient, or area...'
+                  : 'Search donor name or living area...'
+              }
+              placeholderTextColor={C.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+              onSubmitEditing={() => Keyboard.dismiss()}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, bottom: 10, left: 8, right: 10 }}
+              >
+                <Feather name="x" size={15} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View
+            style={[
+              styles.areaPickerTrigger,
+              areaFilter !== 'All'
+                ? {
+                    backgroundColor: isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)',
+                    borderColor: SectorColors.blood,
+                    borderWidth: 1.5,
+                  }
+                : { backgroundColor: C.surface, borderColor: C.border },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.areaPickerBtn}
+              onPress={() => setAreaModalVisible(true)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.areaIconBox}>
+                <AnimatedIcon
+                  family={isHospitalFilter ? 'mci' : 'feather'}
+                  name={isHospitalFilter ? 'hospital-building' : 'map-pin'}
+                  size={24}
+                  color={C.text}
+                />
+              </View>
+
+              <View style={styles.areaTextStack}>
+                <Text
+                  style={[
+                    styles.areaMicroLabel,
+                    {
+                      color: areaFilter !== 'All' ? SectorColors.blood : C.textMuted,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                >
+                  {isHospitalFilter ? 'HOSPITAL' : 'LOCATION'}
+                </Text>
+                <Text
+                  style={[
+                    styles.areaPickerTriggerTxt,
+                    {
+                      color: areaFilter !== 'All' ? (isDark ? '#fff' : SectorColors.blood) : C.text,
+                      fontFamily: FontFamily.jakartaBold,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {displayAreaText}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {areaFilter !== 'All' ? (
+              <TouchableOpacity
+                onPress={() => setAreaFilter('All')}
+                hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+                style={styles.areaClearBtn}
+              >
+                <View style={[styles.clearPill, { backgroundColor: isDark ? 'rgba(199, 52, 74, 0.28)' : 'rgba(199, 52, 74, 0.14)', borderColor: SectorColors.blood, borderWidth: 1 }]}>
+                  <Feather name="x" size={11} color={SectorColors.blood} />
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => setAreaModalVisible(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+                style={styles.areaClearBtn}
+              >
+                <Feather name="chevron-down" size={13} color={C.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
         {loadState === 'loading' && requests.length === 0 && donors.length === 0 ? (
           <SkeletonList />
         ) : loadState === 'error' && requests.length === 0 && donors.length === 0 ? (
