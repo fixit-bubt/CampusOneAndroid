@@ -4087,3 +4087,18 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx tsc --noEmit`).
   - Native Local Release Build: Locally compiled via Gradle (`assembleRelease`) with release keystore in 42s.
   - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
+
+---
+
+### 106. Administration Explore Deduplication & Announcements Scoping (`ExploreScreen.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Role-Aware Scoping & Deduplication (`ExploreScreen.tsx`):**
+  - Added `'announce'` to `ADMIN_EXCLUDED` in `ExploreScreen.tsx`.
+  - Eliminated the redundant "Announcements" row under Campus Life for Administrator accounts, preserving canonical announcements management strictly within the dedicated Administration ("MANAGE") folder via `ManageAnnouncements` (`ManageAnnouncementsScreen.tsx`).
+- **Student & Staff Integrity Guarantee:**
+  - `isStudent` accounts strictly bypass `ADMIN_EXCLUDED` (`isStudent ? SECTORS : ...`), retaining full access to the student Announcements feed (`AnnouncementsScreen.tsx`) under Campus Life without any interruption.
+  - `isStaff` accounts continue using `STAFF_EXPLORE_SECTORS`, preserving direct 72dp bar access to Announcements.
+  - Zero database or backend impact: All notices, PDF attachments, circulars, and push notification triggers remain 100% intact.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across all files (`npx tsc --noEmit`).
+  - Native Local Release Build: Compiled locally via Gradle (`assembleRelease`) with release keystore.
+  - Physical Device Deployment: Installed and verified on physical USB-connected Android phone (`8734b5da`).
