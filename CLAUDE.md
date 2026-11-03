@@ -4220,3 +4220,22 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore.
   - Physical Device Deployment: Installed and launched on physical USB Android phone (`8734b5da`).
 
+---
+
+### 112. Events Admin Viewport Modernization: Natural Native Scrolling & Full Tab-Bar Eradication (`ManageEventsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Unified Native Scroll Architecture (`ListHeaderComponent`):**
+  - Moved all fixed top controls (58dp Search Bar, 58dp Dropdown Category Bar, 58dp Centered Create Action Bar, and BUBT Official Crawler Sync Card) into `ListHeaderComponent` of `FlatList`.
+  - Solved screen viewport constriction where pinned headers previously occupied ~350dp of vertical height, choking event card visibility to only 1 item at a time.
+  - When scrolling up, top bars smoothly scroll off-screen with native momentum, allowing administrators to comfortably view multiple event cards simultaneously while preserving easy access on scroll-back and pull-to-refresh.
+- **Tab Bar Eradication:**
+  - Removed redundant 3-tab bar (`tabsRow58`: `All Events`, `Upcoming`, `Past`) completely, eliminating arbitrary status slicing in favor of unified chronological display and real-time live event status badges (`Ongoing`, `Today`, `Upcoming`, `Ended`).
+  - Purged unused `tabFilter`, `setTabFilter`, and `tabCounts` computation, streamlining memory and render passes.
+- **58dp Architectural Consistency:**
+  - Standardized Create Campus Event button to strict 58dp bar (`createBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`) with 20dp vector `plus-circle` icon.
+  - Category dropdown and search bar maintain strict 58dp heights with 28dp/20dp monochrome vector icons.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx.cmd tsc --noEmit`).
+  - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 46s`).
+  - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
+
+

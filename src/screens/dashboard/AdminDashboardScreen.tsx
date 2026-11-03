@@ -40,14 +40,14 @@ function issueKey(cat?: string): string {
   return 'other';
 }
 
-function statusTone(C: any, status: string): { fg: string; bg: string } {
+function statusTone(C: any, status: string): { fg: string; bg: string; border?: string } {
   switch (status) {
-    case 'In Progress': return { fg: C.info,      bg: C.infoBg };
-    case 'Resolved':    return { fg: C.success,   bg: C.successBg };
-    case 'Closed':      return { fg: C.textMuted, bg: C.surface2 };
-    case 'Rejected':    return { fg: C.danger,    bg: C.dangerBg };
+    case 'In Progress': return { fg: C.brand,     bg: C.brand + '14', border: C.brand + '30' };
+    case 'Resolved':    return { fg: C.textMuted, bg: C.surface2,     border: C.border };
+    case 'Closed':      return { fg: C.textMuted, bg: C.surface2,     border: C.border };
+    case 'Rejected':    return { fg: C.danger,    bg: C.dangerBg,     border: C.danger + '30' };
     case 'Open':
-    default:            return { fg: C.warn,      bg: C.warnBg };
+    default:            return { fg: C.text,      bg: C.surface2,     border: C.border };
   }
 }
 
@@ -161,7 +161,7 @@ const ReportCard = memo(function ReportCard({
         </View>
         <View style={styles.reportBody}>
           <View style={styles.codeRow}>
-            <Text style={[styles.codeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+            <Text style={[styles.codeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {code}
             </Text>
           </View>
@@ -175,8 +175,12 @@ const ReportCard = memo(function ReportCard({
             </Text>
           </View>
         </View>
-        <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
-          <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
+        <View style={[styles.statusPill, { backgroundColor: statusConf.bg, borderColor: statusConf.border ?? C.border, borderWidth: 1 }]}>
+          {r.status === 'Resolved' || r.status === 'Closed' ? (
+            <Icon name="check" size={11} color={statusConf.fg} />
+          ) : (
+            <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
+          )}
           <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>
             {statusLabel}
           </Text>
@@ -197,7 +201,7 @@ const ReportCard = memo(function ReportCard({
         </Text>
       </View>
 
-      {/* Action Strip */}
+      {/* Action Strip: Only Open/Unassigned reports require full-width action button */}
       {(!r.assigned_staff_id || r.status === 'Open') && (
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: C.brand }]}
@@ -214,28 +218,55 @@ const ReportCard = memo(function ReportCard({
         </TouchableOpacity>
       )}
 
+      {/* In Progress: Clean technician row with compact reassign action */}
       {r.status === 'In Progress' && (
-        <TouchableOpacity
-          style={[styles.reassignBtn, { borderColor: C.border }]}
-          onPress={(e) => {
-            e?.stopPropagation?.();
-            onAssign(r);
-          }}
-          activeOpacity={0.8}
-        >
-          <Icon name="userCheck" size={15} color={C.brand} />
-          <Text style={[styles.reassignTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-            {r.assignee_name ? t.dash.reassignTo(r.assignee_name) : t.dash.reassign}
-          </Text>
-        </TouchableOpacity>
+        <View style={[styles.staffRow, { borderTopColor: C.border }]}>
+          <View style={styles.staffInfo}>
+            <Avatar name={r.assignee_name || 'Staff'} size="xs" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.staffLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Assigned
+              </Text>
+              <Text style={[styles.staffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {r.assignee_name || 'Staff Member'}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.reassignCompactBtn, { borderColor: C.brand }]}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              onAssign(r);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.reassignCompactTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              {t.dash.reassign ?? 'Reassign'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
-      {(r.status === 'Resolved' || r.status === 'Closed') && (
-        <View style={[styles.resolvedBtn, { backgroundColor: C.successBg, borderWidth: 1, borderColor: C.success + '40' }]}>
-          <Icon name="check" size={16} color={C.success} />
-          <Text style={[styles.resolvedTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-            {r.assignee_name ? `${t.dash.statResolved} · ${r.assignee_name}` : t.common.done}
-          </Text>
+      {/* Resolved: Quiet metadata row with check, zero fake buttons */}
+      {(r.status === 'Resolved' || r.status === 'Closed') && r.assignee_name && (
+        <View style={[styles.staffRow, { borderTopColor: C.border }]}>
+          <View style={styles.staffInfo}>
+            <Avatar name={r.assignee_name} size="xs" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.staffLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                Resolved by
+              </Text>
+              <Text style={[styles.staffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                {r.assignee_name}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.resolvedBadgeCompact, { backgroundColor: C.surface2, borderColor: C.border }]}>
+            <Icon name="check" size={11} color={C.textMuted} />
+            <Text style={[styles.resolvedBadgeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {t.common.done}
+            </Text>
+          </View>
         </View>
       )}
     </TouchableOpacity>
@@ -527,16 +558,16 @@ export function AdminDashboardScreen({ navigation }: any) {
                       </Text>
                     </View>
                     {stats.unassigned > 0 ? (
-                      <View style={[styles.activePill, { backgroundColor: C.warnBg }]}>
-                        <View style={[styles.activeDot, { backgroundColor: C.warn }]} />
-                        <Text style={[styles.activePillTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                      <View style={[styles.activePill, { backgroundColor: C.brand + '15', borderColor: C.brand + '30', borderWidth: 1 }]}>
+                        <View style={[styles.activeDot, { backgroundColor: C.brand }]} />
+                        <Text style={[styles.activePillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                           {stats.unassigned} {t.dash.statUnassigned.toLowerCase()}
                         </Text>
                       </View>
                     ) : (
-                      <View style={[styles.allClearPill, { backgroundColor: C.successBg }]}>
-                        <Icon name="check" size={11} color={C.success} />
-                        <Text style={[styles.allClearPillTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                      <View style={[styles.allClearPill, { backgroundColor: C.surface2, borderColor: C.border, borderWidth: 1 }]}>
+                        <Icon name="check" size={11} color={C.textMuted} />
+                        <Text style={[styles.allClearPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                           {t.dash.allClear}
                         </Text>
                       </View>

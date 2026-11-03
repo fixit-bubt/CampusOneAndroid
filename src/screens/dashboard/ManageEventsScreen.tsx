@@ -46,8 +46,6 @@ const CATEGORY_OPTIONS: CategoryOption[] = [
   { id: 'Career',   label: 'Career',         icon: 'briefcase' },
 ];
 
-type EventTabFilter = 'all' | 'upcoming' | 'past';
-
 const EventAdminCard = memo(function EventAdminCard({
   item,
   rsvpCount,
@@ -198,10 +196,9 @@ export function ManageEventsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [syncingCrawler, setSyncingCrawler] = useState(false);
 
-  // Filters: 58dp search, 58dp category bar, 58dp tabs
+  // Filters: 58dp search, 58dp category bar
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [tabFilter, setTabFilter] = useState<EventTabFilter>('all');
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -307,22 +304,14 @@ export function ManageEventsScreen({ navigation }: any) {
   const filteredEvents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return events.filter((ev) => {
-      // 1. Tab filter
-      const liveStatus = getEventLiveStatus(ev);
-      if (tabFilter === 'upcoming') {
-        if (liveStatus.status === 'Ended') return false;
-      } else if (tabFilter === 'past') {
-        if (liveStatus.status !== 'Ended') return false;
-      }
-
-      // 2. Category filter
+      // 1. Category filter
       if (selectedCategory !== 'All') {
         if (ev.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
           return false;
         }
       }
 
-      // 3. Search query
+      // 2. Search query
       if (q) {
         const textBlob = [
           ev.title,
@@ -340,29 +329,7 @@ export function ManageEventsScreen({ navigation }: any) {
 
       return true;
     });
-  }, [events, tabFilter, selectedCategory, searchQuery]);
-
-  // Counts for Option A (3 Tabs)
-  const tabCounts = useMemo(() => {
-    let allCount = 0;
-    let upcomingCount = 0;
-    let pastCount = 0;
-
-    events.forEach((ev) => {
-      if (selectedCategory !== 'All' && ev.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
-        return;
-      }
-      allCount++;
-      const s = getEventLiveStatus(ev);
-      if (s.status === 'Ended') {
-        pastCount++;
-      } else {
-        upcomingCount++;
-      }
-    });
-
-    return { all: allCount, upcoming: upcomingCount, past: pastCount };
-  }, [events, selectedCategory]);
+  }, [events, selectedCategory, searchQuery]);
 
   const selectedCategoryLabel =
     CATEGORY_OPTIONS.find((c) => c.id === selectedCategory)?.label ?? 'All Categories';
@@ -401,151 +368,6 @@ export function ManageEventsScreen({ navigation }: any) {
       />
 
       <View style={styles.body}>
-        {/* 2. Strict 58dp Search Bar */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 8 }}>
-          <View style={[styles.searchBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.iconSlot32}>
-              <Feather name="search" size={20} color={C.text} />
-            </View>
-            <TextInput
-              style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              placeholder="Search events, clubs, venues, or speakers..."
-              placeholderTextColor={C.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
-                <Feather name="x" size={16} color={C.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* 3. Strict 58dp Dropdown Category Bar with 28dp vector icon */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 10 }}>
-          <TouchableOpacity
-            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => setCategoryModalOpen(true)}
-            activeOpacity={0.75}
-          >
-            <View style={styles.iconSlot32}>
-              <Feather name="layers" size={28} color={C.text} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {selectedCategoryLabel}
-              </Text>
-            </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
-          </TouchableOpacity>
-        </View>
-
-        {/* 4. Strict 58dp Filter Tabs Row (Option A: 3 Tabs) */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 12 }}>
-          <View style={[styles.tabsRow58, { backgroundColor: C.surface, borderColor: C.border }]}>
-            {(['all', 'upcoming', 'past'] as const).map((tab) => {
-              const active = tabFilter === tab;
-              const count = tabCounts[tab];
-              const label =
-                tab === 'all'
-                  ? (t.events2.allEvents ?? 'All')
-                  : tab === 'upcoming'
-                    ? (t.events2.upcoming ?? 'Upcoming')
-                    : (t.events2.past ?? 'Past');
-
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  style={[
-                    styles.tabItem58,
-                    active && {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                    },
-                  ]}
-                  onPress={() => setTabFilter(tab)}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.tabItemTxt,
-                      {
-                        color: active ? C.text : C.textMuted,
-                        fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {label} ({count})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* 5. Clean 52dp Centered Create Event Action Bar */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 10 }}>
-          <TouchableOpacity
-            style={[styles.createBar52, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => navigation.navigate('EventPost')}
-            activeOpacity={0.75}
-          >
-            <Feather name="plus-circle" size={20} color={C.text} />
-            <Text style={[styles.createBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-              {t.events2.createCampusEvent ?? 'Create Campus Event'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 6. BUBT Automated Sync Card (Identical to Notice Board & Academic Calendar) */}
-        <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 12 }}>
-          <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={styles.syncCardTop}>
-              <View style={styles.syncIconWrap}>
-                <Feather name="refresh-cw" size={32} color={C.text} />
-              </View>
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  BUBT Official Events Calendar
-                </Text>
-                <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  Automated crawler for bubt.edu.bd/events
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.syncActionBtn,
-                {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                  borderColor: C.border,
-                  borderWidth: 1,
-                },
-              ]}
-              onPress={handleSyncCrawler}
-              disabled={syncingCrawler}
-              activeOpacity={0.85}
-            >
-              {syncingCrawler ? (
-                <ActivityIndicator color={C.text} size="small" />
-              ) : (
-                <>
-                  <Feather name="globe" size={18} color={C.text} />
-                  <Text style={[styles.syncActionTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    Sync from BUBT Website
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 7. Events List */}
         {loading ? (
           <View style={styles.loaderWrap}>
             <ActivityIndicator size="small" color={C.brand} />
@@ -556,6 +378,7 @@ export function ManageEventsScreen({ navigation }: any) {
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -568,6 +391,102 @@ export function ManageEventsScreen({ navigation }: any) {
             maxToRenderPerBatch={10}
             windowSize={5}
             removeClippedSubviews={true}
+            ListHeaderComponent={
+              <View style={styles.listHeader}>
+                {/* 1. Strict 58dp Search Bar */}
+                <View style={[styles.searchBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="search" size={20} color={C.text} />
+                  </View>
+                  <TextInput
+                    style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    placeholder="Search events, clubs, venues, or speakers..."
+                    placeholderTextColor={C.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    clearButtonMode="while-editing"
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: 4 }}>
+                      <Feather name="x" size={16} color={C.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* 2. Strict 58dp Dropdown Category Bar with 28dp vector icon */}
+                <TouchableOpacity
+                  style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 }]}
+                  onPress={() => setCategoryModalOpen(true)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.iconSlot32}>
+                    <Feather name="layers" size={28} color={C.text} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {selectedCategoryLabel}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-down" size={18} color={C.textMuted} />
+                </TouchableOpacity>
+
+                {/* 3. Strict 58dp Centered Create Event Action Bar */}
+                <TouchableOpacity
+                  style={[styles.createBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+                  onPress={() => navigation.navigate('EventPost')}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="plus-circle" size={20} color={C.text} />
+                  <Text style={[styles.createBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {t.events2.createCampusEvent ?? 'Create Campus Event'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* 4. BUBT Automated Sync Card */}
+                <View style={[styles.syncCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <View style={styles.syncCardTop}>
+                    <View style={styles.syncIconWrap}>
+                      <Feather name="refresh-cw" size={32} color={C.text} />
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center' }}>
+                      <Text style={[styles.syncTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        BUBT Official Events Calendar
+                      </Text>
+                      <Text style={[styles.syncSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+                        Automated crawler for bubt.edu.bd/events
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.syncActionBtn,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                        borderColor: C.border,
+                        borderWidth: 1,
+                      },
+                    ]}
+                    onPress={handleSyncCrawler}
+                    disabled={syncingCrawler}
+                    activeOpacity={0.85}
+                  >
+                    {syncingCrawler ? (
+                      <ActivityIndicator color={C.text} size="small" />
+                    ) : (
+                      <>
+                        <Feather name="globe" size={18} color={C.text} />
+                        <Text style={[styles.syncActionTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          Sync from BUBT Website
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            }
             ListEmptyComponent={
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <View style={styles.iconSlot32}>
@@ -577,9 +496,9 @@ export function ManageEventsScreen({ navigation }: any) {
                   No events found
                 </Text>
                 <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {searchQuery.trim()
+                  {searchQuery.trim() || selectedCategory !== 'All'
                     ? 'No campus events match your query or category filter.'
-                    : 'No events under this tab. Tap above to post or sync events.'}
+                    : 'No campus events found. Tap above to post or sync events.'}
                 </Text>
               </View>
             }
@@ -681,6 +600,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
+  listHeader: {
+    paddingTop: 8,
+  } as ViewStyle,
+
   // Strict 58dp Search Bar
   searchBar58: {
     height: 58,
@@ -689,6 +612,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
+    marginBottom: 10,
   } as ViewStyle,
   iconSlot32: {
     width: 32,
@@ -716,39 +640,19 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
   } as TextStyle,
 
-  // Option A: 58dp 3-Tab Switcher Bar
-  tabsRow58: {
+  // Strict 58dp Centered Create Action Bar
+  createBar58: {
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 4,
-    gap: 4,
-  } as ViewStyle,
-  tabItem58: {
-    flex: 1,
-    height: '100%',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  tabItemTxt: {
-    fontSize: 13,
-  } as TextStyle,
-
-  // Clean 52dp Centered Create Action Bar
-  createBar52: {
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    marginBottom: 10,
   } as ViewStyle,
   createBarTxt: {
-    fontSize: 14,
+    fontSize: 14.5,
   } as TextStyle,
 
   // BUBT Crawler Sync Card (Matches ManageAnnouncementsScreen & ManageAcademicCalendarScreen)
@@ -756,7 +660,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 14,
-    marginBottom: 4,
+    marginBottom: 14,
   } as ViewStyle,
   syncCardTop: {
     flexDirection: 'row',
