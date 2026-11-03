@@ -215,14 +215,9 @@ export function ClubDetailScreen({ route, navigation }: any) {
         title={club.name}
         onBack={() => navigation.goBack()}
         rightSlot={canManageMembers ? (
-          <View style={styles.rightRow}>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubMembers', { clubId: club.id, clubName: club.name })} activeOpacity={0.75}>
-              <Feather name="users" size={22} color={C.text} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
-              <Feather name="sliders" size={22} color={C.text} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('ClubManage', { clubId: club.id })} activeOpacity={0.75}>
+            <Feather name="sliders" size={22} color={C.text} />
+          </TouchableOpacity>
         ) : undefined}
       />
 
@@ -310,6 +305,23 @@ export function ClubDetailScreen({ route, navigation }: any) {
             <Feather name="plus-circle" size={24} color={C.text} />
             <Text style={[styles.barTitleCenter, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               Create Club Post
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Dedicated 58dp Manage Members Bar for President & VP (Above Feed & Centered) */}
+        {canManageMembers && (
+          <TouchableOpacity
+            style={[
+              styles.bar58Center,
+              { backgroundColor: C.surface, borderColor: C.border, marginTop: canPost ? 10 : 14 },
+            ]}
+            onPress={() => navigation.navigate('ClubMembers', { clubId: club.id, clubName: club.name })}
+            activeOpacity={0.75}
+          >
+            <Feather name="users" size={24} color={C.text} />
+            <Text style={[styles.barTitleCenter, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              Manage Members
             </Text>
           </TouchableOpacity>
         )}
