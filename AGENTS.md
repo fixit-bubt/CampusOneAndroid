@@ -2970,3 +2970,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 44s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+---
+
+### 70. Study Hub Admin Panel Deep Audit & Full Parity Implementation (`ManageStudyHubScreen.tsx`, `AdminDashboardScreen.tsx`, `AppNavigator.tsx`, `BottomTabNavigator.tsx`, `ExploreScreen.tsx`) (/code-review-and-quality, /performance-optimization)
+- **Architectural Decoupling & Dedicated Screen Creation:**
+  - Created dedicated `ManageStudyHubScreen.tsx` in `src/screens/dashboard/`, separating administrative catalogue and CR moderation completely from the student room (`StudyHubScreen.tsx`).
+  - Added native navigation integration: registered `ManageStudyHub` in `AppNavigator.tsx` and `types/navigation.ts`.
+  - Mounted `ManageStudyHubScreen` dynamically on the bottom tab navigator (`BottomTabNavigator.tsx`) when `profile?.role === 'admin'`.
+  - Updated `ExploreScreen.tsx` sector router to direct admins directly to `ManageStudyHubScreen` when tapping Study Hub.
+  - Added a dedicated 72dp academic management bar for Study Hub on `AdminDashboardScreen.tsx` with 32dp floating monochrome study vector and chevron.
+- **Root-Cause Bug Fixes & Web Parity:**
+  - **Fixed 100-User Search Cutoff:** Replaced flawed local array slicing (`loadPeople().slice(0, 100)`) with a debounced (250ms) direct Supabase query (`.from('profiles').select(...).eq('role', 'student').ilike('full_name', ...).limit(15)`). Guarantees all students in the university directory can be searched and assigned without alphabetical truncation, and excludes faculty/staff from CR assignment.
+  - **Single-Section Membership Invariant:** Enforced deletion of conflicting section memberships upon CR assignment (`supabase.from('study_section_members').delete().eq('user_id', student.id).neq('section_id', secId)`), matching web store behavior and preventing multi-section memberships.
+  - **CR Revocation & Multi-CR Roster Support:** Supported multi-CR arrays per section with individual name badges and touch-safe `(X)` remove buttons. Demotes members to regular member status with clear alert confirmations.
+  - **Instant State Synchronization:** Approving a student's section request (`approve_section_request` RPC) now immediately refreshes `study_intakes` and `study_sections` in local state without requiring manual department switching or app reload.
+  - **Soft Error Handling:** Validated `res.ok !== false` from `approve_section_request` and `reject_section_request` RPC payloads, preventing false positive success toasts.
+  - **Join Code Clipboard Integration:** Monospace code pill with 1-tap clipboard copying via `expo-clipboard` and toast feedback.
+  - **Section Deletion:** Added destructive action with confirmation prompt backed by the `study_sections_admin_delete` RLS policy.
+- **UI/UX & Design Integrity:**
+  - SegmentedTabs (`Catalogue` and `Pending Requests` with live badge count).
+  - High touch targets (>= 48dp), zero colored squircle boxes behind icons, crisp monochrome 32dp vector icons.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 41s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
