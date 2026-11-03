@@ -33,15 +33,14 @@ const STATUS_TABS: { id: StatusFilter; label: string }[] = [
 
 const CATEGORIES = ['All', 'Electrical', 'Plumbing', 'Cleanliness', 'IT / Network', 'Furniture', 'Safety / Security', 'Other'];
 
-// Status colors, light + dark aware via C.
-function statusTone(C: any, status: string): { text: string; bg: string } {
+function statusTone(C: any, status: string): { text: string; bg: string; border?: string } {
   switch (status) {
-    case 'In Progress': return { text: C.info,      bg: C.infoBg };
-    case 'Resolved':    return { text: C.success,   bg: C.successBg };
-    case 'Closed':      return { text: C.textMuted, bg: C.surface2 };
-    case 'Rejected':    return { text: C.danger,    bg: C.dangerBg };
+    case 'In Progress': return { text: C.brand,     bg: C.brand + '14', border: C.brand + '30' };
+    case 'Resolved':    return { text: C.textMuted, bg: C.surface2,     border: C.border };
+    case 'Closed':      return { text: C.textMuted, bg: C.surface2,     border: C.border };
+    case 'Rejected':    return { text: C.danger,    bg: C.dangerBg,     border: C.danger + '30' };
     case 'Open':
-    default:            return { text: C.warn,      bg: C.warnBg };
+    default:            return { text: C.text,      bg: C.surface2,     border: C.border };
   }
 }
 
@@ -278,7 +277,10 @@ export function AllReportsScreen({ navigation }: any) {
                     </Text>
                   </View>
                 </View>
-                <View style={[styles.statusPill, { backgroundColor: tone.bg }]}>
+                <View style={[styles.statusPill, { backgroundColor: tone.bg, borderColor: tone.border ?? C.border, borderWidth: 1 }]}>
+                  {r.status === 'Resolved' || r.status === 'Closed' ? (
+                    <Icon name="check" size={11} color={tone.text} />
+                  ) : null}
                   <Text style={[styles.statusTxt, { color: tone.text, fontFamily: FontFamily.jakartaBold }]}>
                     {r.status}
                   </Text>

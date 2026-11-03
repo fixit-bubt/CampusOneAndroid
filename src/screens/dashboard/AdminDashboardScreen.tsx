@@ -227,7 +227,7 @@ const ReportCard = memo(function ReportCard({
               <Text style={[styles.staffLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 Assigned
               </Text>
-              <Text style={[styles.staffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              <Text style={[styles.cardStaffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {r.assignee_name || 'Staff Member'}
               </Text>
             </View>
@@ -256,7 +256,7 @@ const ReportCard = memo(function ReportCard({
               <Text style={[styles.staffLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                 Resolved by
               </Text>
-              <Text style={[styles.staffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              <Text style={[styles.cardStaffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {r.assignee_name}
               </Text>
             </View>
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   } as any,
-  staffNameTxt: {
+  cardStaffNameTxt: {
     fontSize: 12.5,
     lineHeight: 16,
   } as any,

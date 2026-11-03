@@ -41,14 +41,14 @@ function issueKey(cat?: string): string {
   return 'other';
 }
 
-function statusTone(C: any, status: string): { fg: string; bg: string } {
+function statusTone(C: any, status: string): { fg: string; bg: string; border?: string } {
   switch (status) {
-    case 'In Progress': return { fg: C.info,      bg: C.infoBg };
-    case 'Resolved':    return { fg: C.success,   bg: C.successBg };
-    case 'Closed':      return { fg: C.textMuted, bg: C.surface2 };
-    case 'Rejected':    return { fg: C.danger,    bg: C.dangerBg };
+    case 'In Progress': return { fg: C.brand,     bg: C.brand + '14', border: C.brand + '30' };
+    case 'Resolved':    return { fg: C.textMuted, bg: C.surface2,     border: C.border };
+    case 'Closed':      return { fg: C.textMuted, bg: C.surface2,     border: C.border };
+    case 'Rejected':    return { fg: C.danger,    bg: C.dangerBg,     border: C.danger + '30' };
     case 'Open':
-    default:            return { fg: C.warn,      bg: C.warnBg };
+    default:            return { fg: C.text,      bg: C.surface2,     border: C.border };
   }
 }
 
@@ -149,7 +149,7 @@ const ReportCard = memo(function ReportCard({
         </View>
         <View style={styles.reportBody}>
           <View style={styles.codeRow}>
-            <Text style={[styles.codeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+            <Text style={[styles.codeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
               {code}
             </Text>
           </View>
@@ -163,8 +163,12 @@ const ReportCard = memo(function ReportCard({
             </Text>
           </View>
         </View>
-        <View style={[styles.statusPill, { backgroundColor: statusConf.bg }]}>
-          <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
+        <View style={[styles.statusPill, { backgroundColor: statusConf.bg, borderColor: statusConf.border ?? C.border, borderWidth: 1 }]}>
+          {r.status === 'Resolved' || r.status === 'Closed' ? (
+            <Icon name="check" size={11} color={statusConf.fg} />
+          ) : (
+            <View style={[styles.statusDot, { backgroundColor: statusConf.fg }]} />
+          )}
           <Text style={[styles.statusTxt, { color: statusConf.fg, fontFamily: FontFamily.jakartaBold }]}>
             {statusLabel}
           </Text>
@@ -218,9 +222,9 @@ const ReportCard = memo(function ReportCard({
       )}
 
       {r.status === 'Resolved' && (
-        <View style={[styles.actionBtn, { backgroundColor: C.successBg, borderWidth: 1, borderColor: C.success + '40' }]}>
-          <Icon name="check" size={16} color={C.success} />
-          <Text style={[styles.actionTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 10, alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.border }}>
+          <Icon name="check" size={12} color={C.textMuted} />
+          <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaBold, fontSize: 11.5 }}>
             {t.common.done}
           </Text>
         </View>
