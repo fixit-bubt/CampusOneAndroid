@@ -10,7 +10,6 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { Feather } from '@expo/vector-icons';
 import { FontFamily, Layout, Radius, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { personName } from '../../services/peopleService';
@@ -49,9 +48,7 @@ function formatDate(iso: string): string {
 interface StatusAction {
   status: Report['status'];
   label: string;
-  desc: string;
   icon: string;
-  tone: string;
 }
 
 interface StaffCandidate {
@@ -148,9 +145,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         list.push({
           status: 'Resolved',
           label: 'Mark Resolved',
-          desc: 'Verify repairs and complete ticket',
-          icon: 'check-circle',
-          tone: C.success,
+          icon: 'check',
         });
       }
       // 2. Reject Report
@@ -158,9 +153,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         list.push({
           status: 'Rejected',
           label: 'Reject Report',
-          desc: 'Mark as invalid, spam, or duplicate issue',
-          icon: 'slash',
-          tone: C.danger,
+          icon: 'close',
         });
       }
       // 3. Close Ticket
@@ -168,9 +161,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         list.push({
           status: 'Closed',
           label: 'Close Ticket',
-          desc: 'Archive this report ticket',
           icon: 'lock',
-          tone: C.textMuted,
         });
       }
       // 4. Reopen Ticket (if closed, rejected, or resolved)
@@ -178,9 +169,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         list.push({
           status: 'Open',
           label: 'Reopen Ticket',
-          desc: 'Return ticket to open triage pool',
           icon: 'rotate-ccw',
-          tone: C.warn,
         });
       }
     } else if (isAssignedStaff) {
@@ -189,23 +178,19 @@ export function ReportDetailScreen({ route, navigation }: any) {
         list.push({
           status: 'In Progress',
           label: 'Start Work',
-          desc: 'Begin repairs and update status to In Progress',
           icon: 'play',
-          tone: C.brand,
         });
       } else if (report.status === 'In Progress') {
         list.push({
           status: 'Resolved',
           label: 'Mark Resolved',
-          desc: 'All repairs completed and issue is resolved',
-          icon: 'check-circle',
-          tone: C.success,
+          icon: 'check',
         });
       }
     }
 
     return list;
-  }, [report, isAdmin, isAssignedStaff, C]);
+  }, [report, isAdmin, isAssignedStaff]);
 
   // Ranked staff by expertise match with report category
   const rankedStaff = useMemo(() => {
@@ -406,7 +391,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
                   onPress={() => setAssignModalOpen(true)}
                   activeOpacity={0.75}
                 >
-                  <Feather name="user-plus" size={13} color={C.brand} />
+                  <Icon name="userPlus" size={13} color={C.brand} />
                   <Text style={[styles.assignQuickTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                     Assign Staff
                   </Text>
@@ -503,21 +488,18 @@ export function ReportDetailScreen({ route, navigation }: any) {
               activeOpacity={0.75}
               disabled={updatingStatus}
             >
-              <View style={styles.dropdownBarLeft}>
-                <View style={[styles.statusDot, { backgroundColor: statusStyle.text }]} />
-                <View style={styles.dropdownBarTexts}>
-                  <Text style={[styles.dropdownBarSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    {isAdmin ? 'CHANGE STATUS OR LIFECYCLE' : 'TECHNICIAN PROGRESS'}
-                  </Text>
-                  <Text style={[styles.dropdownBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    Current: {t.status[report.status] ?? report.status}
-                  </Text>
-                </View>
+              <View style={styles.iconSlot32}>
+                <Icon name="sliders" size={24} color={C.text} />
+              </View>
+              <View style={styles.dropdownBarBody}>
+                <Text style={[styles.dropdownBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {isAdmin ? 'Administrative Actions' : 'Update Status'} · {t.status[report.status] ?? report.status}
+                </Text>
               </View>
               {updatingStatus ? (
                 <ActivityIndicator size="small" color={C.brand} />
               ) : (
-                <Feather name="chevron-down" size={18} color={C.textMuted} />
+                <Icon name="chevD" size={18} color={C.textMuted} />
               )}
             </TouchableOpacity>
           </View>
@@ -544,66 +526,58 @@ export function ReportDetailScreen({ route, navigation }: any) {
       <Modal
         visible={statusModalOpen}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setStatusModalOpen(false)}
       >
         <TouchableOpacity
-          style={styles.modalBackdrop}
+          style={styles.overlay}
           activeOpacity={1}
           onPress={() => setStatusModalOpen(false)}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border }]}
-          >
-            <View style={styles.modalHeader}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                  {isAdmin ? 'Administrative Actions' : 'Update Progress'}
-                </Text>
-                <Text style={[styles.modalSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                  {isAdmin ? 'Select ticket lifecycle state' : 'Advance work on this assigned report'}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={() => setStatusModalOpen(false)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Feather name="x" size={20} color={C.textMuted} />
-              </TouchableOpacity>
-            </View>
+        />
+        <View style={[styles.sheet, { backgroundColor: C.surface, borderColor: C.border, borderTopWidth: 1 }]}>
+          <View style={styles.sheetHeader}>
+            <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {isAdmin ? 'Administrative Actions' : 'Update Status'}
+            </Text>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setStatusModalOpen(false)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Icon name="close" size={20} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.modalOptions}>
-              {availableActions.map((opt) => (
-                <TouchableOpacity
-                  key={opt.status}
-                  style={[styles.modalRow58, { backgroundColor: C.surface2, borderColor: C.border }]}
-                  onPress={() => {
-                    setStatusModalOpen(false);
-                    handleStatusUpdate(opt.status);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.modalRowLeft}>
-                    <View style={[styles.modalRowIconBox, { backgroundColor: opt.tone + '18' }]}>
-                      <Feather name={opt.icon as any} size={18} color={opt.tone} />
-                    </View>
-                    <View style={styles.modalRowTexts}>
-                      <Text style={[styles.modalRowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        {opt.label}
-                      </Text>
-                      <Text style={[styles.modalRowDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {opt.desc}
-                      </Text>
-                    </View>
-                  </View>
-                  <Feather name="chevron-right" size={16} color={C.textMuted} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          <View style={styles.actionList}>
+            {availableActions.map((opt) => (
+              <TouchableOpacity
+                key={opt.status}
+                style={[
+                  styles.actionRow58,
+                  {
+                    backgroundColor: C.surface2,
+                    borderColor: C.border,
+                  },
+                ]}
+                onPress={() => {
+                  setStatusModalOpen(false);
+                  handleStatusUpdate(opt.status);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.iconSlot32}>
+                  <Icon name={opt.icon} size={32} color={C.text} />
+                </View>
+                <View style={styles.actionRowBody}>
+                  <Text style={[styles.actionRowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    {opt.label}
+                  </Text>
+                </View>
+                <Icon name="chevR" size={18} color={C.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
       </Modal>
 
       {/* Staff Assignment Bottom Sheet Modal for Admin */}
@@ -611,85 +585,72 @@ export function ReportDetailScreen({ route, navigation }: any) {
         <Modal
           visible={assignModalOpen}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setAssignModalOpen(false)}
         >
           <TouchableOpacity
-            style={styles.modalBackdrop}
+            style={styles.overlay}
             activeOpacity={1}
             onPress={() => setAssignModalOpen(false)}
-          >
-            <TouchableOpacity
-              activeOpacity={1}
-              style={[styles.modalSheet, { backgroundColor: C.surface, borderColor: C.border, maxHeight: '80%' }]}
-            >
-              <View style={styles.modalHeader}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[styles.modalTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                    {assigneeName ? 'Reassign Staff' : 'Assign Maintenance Staff'}
-                  </Text>
-                  <Text style={[styles.modalSubtitle, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    Select a technician for {report.category}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.modalCloseBtn}
-                  onPress={() => setAssignModalOpen(false)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Feather name="x" size={20} color={C.textMuted} />
-                </TouchableOpacity>
-              </View>
+          />
+          <View style={[styles.sheet, { backgroundColor: C.surface, borderColor: C.border, borderTopWidth: 1, maxHeight: '80%' }]}>
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+                {assigneeName ? 'Reassign Staff' : 'Assign Maintenance Staff'}
+              </Text>
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={() => setAssignModalOpen(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="close" size={20} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
 
-              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
-                {rankedStaff.map((s) => {
-                  const isMatch = s.expertise === report.category;
-                  const isCurrent = report.assigned_staff_id === s.id;
-                  return (
-                    <TouchableOpacity
-                      key={s.id}
-                      style={[
-                        styles.modalRow58,
-                        {
-                          backgroundColor: isCurrent ? (C.brand + '14') : C.surface2,
-                          borderColor: isCurrent ? C.brand : C.border,
-                        },
-                      ]}
-                      onPress={() => handleAssignStaff(s.id)}
-                      activeOpacity={0.75}
-                      disabled={assigningStaff}
-                    >
-                      <View style={styles.modalRowLeft}>
-                        <Avatar name={s.full_name} size="sm" />
-                        <View style={styles.modalRowTexts}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            <Text style={[styles.modalRowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                              {s.full_name}
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
+              {rankedStaff.map((s) => {
+                const isMatch = s.expertise === report.category;
+                const isCurrent = report.assigned_staff_id === s.id;
+                return (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={[
+                      styles.actionRow58,
+                      {
+                        backgroundColor: isCurrent ? (C.brand + '14') : C.surface2,
+                        borderColor: isCurrent ? C.brand : C.border,
+                        marginBottom: 8,
+                      },
+                    ]}
+                    onPress={() => handleAssignStaff(s.id)}
+                    activeOpacity={0.7}
+                    disabled={assigningStaff}
+                  >
+                    <Avatar name={s.full_name} size="sm" />
+                    <View style={styles.actionRowBody}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[styles.actionRowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {s.full_name}
+                        </Text>
+                        {isMatch && (
+                          <View style={[styles.matchBadge, { backgroundColor: C.successBg }]}>
+                            <Text style={[styles.matchBadgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                              Match
                             </Text>
-                            {isMatch && (
-                              <View style={[styles.matchBadge, { backgroundColor: C.successBg }]}>
-                                <Text style={[styles.matchBadgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                                  Match
-                                </Text>
-                              </View>
-                            )}
                           </View>
-                          <Text style={[styles.modalRowDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                            {s.expertise ?? s.department ?? 'Staff'}
-                          </Text>
-                        </View>
+                        )}
                       </View>
-                      {isCurrent ? (
-                        <Feather name="check" size={18} color={C.brand} />
-                      ) : (
-                        <Feather name="chevron-right" size={16} color={C.textMuted} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </TouchableOpacity>
-          </TouchableOpacity>
+                    </View>
+                    {isCurrent ? (
+                      <Icon name="check" size={18} color={C.brand} />
+                    ) : (
+                      <Icon name="chevR" size={16} color={C.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         </Modal>
       )}
     </SafeAreaView>
@@ -880,104 +841,66 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
     marginTop: 6,
   } as ViewStyle,
-  dropdownBarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  dropdownBarBody: {
     flex: 1,
-    minWidth: 0,
+    justifyContent: 'center',
   } as ViewStyle,
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  } as ViewStyle,
-  dropdownBarTexts: {
-    flex: 1,
-    minWidth: 0,
-  } as ViewStyle,
-  dropdownBarSub: {
-    fontSize: 10.5,
-    letterSpacing: 0.5,
-  } as TextStyle,
   dropdownBarTitle: {
-    fontSize: 14,
-    marginTop: 1,
+    fontSize: 14.5,
   } as TextStyle,
 
   // Bottom Sheet Modal
-  modalBackdrop: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   } as ViewStyle,
-  modalSheet: {
+  sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 28,
+    padding: 20,
+    paddingBottom: 36,
   } as ViewStyle,
-  modalHeader: {
+  sheetHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
-    paddingHorizontal: 2,
   } as ViewStyle,
-  modalTitle: {
+  sheetTitle: {
     fontSize: 17,
   } as TextStyle,
-  modalSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  } as TextStyle,
-  modalCloseBtn: {
+  closeBtn: {
     padding: 6,
-    marginLeft: 8,
   } as ViewStyle,
-  modalOptions: {
+  actionList: {
     gap: 8,
   } as ViewStyle,
-  modalRow58: {
+  actionRow58: {
     height: 58,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  } as ViewStyle,
-  modalRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
-    flex: 1,
-    minWidth: 0,
   } as ViewStyle,
-  modalRowIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
+  actionRowBody: {
+    flex: 1,
     justifyContent: 'center',
   } as ViewStyle,
-  modalRowTexts: {
-    flex: 1,
-    minWidth: 0,
+  actionRowTitle: {
+    fontSize: 15,
+  } as TextStyle,
+  iconSlot32: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   } as ViewStyle,
-  modalRowTitle: {
-    fontSize: 14,
-  } as TextStyle,
-  modalRowDesc: {
-    fontSize: 11.5,
-    marginTop: 1,
-  } as TextStyle,
   matchBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,

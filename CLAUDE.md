@@ -3056,3 +3056,9 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 23s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+- **Zero-Slop Iconography & Subtitle Elimination Refinement:**
+  - Standardized all Administrator Action modal sheet items to floating **32dp** monochrome icons (`Icon name={opt.icon} size={32} color={C.text}`) within transparent `iconSlot32` layouts, completely removing size-18 icons and outer colored squircle boxes.
+  - Sourced icons exclusively from the core system `Icon` component: `check` (Mark Resolved), `close` (Reject Report), `lock` (Close Ticket), `rotate-ccw` (Reopen Ticket), and `play` (Start Work).
+  - Completely stripped all redundant explanatory subtext and subtitles from both the 58dp dropdown trigger bar and the action sheet rows, vertically centering titles with `justifyContent: 'center'`.
+  - Replaced nested touch responders with decoupled sibling overlay (`styles.overlay`) and modal sheet view container (`styles.sheet`), eliminating touch interception bugs on physical Android devices.
