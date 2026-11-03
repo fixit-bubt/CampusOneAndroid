@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,43 +19,16 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { useT } from '../../i18n';
 import { useApp } from '../../store/appStore';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
 import { setCache, getCache, CacheKeys } from '../../services/cacheService';
-import { formatTime12, toMinutes, minutesToHHMM } from '../../utils/transitPrayer';
+import { formatTime12, toMinutes } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
 
-const BUS_COLOR = SectorColors.bus;
-
 const DAY_OPTIONS = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
-
-const POPULAR_STOPS = [
-  'BUBT Main Campus',
-  'Pallabi Metro',
-  'Mirpur 10 Circle',
-  'Mirpur 11',
-  'Mirpur 2',
-  'Mirpur 1',
-  'Mirpur 14',
-  'Agargaon Metro',
-  'Shyamoli',
-  'Kalyanpur',
-  'Farmgate',
-  'Mohakhali',
-  'Uttara (House Building)',
-  'Abdullahpur',
-  'ECB Chattar',
-  'Kuril 300ft',
-  'Mirpur DOHS',
-  'Gabtoli',
-  'Dhanmondi 27',
-];
-
-const PRESET_TO_TIMES = ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '11:00'];
-const PRESET_FROM_TIMES = ['12:30', '13:30', '14:30', '15:00', '16:00', '16:30', '17:15', '18:00'];
 
 interface StopItem {
   id: string;
@@ -100,6 +73,11 @@ export function BusRouteEditorModal({
   const [helperPhone, setHelperPhone] = useState('');
   const [days, setDays] = useState<string[]>(['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu']);
   const [fridayNote, setFridayNote] = useState('');
+
+  // Dropdown expansion state (clean accordion standard)
+  const [daysExpanded, setDaysExpanded] = useState(false);
+  const [stopsExpanded, setStopsExpanded] = useState(false);
+  const [depExpanded, setDepExpanded] = useState(false);
 
   // Structured Stops State
   const [stopsList, setStopsList] = useState<StopItem[]>([]);
@@ -170,6 +148,9 @@ export function BusRouteEditorModal({
     setCustomToTime('');
     setCustomFromTime('');
     setNewStopInput('');
+    setDaysExpanded(false);
+    setStopsExpanded(false);
+    setDepExpanded(false);
   }, [visible, route, currentPdfUrl]);
 
   // Stops handlers
@@ -236,20 +217,19 @@ export function BusRouteEditorModal({
     toast({
       type: 'success',
       title: isBn ? 'স্টপ যোগ সম্পন্ন' : 'Stops Applied',
-      message: `${parsed.length} ${isBn ? 'টি স্টপ সফলভাবে যোগ হয়েছে।' : 'stops imported into schedule.'}`,
+      message: `${parsed.length} ${isBn ? 'টি স্টপ যোগ হয়েছে।' : 'stops updated.'}`,
     });
   }, [bulkStopsInput, isBn, toast]);
 
   // Departures handlers
   const handleAddDeparture = useCallback(
     (timeStr: string, type: 'to' | 'from') => {
-      // Validate HH:MM
       const clean = timeStr.trim();
       if (!/^\d{1,2}:\d{2}$/.test(clean)) {
         toast({
           type: 'error',
           title: isBn ? 'ভুল ফরম্যাট' : 'Invalid Format',
-          message: isBn ? 'অনুগ্রহ করে HH:MM ফরম্যাট লিখুন (যেমন: 07:30)' : 'Please use HH:MM format (e.g. 07:30)',
+          message: isBn ? 'অনুগ্রহ করে HH:MM ফরম্যাট লিখুন' : 'Please use HH:MM format',
         });
         return;
       }
@@ -291,7 +271,7 @@ export function BusRouteEditorModal({
   const toggleDay = useCallback((day: string) => {
     setDays((prev) => {
       if (prev.includes(day)) {
-        if (prev.length === 1) return prev; // Keep at least one day
+        if (prev.length === 1) return prev;
         return prev.filter((d) => d !== day);
       }
       return [...prev, day];
@@ -344,7 +324,6 @@ export function BusRouteEditorModal({
       let savedRecord: BusRoute | null = null;
 
       if (route?.id) {
-        // Update
         const { data, error } = await supabase
           .from('bus_routes')
           .update(payload)
@@ -355,7 +334,6 @@ export function BusRouteEditorModal({
         if (error) throw error;
         savedRecord = data as BusRoute;
       } else {
-        // Insert
         const slug = trimmedName
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
@@ -436,7 +414,7 @@ export function BusRouteEditorModal({
               toast({
                 type: 'success',
                 title: isBn ? 'মুছে ফেলা হয়েছে' : 'Route Deleted',
-                message: `${route.name} ${isBn ? 'রুটটি মুছে ফেলা হয়েছে।' : 'has been removed.'}`,
+                message: `${route.name} ${isBn ? 'মুছে ফেলা হয়েছে।' : 'has been removed.'}`,
               });
 
               onDeleteSuccess?.(route.id);
@@ -455,6 +433,16 @@ export function BusRouteEditorModal({
       ]
     );
   };
+
+  // Concise days summary for the 58dp dropdown bar header
+  const daysSummary =
+    days.length === 6 && !days.includes('Fri')
+      ? (isBn ? 'শনি - বৃহস্পতি' : 'Sat - Thu')
+      : days.length === 7
+      ? (isBn ? 'সব দিন (৭ দিন)' : 'All 7 Days')
+      : days.length === 1 && days[0] === 'Fri'
+      ? (isBn ? 'শুধু শুক্রবার' : 'Friday Only')
+      : `${days.length} ${isBn ? 'দিন' : 'Days'}`;
 
   return (
     <Modal
@@ -479,7 +467,7 @@ export function BusRouteEditorModal({
                 {deleting ? (
                   <ActivityIndicator size="small" color={C.danger} />
                 ) : (
-                  <Feather name="trash-2" size={19} color={C.danger} />
+                  <Feather name="trash-2" size={20} color={C.danger} />
                 )}
               </TouchableOpacity>
             ) : null
@@ -498,119 +486,104 @@ export function BusRouteEditorModal({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Section 1: Route Status & Basic Details */}
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
-                {t.bus2.basicInfoSection}
-              </Text>
-            </View>
-
-            {/* 52dp Active Toggle Bar */}
+            {/* Section 1: Route Status Bar (58dp Standard) */}
             <TouchableOpacity
               style={[
-                styles.bar52,
-                styles.statusToggleBar,
+                styles.bar58,
                 {
                   backgroundColor: C.surface,
-                  borderColor: isActive ? (C.brand + '80') : C.border,
+                  borderColor: C.border,
+                  marginBottom: 10,
                 },
               ]}
               onPress={() => setIsActive((prev) => !prev)}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
             >
-              <View style={styles.statusLeft}>
-                <View
-                  style={[
-                    styles.statusDot,
-                    { backgroundColor: isActive ? C.success : C.warn },
-                  ]}
-                />
-                <View>
-                  <Text style={[styles.statusTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              <View style={styles.barLeft}>
+                <View style={styles.iconSlot32}>
+                  <Feather
+                    name={isActive ? 'check-circle' : 'slash'}
+                    size={32}
+                    color={C.text}
+                  />
+                </View>
+                <View style={styles.barTitleCol}>
+                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {isActive ? t.bus2.statusActive : t.bus2.statusSuspended}
-                  </Text>
-                  <Text style={[styles.statusSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {isActive
-                      ? (isBn ? 'শিক্ষার্থীরা রুটটি দেখতে ও ব্যবহার করতে পারবে' : 'Visible to students and operating on schedule')
-                      : (isBn ? 'সাময়িকভাবে বন্ধ ও তালিকায় লুকানো থাকবে' : 'Temporarily halted and hidden from students')}
                   </Text>
                 </View>
               </View>
-              <Feather
-                name={isActive ? 'check-circle' : 'slash'}
-                size={20}
-                color={isActive ? C.success : C.warn}
-              />
+              <View style={[styles.statusPill, { borderColor: C.border }]}>
+                <Text style={[styles.statusPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {isActive ? (isBn ? 'সক্রিয়' : 'Active') : (isBn ? 'স্থগিত' : 'Paused')}
+                </Text>
+              </View>
             </TouchableOpacity>
 
-            {/* Field: Route Name */}
-            <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {t.bus2.fieldName}
-            </Text>
-            <View style={[styles.inputBox52, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="navigation" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
+            {/* Field 1: Route Name (58dp Bar) */}
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="navigation" size={32} color={C.text} />
+              </View>
               <TextInput
-                style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder={isBn ? 'যেমন: রুট ১ (মিরপুর - উত্তরা)' : 'e.g. Route 1 (Mirpur to Uttara)'}
+                style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder={isBn ? 'রুটের নাম' : 'Route Name'}
                 placeholderTextColor={C.textMuted}
                 value={name}
                 onChangeText={setName}
               />
             </View>
 
-            {/* Field: Service Area */}
-            <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {t.bus2.fieldArea}
-            </Text>
-            <View style={[styles.inputBox52, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="map" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
+            {/* Field 2: Service Area (58dp Bar) */}
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="map" size={32} color={C.text} />
+              </View>
               <TextInput
-                style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder={isBn ? 'যেমন: মিরপুর / পল্লবী / উত্তরা' : 'e.g. Mirpur / Pallabi / Uttara'}
+                style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder={isBn ? 'এলাকা বা কাভারেজ' : 'Service Area / Coverage'}
                 placeholderTextColor={C.textMuted}
                 value={area}
                 onChangeText={setArea}
               />
             </View>
 
-            {/* Field: Bus Plate / Number */}
-            <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-              {t.bus2.fieldBusNo}
-            </Text>
-            <View style={[styles.inputBox52, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="truck" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
+            {/* Field 3: Bus Number / Plate (58dp Bar) */}
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="truck" size={32} color={C.text} />
+              </View>
               <TextInput
-                style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder={isBn ? 'যেমন: BUBT-01 বা ঢাকা মেট্রো চ ১১-৪৫৫৫' : 'e.g. BUBT-01 or Cha 11-4455'}
+                style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder={isBn ? 'বাস নম্বর বা প্লেট' : 'Bus Number / Plate'}
                 placeholderTextColor={C.textMuted}
                 value={busNo}
                 onChangeText={setBusNo}
               />
             </View>
 
-            {/* Section 2: Driver & Helper Info */}
-            <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-              <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
-                {t.bus2.contactsSection}
-              </Text>
-            </View>
-
-            <View style={[styles.inputBox52, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="user" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
+            {/* Field 4: Driver / Helper Name (58dp Bar) */}
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="user" size={32} color={C.text} />
+              </View>
               <TextInput
-                style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder={t.bus2.fieldHelperName}
+                style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder={isBn ? 'ড্রাইভার বা হেল্পারের নাম' : 'Driver / Helper Name'}
                 placeholderTextColor={C.textMuted}
                 value={helperName}
                 onChangeText={setHelperName}
               />
             </View>
 
-            <View style={[styles.inputBox52, { backgroundColor: C.surface, borderColor: C.border, marginTop: 10 }]}>
-              <Feather name="phone" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
+            {/* Field 5: Helper Phone (58dp Bar) */}
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="phone" size={32} color={C.text} />
+              </View>
               <TextInput
-                style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder={t.bus2.fieldHelperPhone}
+                style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder={isBn ? 'ফোন নম্বর' : 'Phone Number'}
                 placeholderTextColor={C.textMuted}
                 value={helperPhone}
                 onChangeText={setHelperPhone}
@@ -618,182 +591,222 @@ export function BusRouteEditorModal({
               />
               {helperPhone.trim().length > 0 && (
                 <TouchableOpacity
-                  style={[styles.quickCallPill, { backgroundColor: C.surface2 }]}
+                  style={[styles.innerActionBtn, { borderColor: C.border }]}
                   onPress={() => Linking.openURL(`tel:${helperPhone.trim()}`)}
                   activeOpacity={0.7}
+                  hitSlop={6}
                 >
-                  <Feather name="phone-call" size={13} color={C.brand} />
-                  <Text style={[styles.quickCallTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    {isBn ? 'টেস্ট কল' : 'Call'}
-                  </Text>
+                  <Feather name="phone-call" size={16} color={C.text} />
                 </TouchableOpacity>
               )}
             </View>
 
-            {/* Section 3: Operating Days & Holiday Notice */}
-            <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-              <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
-                {t.bus2.operatingDaysSection}
-              </Text>
-            </View>
-
-            {/* Preset days shortcut row */}
-            <View style={styles.daysPresetRow}>
-              <TouchableOpacity
-                style={[
-                  styles.presetChip,
-                  {
-                    backgroundColor: days.length === 6 && !days.includes('Fri') ? `${C.brand}20` : C.surface,
-                    borderColor: days.length === 6 && !days.includes('Fri') ? C.brand : C.border,
-                  },
-                ]}
-                onPress={() => setDaysPreset('sat_thu')}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.presetChipTxt,
-                    {
-                      color: days.length === 6 && !days.includes('Fri') ? C.brand : C.textMuted,
-                      fontFamily: FontFamily.jakartaBold,
-                    },
-                  ]}
-                >
-                  {t.bus2.regularDays}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.presetChip,
-                  {
-                    backgroundColor: days.length === 7 ? `${C.brand}20` : C.surface,
-                    borderColor: days.length === 7 ? C.brand : C.border,
-                  },
-                ]}
-                onPress={() => setDaysPreset('all')}
-                activeOpacity={0.75}
-              >
-                <Text
-                  style={[
-                    styles.presetChipTxt,
-                    {
-                      color: days.length === 7 ? C.brand : C.textMuted,
-                      fontFamily: FontFamily.jakartaBold,
-                    },
-                  ]}
-                >
-                  {t.bus2.allDays}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Individual day chips */}
-            <View style={styles.daysChipsRow}>
-              {DAY_OPTIONS.map((d) => {
-                const selected = days.includes(d);
-                return (
-                  <TouchableOpacity
-                    key={d}
-                    style={[
-                      styles.dayChip,
-                      {
-                        backgroundColor: selected ? BUS_COLOR : C.surface,
-                        borderColor: selected ? BUS_COLOR : C.border,
-                      },
-                    ]}
-                    onPress={() => toggleDay(d)}
-                    activeOpacity={0.75}
-                  >
-                    <Text
-                      style={[
-                        styles.dayChipTxt,
-                        {
-                          color: selected ? '#fff' : C.textMuted,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      {d}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Holiday / Friday notice */}
-            <Text style={[styles.fieldLabel, { color: C.text2, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-              {t.bus2.fridayNoticeSection}
-            </Text>
-            <View style={[styles.inputBox52, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="info" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
-              <TextInput
-                style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                placeholder={isBn ? 'যেমন: শুক্রবার স্পেশাল পরীক্ষার বাস চলবে' : 'e.g. Special shuttle runs on exam Fridays'}
-                placeholderTextColor={C.textMuted}
-                value={fridayNote}
-                onChangeText={setFridayNote}
-              />
-            </View>
-
-            {/* Section 4: Stops & Intermediate Travel Times */}
-            <View style={[styles.sectionHeaderRow, { marginTop: 24, justifyContent: 'space-between' }]}>
-              <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
-                {t.bus2.stopsSection} ({stopsList.length})
-              </Text>
-              <TouchableOpacity
-                onPress={() => setBulkMode((prev) => !prev)}
-                hitSlop={8}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modeToggleTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                  {bulkMode ? (isBn ? 'তালিকা ভিউ' : 'List View') : t.bus2.bulkStopsMode}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {bulkMode ? (
-              /* Bulk Paste Mode */
-              <View style={[styles.bulkBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <Text style={[styles.bulkHint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {t.bus2.bulkStopsPlaceholder}
-                </Text>
-                <TextInput
-                  style={[
-                    styles.bulkInput,
-                    {
-                      color: C.text,
-                      backgroundColor: C.bg,
-                      borderColor: C.border,
-                      fontFamily: FontFamily.jakartaMedium,
-                    },
-                  ]}
-                  value={bulkStopsInput}
-                  onChangeText={setBulkStopsInput}
-                  multiline
-                  numberOfLines={4}
-                  placeholderTextColor={C.textMuted}
-                  placeholder="BUBT Campus, Pallabi, Mirpur 10..."
-                />
-                <TouchableOpacity
-                  style={[styles.bar52, styles.applyBulkBtn, { backgroundColor: C.brand }]}
-                  onPress={handleApplyBulkStops}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="check" size={18} color="#fff" />
-                  <Text style={[styles.applyBulkTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.bus2.applyBulkStops}
+            {/* Dropdown Bar 1: Operating Days (58dp Standard) */}
+            <TouchableOpacity
+              style={[
+                styles.bar58,
+                styles.dropdownBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  marginBottom: daysExpanded ? 8 : 14,
+                },
+              ]}
+              onPress={() => setDaysExpanded((prev) => !prev)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.barLeft}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="calendar" size={32} color={C.text} />
+                </View>
+                <View style={styles.barTitleCol}>
+                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {t.bus2.operatingDaysSection}
                   </Text>
-                </TouchableOpacity>
+                  <Text style={[styles.barSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                    {daysSummary}
+                  </Text>
+                </View>
               </View>
-            ) : (
-              /* Structured Stops List */
-              <View style={styles.stopsBlock}>
-                {/* Add new stop bar */}
-                <View style={[styles.inputBox52, styles.addStopBar, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  <Feather name="map-pin" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
+              <Feather
+                name={daysExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={C.textMuted}
+              />
+            </TouchableOpacity>
+
+            {/* Expanded Content: Operating Days (All inner rows are 58dp) */}
+            {daysExpanded && (
+              <View style={styles.expandedBlock}>
+                {/* Preset 1: Sat - Thu (58dp Bar) */}
+                <TouchableOpacity
+                  style={[
+                    styles.bar58,
+                    {
+                      backgroundColor: C.surface,
+                      borderColor: days.length === 6 && !days.includes('Fri') ? C.brand : C.border,
+                      marginBottom: 8,
+                    },
+                  ]}
+                  onPress={() => setDaysPreset('sat_thu')}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.barLeft}>
+                    <View style={styles.iconSlot32}>
+                      <Feather name="calendar" size={24} color={C.text} />
+                    </View>
+                    <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {t.bus2.regularDays}
+                    </Text>
+                  </View>
+                  {days.length === 6 && !days.includes('Fri') && (
+                    <Feather name="check" size={20} color={C.brand} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Preset 2: All 7 Days (58dp Bar) */}
+                <TouchableOpacity
+                  style={[
+                    styles.bar58,
+                    {
+                      backgroundColor: C.surface,
+                      borderColor: days.length === 7 ? C.brand : C.border,
+                      marginBottom: 8,
+                    },
+                  ]}
+                  onPress={() => setDaysPreset('all')}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.barLeft}>
+                    <View style={styles.iconSlot32}>
+                      <Feather name="calendar" size={24} color={C.text} />
+                    </View>
+                    <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {t.bus2.allDays}
+                    </Text>
+                  </View>
+                  {days.length === 7 && (
+                    <Feather name="check" size={20} color={C.brand} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Preset 3: Friday Only (58dp Bar) */}
+                <TouchableOpacity
+                  style={[
+                    styles.bar58,
+                    {
+                      backgroundColor: C.surface,
+                      borderColor: days.length === 1 && days[0] === 'Fri' ? C.brand : C.border,
+                      marginBottom: 8,
+                    },
+                  ]}
+                  onPress={() => setDaysPreset('fri_only')}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.barLeft}>
+                    <View style={styles.iconSlot32}>
+                      <Feather name="calendar" size={24} color={C.text} />
+                    </View>
+                    <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {t.bus2.fridayOnly}
+                    </Text>
+                  </View>
+                  {days.length === 1 && days[0] === 'Fri' && (
+                    <Feather name="check" size={20} color={C.brand} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Individual Days Selection (7 bars of 58dp) */}
+                <View style={{ gap: 8, marginTop: 4, marginBottom: 8 }}>
+                  {DAY_OPTIONS.map((d) => {
+                    const isSelected = days.includes(d);
+                    return (
+                      <TouchableOpacity
+                        key={d}
+                        style={[
+                          styles.bar58,
+                          {
+                            backgroundColor: C.surface,
+                            borderColor: isSelected ? C.brand : C.border,
+                          },
+                        ]}
+                        onPress={() => toggleDay(d)}
+                        activeOpacity={0.75}
+                      >
+                        <View style={styles.barLeft}>
+                          <View style={styles.iconSlot32}>
+                            <Feather name="clock" size={24} color={C.text} />
+                          </View>
+                          <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                            {d}
+                          </Text>
+                        </View>
+                        {isSelected && <Feather name="check" size={20} color={C.brand} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Holiday / Friday Notice Bar (58dp) */}
+                <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="info" size={24} color={C.textMuted} />
+                  </View>
                   <TextInput
-                    style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    placeholder={isBn ? 'ছুটি বা বিশেষ নোটিশ' : 'Holiday or operational notice'}
+                    placeholderTextColor={C.textMuted}
+                    value={fridayNote}
+                    onChangeText={setFridayNote}
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Dropdown Bar 2: Route Stops (58dp Standard) */}
+            <TouchableOpacity
+              style={[
+                styles.bar58,
+                styles.dropdownBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  marginBottom: stopsExpanded ? 8 : 14,
+                },
+              ]}
+              onPress={() => setStopsExpanded((prev) => !prev)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.barLeft}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="map-pin" size={32} color={C.text} />
+                </View>
+                <View style={styles.barTitleCol}>
+                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {t.bus2.stopsSection}
+                  </Text>
+                  <Text style={[styles.barSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                    {`${stopsList.length} ${isBn ? 'টি স্টপ' : 'Stops'}`}
+                  </Text>
+                </View>
+              </View>
+              <Feather
+                name={stopsExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={C.textMuted}
+              />
+            </TouchableOpacity>
+
+            {/* Expanded Content: Route Stops (All inner items are 58dp) */}
+            {stopsExpanded && (
+              <View style={styles.expandedBlock}>
+                {/* Add New Stop (58dp Bar) */}
+                <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="map-pin" size={24} color={C.text} />
+                  </View>
+                  <TextInput
+                    style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                     placeholder={t.bus2.addStopPlaceholder}
                     placeholderTextColor={C.textMuted}
                     value={newStopInput}
@@ -801,319 +814,342 @@ export function BusRouteEditorModal({
                     onSubmitEditing={() => handleAddStop(newStopInput)}
                   />
                   <TouchableOpacity
-                    style={[styles.addStopBtn, { backgroundColor: newStopInput.trim() ? BUS_COLOR : C.surface2 }]}
+                    style={[styles.innerActionBtn, { borderColor: C.border, opacity: newStopInput.trim() ? 1 : 0.4 }]}
                     onPress={() => handleAddStop(newStopInput)}
                     disabled={!newStopInput.trim()}
-                    activeOpacity={0.8}
+                    activeOpacity={0.75}
+                    hitSlop={6}
                   >
-                    <Feather name="plus" size={18} color={newStopInput.trim() ? '#fff' : C.textMuted} />
+                    <Feather name="plus" size={18} color={C.text} />
                   </TouchableOpacity>
                 </View>
 
-                {/* Popular stop quick suggestion pills */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popularRow}>
-                  {POPULAR_STOPS.map((st) => (
+                {/* Bulk Paste Toggle Bar (58dp Bar) */}
+                <TouchableOpacity
+                  style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}
+                  onPress={() => setBulkMode((prev) => !prev)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.barLeft}>
+                    <View style={styles.iconSlot32}>
+                      <Feather name="file-text" size={24} color={C.text} />
+                    </View>
+                    <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {bulkMode ? (isBn ? 'তালিকা ভিউ' : 'List View') : t.bus2.bulkStopsMode}
+                    </Text>
+                  </View>
+                  <Feather name={bulkMode ? 'chevron-up' : 'chevron-right'} size={20} color={C.textMuted} />
+                </TouchableOpacity>
+
+                {bulkMode ? (
+                  <View style={[styles.bulkBox, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 10 }]}>
+                    <TextInput
+                      style={[
+                        styles.bulkInput,
+                        {
+                          color: C.text,
+                          backgroundColor: C.bg,
+                          borderColor: C.border,
+                          fontFamily: FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      value={bulkStopsInput}
+                      onChangeText={setBulkStopsInput}
+                      multiline
+                      numberOfLines={3}
+                      placeholderTextColor={C.textMuted}
+                      placeholder={t.bus2.bulkStopsPlaceholder}
+                    />
                     <TouchableOpacity
-                      key={st}
-                      style={[styles.suggestPill, { backgroundColor: C.surface, borderColor: C.border }]}
-                      onPress={() => handleAddStop(st)}
-                      activeOpacity={0.7}
+                      style={[styles.bar58, styles.applyBulkBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                      onPress={handleApplyBulkStops}
+                      activeOpacity={0.8}
                     >
-                      <Feather name="plus" size={11} color={C.textMuted} />
-                      <Text style={[styles.suggestPillTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
-                        {st}
+                      <Feather name="check" size={18} color={C.text} />
+                      <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                        {t.bus2.applyBulkStops}
                       </Text>
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                  </View>
+                ) : (
+                  /* Ordered Stop Bars (Each is 58dp) */
+                  <View style={{ gap: 8, marginBottom: 14 }}>
+                    {stopsList.map((stop, index) => {
+                      const isFirst = index === 0;
+                      const isLast = index === stopsList.length - 1;
 
-                {/* Ordered list of stops */}
-                {stopsList.map((stop, index) => {
-                  const isFirst = index === 0;
-                  const isLast = index === stopsList.length - 1;
+                      return (
+                        <View
+                          key={stop.id}
+                          style={[
+                            styles.bar58,
+                            {
+                              backgroundColor: C.surface,
+                              borderColor: C.border,
+                            },
+                          ]}
+                        >
+                          {/* Step Index Badge (32dp slot) */}
+                          <View style={styles.iconSlot32}>
+                            <Text style={[styles.indexBadgeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                              {index + 1}
+                            </Text>
+                          </View>
 
-                  return (
+                          {/* Stop Name & Leg Minutes (Zero overlap) */}
+                          <View style={styles.barTitleCol}>
+                            <TextInput
+                              style={[styles.stopInlineInput, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                              value={stop.name}
+                              onChangeText={(txt) => handleUpdateStopName(index, txt)}
+                              placeholder="Stop name"
+                              placeholderTextColor={C.textMuted}
+                              numberOfLines={1}
+                            />
+                            {!isFirst && (
+                              <Text style={[styles.barSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                                {`+${stop.legMins} ${t.bus2.travelMin}`}
+                              </Text>
+                            )}
+                          </View>
+
+                          {/* Actions: Adjust Leg Minutes, Reorder, Delete */}
+                          <View style={styles.stopActionGroup}>
+                            {!isFirst && (
+                              <View style={styles.legBtnPair}>
+                                <TouchableOpacity
+                                  style={[styles.miniBtn, { borderColor: C.border }]}
+                                  onPress={() => handleUpdateLegMins(index, -5)}
+                                  hitSlop={6}
+                                >
+                                  <Feather name="minus" size={12} color={C.textMuted} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[styles.miniBtn, { borderColor: C.border }]}
+                                  onPress={() => handleUpdateLegMins(index, 5)}
+                                  hitSlop={6}
+                                >
+                                  <Feather name="plus" size={12} color={C.textMuted} />
+                                </TouchableOpacity>
+                              </View>
+                            )}
+
+                            <TouchableOpacity
+                              style={[styles.miniBtn, { borderColor: C.border, opacity: isFirst ? 0.3 : 1 }]}
+                              onPress={() => handleMoveStop(index, 'up')}
+                              disabled={isFirst}
+                              hitSlop={6}
+                            >
+                              <Feather name="arrow-up" size={14} color={C.textMuted} />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={[styles.miniBtn, { borderColor: C.border, opacity: isLast ? 0.3 : 1 }]}
+                              onPress={() => handleMoveStop(index, 'down')}
+                              disabled={isLast}
+                              hitSlop={6}
+                            >
+                              <Feather name="arrow-down" size={14} color={C.textMuted} />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={[styles.miniBtn, { borderColor: C.border }]}
+                              onPress={() => handleRemoveStop(index)}
+                              hitSlop={6}
+                            >
+                              <Feather name="trash-2" size={14} color={C.textMuted} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Dropdown Bar 3: Departure Schedules (58dp Standard) */}
+            <TouchableOpacity
+              style={[
+                styles.bar58,
+                styles.dropdownBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  marginBottom: depExpanded ? 8 : 14,
+                },
+              ]}
+              onPress={() => setDepExpanded((prev) => !prev)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.barLeft}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="clock" size={32} color={C.text} />
+                </View>
+                <View style={styles.barTitleCol}>
+                  <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                    {t.bus2.departuresSection}
+                  </Text>
+                  <Text style={[styles.barSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                    {`${toDepartures.length} ${t.bus2.toCampus} · ${fromDepartures.length} ${t.bus2.fromCampus}`}
+                  </Text>
+                </View>
+              </View>
+              <Feather
+                name={depExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={C.textMuted}
+              />
+            </TouchableOpacity>
+
+            {/* Expanded Content: Departure Schedules (All inner items are 58dp) */}
+            {depExpanded && (
+              <View style={styles.expandedBlock}>
+                {/* 3.1 To Campus Section */}
+                <Text style={[styles.subGroupLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.bus2.toCampus}
+                </Text>
+
+                {/* Add To Campus Time (58dp Bar) */}
+                <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="arrow-right" size={24} color={C.text} />
+                  </View>
+                  <TextInput
+                    style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    placeholder={t.bus2.customTimePlaceholder}
+                    placeholderTextColor={C.textMuted}
+                    value={customToTime}
+                    onChangeText={setCustomToTime}
+                    keyboardType="numbers-and-punctuation"
+                    maxLength={5}
+                  />
+                  <TouchableOpacity
+                    style={[styles.innerActionBtn, { borderColor: C.border, opacity: customToTime.trim() ? 1 : 0.4 }]}
+                    onPress={() => handleAddDeparture(customToTime, 'to')}
+                    disabled={!customToTime.trim()}
+                    activeOpacity={0.75}
+                    hitSlop={6}
+                  >
+                    <Feather name="plus" size={18} color={C.text} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* To Campus Departure Rows (58dp each) */}
+                <View style={{ gap: 8, marginBottom: 14 }}>
+                  {toDepartures.map((time) => (
                     <View
-                      key={stop.id}
+                      key={time}
                       style={[
-                        styles.stopItemCard,
+                        styles.bar58,
                         {
                           backgroundColor: C.surface,
                           borderColor: C.border,
                         },
                       ]}
                     >
-                      {/* Step index badge */}
-                      <View style={[styles.stopIndexBadge, { backgroundColor: C.surface2 }]}>
-                        <Text style={[styles.stopIndexTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                          #{index + 1}
+                      <View style={styles.barLeft}>
+                        <View style={styles.iconSlot32}>
+                          <Feather name="clock" size={24} color={C.text} />
+                        </View>
+                        <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {formatTime12(time)}
                         </Text>
                       </View>
-
-                      {/* Stop name input */}
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <TextInput
-                          style={[styles.stopNameInput, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                          value={stop.name}
-                          onChangeText={(txt) => handleUpdateStopName(index, txt)}
-                          placeholder="Stop name"
-                          placeholderTextColor={C.textMuted}
-                        />
-                        {/* Leg duration adjuster */}
-                        <View style={styles.legRow}>
-                          <Text style={[styles.legLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                            {isFirst ? (isBn ? 'শুরুর পয়েন্ট' : 'Origin') : `+${stop.legMins} ${t.bus2.travelMin}`}
-                          </Text>
-                          {!isFirst && (
-                            <View style={styles.legAdjusters}>
-                              <TouchableOpacity
-                                style={[styles.legBtn, { borderColor: C.border }]}
-                                onPress={() => handleUpdateLegMins(index, -5)}
-                                hitSlop={6}
-                              >
-                                <Feather name="minus" size={12} color={C.textMuted} />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.legBtn, { borderColor: C.border }]}
-                                onPress={() => handleUpdateLegMins(index, 5)}
-                                hitSlop={6}
-                              >
-                                <Feather name="plus" size={12} color={C.textMuted} />
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-
-                      {/* Reorder and Delete actions */}
-                      <View style={styles.stopActions}>
-                        <TouchableOpacity
-                          style={[styles.actionIconBtn, { opacity: isFirst ? 0.3 : 1 }]}
-                          onPress={() => handleMoveStop(index, 'up')}
-                          disabled={isFirst}
-                          hitSlop={6}
-                        >
-                          <Feather name="arrow-up" size={15} color={C.textMuted} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.actionIconBtn, { opacity: isLast ? 0.3 : 1 }]}
-                          onPress={() => handleMoveStop(index, 'down')}
-                          disabled={isLast}
-                          hitSlop={6}
-                        >
-                          <Feather name="arrow-down" size={15} color={C.textMuted} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.actionIconBtn}
-                          onPress={() => handleRemoveStop(index)}
-                          hitSlop={6}
-                        >
-                          <Feather name="x" size={16} color={C.danger} />
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        style={[styles.miniBtn, { borderColor: C.border }]}
+                        onPress={() => handleRemoveDeparture(time, 'to')}
+                        activeOpacity={0.7}
+                        hitSlop={6}
+                      >
+                        <Feather name="trash-2" size={14} color={C.textMuted} />
+                      </TouchableOpacity>
                     </View>
-                  );
-                })}
+                  ))}
+                  {toDepartures.length === 0 && (
+                    <Text style={[styles.emptyPrompt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
+                    </Text>
+                  )}
+                </View>
+
+                {/* 3.2 From Campus Section */}
+                <Text style={[styles.subGroupLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.bus2.fromCampus}
+                </Text>
+
+                {/* Add From Campus Time (58dp Bar) */}
+                <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name="arrow-left" size={24} color={C.text} />
+                  </View>
+                  <TextInput
+                    style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                    placeholder={t.bus2.customTimePlaceholder}
+                    placeholderTextColor={C.textMuted}
+                    value={customFromTime}
+                    onChangeText={setCustomFromTime}
+                    keyboardType="numbers-and-punctuation"
+                    maxLength={5}
+                  />
+                  <TouchableOpacity
+                    style={[styles.innerActionBtn, { borderColor: C.border, opacity: customFromTime.trim() ? 1 : 0.4 }]}
+                    onPress={() => handleAddDeparture(customFromTime, 'from')}
+                    disabled={!customFromTime.trim()}
+                    activeOpacity={0.75}
+                    hitSlop={6}
+                  >
+                    <Feather name="plus" size={18} color={C.text} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* From Campus Departure Rows (58dp each) */}
+                <View style={{ gap: 8, marginBottom: 14 }}>
+                  {fromDepartures.map((time) => (
+                    <View
+                      key={time}
+                      style={[
+                        styles.bar58,
+                        {
+                          backgroundColor: C.surface,
+                          borderColor: C.border,
+                        },
+                      ]}
+                    >
+                      <View style={styles.barLeft}>
+                        <View style={styles.iconSlot32}>
+                          <Feather name="clock" size={24} color={C.text} />
+                        </View>
+                        <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {formatTime12(time)}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.miniBtn, { borderColor: C.border }]}
+                        onPress={() => handleRemoveDeparture(time, 'from')}
+                        activeOpacity={0.7}
+                        hitSlop={6}
+                      >
+                        <Feather name="trash-2" size={14} color={C.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  {fromDepartures.length === 0 && (
+                    <Text style={[styles.emptyPrompt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                      {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
+                    </Text>
+                  )}
+                </View>
               </View>
             )}
 
-            {/* Section 5: Departure Timings (To Campus & From Campus) */}
-            <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-              <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
-                {t.bus2.departuresSection}
-              </Text>
-            </View>
-
-            {/* 5.1 To Campus Departures */}
-            <View style={[styles.depContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <View style={styles.depHeader}>
-                <View style={styles.depTitleRow}>
-                  <Feather name="arrow-right" size={16} color={BUS_COLOR} />
-                  <Text style={[styles.depBlockTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.bus2.toCampus} ({toDepartures.length})
-                  </Text>
-                </View>
-                <Text style={[styles.depSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {isBn ? 'সকাল ও দুপুরের ক্যাম্পাসগামী বাস' : 'Morning & midday shuttles to campus'}
-                </Text>
+            {/* Official PDF Schedule URL Bar (58dp) */}
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="file-text" size={32} color={C.text} />
               </View>
-
-              {/* Time Chips */}
-              <View style={styles.timePillsWrap}>
-                {toDepartures.map((time) => (
-                  <View key={time} style={[styles.timeChip, { backgroundColor: `${BUS_COLOR}1c`, borderColor: BUS_COLOR }]}>
-                    <Text style={[styles.timeChipTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
-                      {formatTime12(time)}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveDeparture(time, 'to')}
-                      hitSlop={6}
-                      style={{ padding: 2 }}
-                    >
-                      <Feather name="x" size={13} color={BUS_COLOR} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {toDepartures.length === 0 && (
-                  <Text style={[styles.noTimesTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
-                  </Text>
-                )}
-              </View>
-
-              {/* Quick Add Presets */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timePresetsRow}>
-                {PRESET_TO_TIMES.map((preset) => (
-                  <TouchableOpacity
-                    key={preset}
-                    style={[
-                      styles.timePresetBtn,
-                      {
-                        backgroundColor: toDepartures.includes(preset) ? `${BUS_COLOR}24` : C.bg,
-                        borderColor: toDepartures.includes(preset) ? BUS_COLOR : C.border,
-                      },
-                    ]}
-                    onPress={() => handleAddDeparture(preset, 'to')}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.timePresetTxt,
-                        {
-                          color: toDepartures.includes(preset) ? BUS_COLOR : C.text,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      +{preset}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {/* Custom Time Input */}
-              <View style={[styles.customTimeRow, { borderColor: C.border }]}>
-                <TextInput
-                  style={[styles.customTimeInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                  placeholder={t.bus2.customTimePlaceholder}
-                  placeholderTextColor={C.textMuted}
-                  value={customToTime}
-                  onChangeText={setCustomToTime}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-                <TouchableOpacity
-                  style={[styles.customTimeBtn, { backgroundColor: BUS_COLOR }]}
-                  onPress={() => handleAddDeparture(customToTime, 'to')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.customTimeBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.bus2.addTimeBtn}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* 5.2 From Campus Departures */}
-            <View style={[styles.depContainer, { backgroundColor: C.surface, borderColor: C.border, marginTop: 14 }]}>
-              <View style={styles.depHeader}>
-                <View style={styles.depTitleRow}>
-                  <Feather name="arrow-left" size={16} color={C.brand} />
-                  <Text style={[styles.depBlockTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.bus2.fromCampus} ({fromDepartures.length})
-                  </Text>
-                </View>
-                <Text style={[styles.depSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {isBn ? 'দুপুর ও সন্ধ্যার ফিরতি বাস' : 'Afternoon & evening return shuttles'}
-                </Text>
-              </View>
-
-              {/* Time Chips */}
-              <View style={styles.timePillsWrap}>
-                {fromDepartures.map((time) => (
-                  <View key={time} style={[styles.timeChip, { backgroundColor: `${C.brand}1c`, borderColor: C.brand }]}>
-                    <Text style={[styles.timeChipTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                      {formatTime12(time)}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveDeparture(time, 'from')}
-                      hitSlop={6}
-                      style={{ padding: 2 }}
-                    >
-                      <Feather name="x" size={13} color={C.brand} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {fromDepartures.length === 0 && (
-                  <Text style={[styles.noTimesTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                    {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
-                  </Text>
-                )}
-              </View>
-
-              {/* Quick Add Presets */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timePresetsRow}>
-                {PRESET_FROM_TIMES.map((preset) => (
-                  <TouchableOpacity
-                    key={preset}
-                    style={[
-                      styles.timePresetBtn,
-                      {
-                        backgroundColor: fromDepartures.includes(preset) ? `${C.brand}24` : C.bg,
-                        borderColor: fromDepartures.includes(preset) ? C.brand : C.border,
-                      },
-                    ]}
-                    onPress={() => handleAddDeparture(preset, 'from')}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.timePresetTxt,
-                        {
-                          color: fromDepartures.includes(preset) ? C.brand : C.text,
-                          fontFamily: FontFamily.jakartaBold,
-                        },
-                      ]}
-                    >
-                      +{preset}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {/* Custom Time Input */}
-              <View style={[styles.customTimeRow, { borderColor: C.border }]}>
-                <TextInput
-                  style={[styles.customTimeInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                  placeholder={t.bus2.customTimePlaceholder}
-                  placeholderTextColor={C.textMuted}
-                  value={customFromTime}
-                  onChangeText={setCustomFromTime}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-                <TouchableOpacity
-                  style={[styles.customTimeBtn, { backgroundColor: C.brand }]}
-                  onPress={() => handleAddDeparture(customFromTime, 'from')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.customTimeBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.bus2.addTimeBtn}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Section 6: Official PDF Circular URL */}
-            <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-              <Text style={[styles.sectionEyebrow, { color: C.text3, fontFamily: FontFamily.jakartaBold }]}>
-                {t.bus2.pdfSection}
-              </Text>
-            </View>
-            <View style={[styles.inputBox52, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="file-text" size={18} color={C.textMuted} style={styles.inputLeadingIcon} />
               <TextInput
-                style={[styles.textInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                style={[styles.fullInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 placeholder={t.bus2.pdfUrlPlaceholder}
                 placeholderTextColor={C.textMuted}
                 value={pdfUrl}
@@ -1122,23 +1158,21 @@ export function BusRouteEditorModal({
               />
               {pdfUrl.trim().length > 0 && (
                 <TouchableOpacity
-                  style={[styles.quickCallPill, { backgroundColor: C.surface2 }]}
+                  style={[styles.innerActionBtn, { borderColor: C.border }]}
                   onPress={() => Linking.openURL(pdfUrl.trim())}
                   activeOpacity={0.7}
+                  hitSlop={6}
                 >
-                  <Feather name="external-link" size={13} color={C.brand} />
-                  <Text style={[styles.quickCallTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    View
-                  </Text>
+                  <Feather name="external-link" size={16} color={C.text} />
                 </TouchableOpacity>
               )}
             </View>
 
-            <View style={{ height: 32 }} />
+            <View style={{ height: 20 }} />
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* Floating Bottom CTA Dock */}
+        {/* Floating Bottom CTA Dock (58dp Standard) */}
         <View
           style={[
             styles.bottomDock,
@@ -1151,11 +1185,11 @@ export function BusRouteEditorModal({
         >
           <TouchableOpacity
             style={[
-              styles.bar52,
+              styles.bar58,
               styles.submitBtn,
               {
-                backgroundColor: BUS_COLOR,
-                opacity: name.trim() && !saving ? 1 : 0.5,
+                backgroundColor: C.text,
+                opacity: name.trim() && !saving ? 1 : 0.4,
               },
             ]}
             onPress={handleSave}
@@ -1163,11 +1197,11 @@ export function BusRouteEditorModal({
             activeOpacity={0.85}
           >
             {saving ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={C.bg} size="small" />
             ) : (
               <>
-                <Feather name="check" size={20} color="#fff" />
-                <Text style={[styles.submitBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                <Feather name="check" size={20} color={C.bg} />
+                <Text style={[styles.submitBtnTxt, { color: C.bg, fontFamily: FontFamily.jakartaBold }]}>
                   {t.bus2.saveRoute}
                 </Text>
               </>
@@ -1188,311 +1222,149 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   } as ViewStyle,
 
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  } as ViewStyle,
-  sectionEyebrow: {
-    fontSize: 11.5,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  } as TextStyle,
-  modeToggleTxt: {
-    fontSize: 12.5,
-  } as TextStyle,
-
-  bar52: {
-    height: 52,
-    borderRadius: 14,
+  // Universal 58dp Bar Standard
+  bar58: {
+    height: 58,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   } as ViewStyle,
 
-  statusToggleBar: {
+  dropdownBar: {
     justifyContent: 'space-between',
-    marginBottom: 14,
   } as ViewStyle,
-  statusLeft: {
+
+  barLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    minWidth: 0,
   } as ViewStyle,
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  } as ViewStyle,
-  statusTitle: {
-    fontSize: 14,
-  } as TextStyle,
-  statusSub: {
-    fontSize: 11,
-    marginTop: 1,
-  } as TextStyle,
 
-  fieldLabel: {
-    fontSize: 11.5,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-    marginTop: 10,
-  } as TextStyle,
-
-  inputBox52: {
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
+  iconSlot32: {
+    width: 38,
+    height: 38,
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    flexShrink: 0,
   } as ViewStyle,
-  inputLeadingIcon: {
-    width: 22,
+
+  barTitleCol: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
   } as ViewStyle,
-  textInput: {
+
+  barTitle: {
+    fontSize: 15,
+  } as TextStyle,
+
+  barSub: {
+    fontSize: 12,
+    marginTop: 2,
+  } as TextStyle,
+
+  fullInput: {
     flex: 1,
     height: '100%',
-    fontSize: 14,
+    fontSize: 14.5,
+    paddingVertical: 0,
   } as TextStyle,
 
-  quickCallPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+  stopInlineInput: {
+    fontSize: 14.5,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+  } as TextStyle,
+
+  indexBadgeTxt: {
+    fontSize: 13,
+  } as TextStyle,
+
+  statusPill: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 8,
-  } as ViewStyle,
-  quickCallTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-
-  daysPresetRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 10,
-  } as ViewStyle,
-  presetChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
     borderWidth: 1,
   } as ViewStyle,
-  presetChipTxt: {
+
+  statusPillTxt: {
     fontSize: 11.5,
   } as TextStyle,
 
-  daysChipsRow: {
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'space-between',
-  } as ViewStyle,
-  dayChip: {
-    flex: 1,
+  innerActionBtn: {
+    width: 38,
     height: 38,
     borderRadius: 10,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  } as ViewStyle,
-  dayChipTxt: {
-    fontSize: 12,
-  } as TextStyle,
-
-  stopsBlock: {
-    gap: 8,
-  } as ViewStyle,
-  addStopBar: {
-    paddingRight: 6,
-  } as ViewStyle,
-  addStopBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexShrink: 0,
   } as ViewStyle,
 
-  popularRow: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingVertical: 4,
-  } as ViewStyle,
-  suggestPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-  } as ViewStyle,
-  suggestPillTxt: {
-    fontSize: 12,
-  } as TextStyle,
-
-  stopItemCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-  } as ViewStyle,
-  stopIndexBadge: {
-    width: 32,
-    height: 32,
+  miniBtn: {
+    width: 30,
+    height: 30,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  stopIndexTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-  stopNameInput: {
-    fontSize: 14,
-    padding: 0,
-    marginBottom: 2,
-  } as TextStyle,
-  legRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  } as ViewStyle,
-  legLabel: {
-    fontSize: 11,
-  } as TextStyle,
-  legAdjusters: {
-    flexDirection: 'row',
-    gap: 4,
-  } as ViewStyle,
-  legBtn: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  stopActions: {
+
+  stopActionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+  } as ViewStyle,
+
+  legBtnPair: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   } as ViewStyle,
-  actionIconBtn: {
-    padding: 6,
+
+  expandedBlock: {
+    marginBottom: 8,
   } as ViewStyle,
+
+  subGroupLabel: {
+    fontSize: 11.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginTop: 4,
+  } as TextStyle,
 
   bulkBox: {
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 10,
+    gap: 8,
   } as ViewStyle,
-  bulkHint: {
-    fontSize: 12,
-    lineHeight: 17,
-  } as TextStyle,
+
   bulkInput: {
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     padding: 12,
     fontSize: 13.5,
-    minHeight: 90,
+    minHeight: 80,
     textAlignVertical: 'top',
   } as TextStyle,
+
   applyBulkBtn: {
     justifyContent: 'center',
     gap: 8,
   } as ViewStyle,
-  applyBulkTxt: {
-    fontSize: 14,
-  } as TextStyle,
 
-  depContainer: {
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 12,
-  } as ViewStyle,
-  depHeader: {
-    gap: 2,
-  } as ViewStyle,
-  depTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  } as ViewStyle,
-  depBlockTitle: {
-    fontSize: 14,
-  } as TextStyle,
-  depSub: {
-    fontSize: 11.5,
-  } as TextStyle,
-
-  timePillsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-  } as ViewStyle,
-  timeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 16,
-    borderWidth: 1,
-  } as ViewStyle,
-  timeChipTxt: {
-    fontSize: 12,
-  } as TextStyle,
-  noTimesTxt: {
-    fontSize: 12,
-    fontStyle: 'italic',
-    paddingVertical: 4,
-  } as TextStyle,
-
-  timePresetsRow: {
-    flexDirection: 'row',
-    gap: 6,
-  } as ViewStyle,
-  timePresetBtn: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-  timePresetTxt: {
-    fontSize: 11.5,
-  } as TextStyle,
-
-  customTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderTopWidth: 1,
-    paddingTop: 10,
-  } as ViewStyle,
-  customTimeInput: {
-    flex: 1,
-    height: 40,
-    fontSize: 13,
-  } as TextStyle,
-  customTimeBtn: {
-    paddingHorizontal: 14,
-    height: 38,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  customTimeBtnTxt: {
+  emptyPrompt: {
     fontSize: 12.5,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   } as TextStyle,
 
   bottomDock: {
@@ -1504,12 +1376,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.screenPadding,
     paddingTop: 12,
   } as ViewStyle,
+
   submitBtn: {
     justifyContent: 'center',
     gap: 8,
   } as ViewStyle,
+
   submitBtnTxt: {
     fontSize: 15,
   } as TextStyle,
 });
-

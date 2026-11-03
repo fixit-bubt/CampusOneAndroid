@@ -312,16 +312,16 @@ export function BusScreen({ navigation }: any) {
             activeOpacity={0.8}
           >
             <View style={styles.heroTop}>
-              <View style={[styles.heroBadge, { backgroundColor: BUS_BG }]}>
-                <AnimatedIcon key={direction} family="feather" name="clock" size={13} color={BUS_COLOR} />
-                <Text style={[styles.heroBadgeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+              <View style={[styles.heroBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Feather name="clock" size={13} color={C.text} />
+                <Text style={[styles.heroBadgeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {direction === 'to'
                     ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next shuttle to campus')
                     : (isBn ? 'ক্যাম্পাস থেকে ফেরার পরবর্তী বাস' : 'Next shuttle from campus')}
                 </Text>
               </View>
-              <View style={[styles.waitPill, { backgroundColor: hero.tomorrow ? C.surface2 : `${BUS_COLOR}1e` }]}>
-                <Text style={[styles.waitPillTxt, { color: hero.tomorrow ? C.textMuted : BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+              <View style={[styles.waitPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <Text style={[styles.waitPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {hero.nextDayLabel === 'Sat'
                     ? (isBn ? 'শনিবার' : 'Saturday')
                     : hero.tomorrow
@@ -335,7 +335,7 @@ export function BusScreen({ navigation }: any) {
               <Text style={[styles.heroTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
                 {hero.route.name}
               </Text>
-              <Text style={[styles.heroTime, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.heroTime, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {formatTime12(minutesToHHMM(hero.mins))}
               </Text>
             </View>
@@ -394,9 +394,13 @@ export function BusScreen({ navigation }: any) {
                     <Icon name="bus" size={32} color={C.text} />
                   </View>
                   <View style={styles.cardBody}>
-                    <View style={styles.cardTitleRow}>
-                      <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {r.name}
+                    <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {r.name}
+                    </Text>
+
+                    <View style={styles.cardMetaRow}>
+                      <Text style={[styles.cardStops, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+                        {t.bus2.stopsCount((r.stops ?? []).length)} · {r.area}
                       </Text>
                       {r.bus_no && (
                         <View style={[styles.busNoBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
@@ -406,31 +410,27 @@ export function BusScreen({ navigation }: any) {
                         </View>
                       )}
                       {!r.active && (
-                        <View style={[styles.suspendedBadge, { backgroundColor: `${C.warn}1a`, borderColor: C.warn }]}>
-                          <Text style={[styles.suspendedTxt, { color: C.warn, fontFamily: FontFamily.jakartaBold }]}>
+                        <View style={[styles.suspendedBadge, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                          <Text style={[styles.suspendedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                             {isBn ? 'স্থগিত' : 'Suspended'}
                           </Text>
                         </View>
                       )}
                     </View>
 
-                    <Text style={[styles.cardStops, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                      {t.bus2.stopsCount((r.stops ?? []).length)} · {r.area}
-                    </Text>
-
                     {matchedStop && (
-                      <View style={[styles.matchedPill, { backgroundColor: `${C.brand}14` }]}>
-                        <Feather name="map-pin" size={11} color={C.brand} />
-                        <Text style={[styles.matchedPillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                      <View style={[styles.matchedPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                        <Feather name="map-pin" size={11} color={C.text} />
+                        <Text style={[styles.matchedPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                           {isBn ? `স্টপেজ: ${matchedStop}` : `Stops at ${matchedStop}`}
                         </Text>
                       </View>
                     )}
 
                     <View style={styles.cardMeta}>
-                      <View style={[styles.timePill, { backgroundColor: `${BUS_COLOR}1e` }]}>
-                        <View style={[styles.timeDot, { backgroundColor: BUS_COLOR }]} />
-                        <Text style={[styles.timeTxt, { color: BUS_COLOR, fontFamily: FontFamily.jakartaBold }]}>
+                      <View style={[styles.timePill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                        <Feather name="clock" size={12} color={C.text} />
+                        <Text style={[styles.timeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                           {dep
                             ? `${dep.nextDayLabel === 'Sat' ? 'Sat' : dep.tomorrow ? 'Tmrw' : 'Next'}: ${formatTime12(minutesToHHMM(dep.mins))}`
                             : 'No service'}
@@ -453,7 +453,7 @@ export function BusScreen({ navigation }: any) {
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity onPress={() => toggleSave(r.id)} hitSlop={8} activeOpacity={0.7}>
-                      <Feather name="star" size={18} color={isSaved ? BUS_COLOR : C.textMuted} />
+                      <Feather name="star" size={18} color={isSaved ? C.text : C.textMuted} />
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -651,57 +651,58 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   } as ViewStyle,
   cardBody: { flex: 1 } as ViewStyle,
-  cardTitleRow: {
+  cardTitle: {
+    fontSize: 15,
+  } as TextStyle,
+  cardMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginTop: 4,
+    flexWrap: 'wrap',
   } as ViewStyle,
-  cardTitle: {
-    fontSize: 14.5,
-    flexShrink: 1,
-  } as any,
   busNoBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
   } as ViewStyle,
   busNoTxt: {
-    fontSize: 10.5,
-  } as any,
+    fontSize: 11,
+  } as TextStyle,
   cardStops: {
-    fontSize: 12,
-    marginTop: 3,
-  } as any,
+    fontSize: 12.5,
+  } as TextStyle,
   matchedPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4.5,
+    gap: 5,
     alignSelf: 'flex-start',
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 6,
   } as ViewStyle,
   matchedPillTxt: {
-    fontSize: 11,
-  } as any,
+    fontSize: 11.5,
+  } as TextStyle,
   cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 6,
+    marginTop: 8,
   } as ViewStyle,
   timePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 20,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    borderWidth: 1,
   } as ViewStyle,
-  timeDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
-  timeTxt: { fontSize: 11 } as any,
+  timeTxt: { fontSize: 11.5 } as TextStyle,
 
   empty: {
     alignItems: 'center',
