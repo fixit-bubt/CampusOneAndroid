@@ -16,6 +16,8 @@ import { personName } from '../../services/peopleService';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { declineReport } from '../../services/reportsService';
+import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
+import { getTradeLabel, isTradeMatch } from '../../utils/tradeMatcher';
 import type { Report, ReportEvent } from '../../types/database';
 
 const CAT_MAP: Record<string, { icon: string; fg: string }> = {
@@ -74,7 +76,9 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignTab, setAssignTab] = useState<'trade' | 'all'>('trade');
   const [staffList, setStaffList] = useState<StaffCandidate[]>([]);
+  const [activeByStaff, setActiveByStaff] = useState<Record<string, number>>({});
   const [assigningStaff, setAssigningStaff] = useState(false);
 
   const reportId = report?.id ?? paramReportId ?? '';
@@ -91,15 +95,27 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
   const load = useCallback(async () => {
     if (!reportId) return;
-    const [evRes, rptData, staffRes] = await Promise.all([
+    const [evRes, rptData, staffRes, activeRes] = await Promise.all([
       supabase.from('report_events').select('*').eq('report_id', reportId).order('created_at', { ascending: true }),
       supabase.from('reports').select('*').eq('id', reportId).maybeSingle(),
       isAdmin
         ? supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff').limit(100)
         : Promise.resolve({ data: null }),
+      isAdmin
+        ? supabase.from('reports').select('assigned_staff_id').in('status', ['Open', 'In Progress']).is('deleted_at', null)
+        : Promise.resolve({ data: null }),
     ]);
     if (evRes.data) setEvents(evRes.data as ReportEvent[]);
     if (staffRes?.data) setStaffList(staffRes.data as StaffCandidate[]);
+    if (activeRes?.data) {
+      const counts: Record<string, number> = {};
+      (activeRes.data as any[]).forEach((r) => {
+        if (r.assigned_staff_id) {
+          counts[r.assigned_staff_id] = (counts[r.assigned_staff_id] || 0) + 1;
+        }
+      });
+      setActiveByStaff(counts);
+    }
 
     let currentReport: any = rptData?.data;
     if (!currentReport) {
@@ -192,13 +208,36 @@ export function ReportDetailScreen({ route, navigation }: any) {
     return list;
   }, [report, isAdmin, isAssignedStaff]);
 
-  // Ranked staff by expertise match with report category
-  const rankedStaff = useMemo(() => {
+  const tradeLabel = useMemo(() => getTradeLabel(report?.category), [report?.category]);
+
+  const matchingStaff = useMemo(() => {
     if (!report?.category) return staffList;
-    return [...staffList].sort(
-      (a, b) => Number(b.expertise === report.category) - Number(a.expertise === report.category)
-    );
+    return staffList.filter((s) => isTradeMatch(s.expertise, report.category));
   }, [staffList, report?.category]);
+
+  const assignTabs = useMemo<TabItem<'trade' | 'all'>[]>(() => {
+    return [
+      {
+        id: 'trade',
+        label: `${tradeLabel} (${matchingStaff.length})`,
+        icon: 'zap',
+        color: Accent.amber,
+      },
+      {
+        id: 'all',
+        label: `All Staff (${staffList.length})`,
+        icon: 'users',
+        color: C.brand,
+      },
+    ];
+  }, [tradeLabel, matchingStaff.length, staffList.length, C.brand]);
+
+  const displayedStaff = useMemo(() => {
+    if (assignTab === 'trade' && matchingStaff.length > 0) {
+      return matchingStaff;
+    }
+    return staffList;
+  }, [assignTab, matchingStaff, staffList]);
 
   async function handleAssignStaff(staffId: string) {
     if (!report) return;
@@ -350,15 +389,16 @@ export function ReportDetailScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {/* Top Badges Row: Category + Status */}
+        {/* Top Badges Row: Category + Status (32dp Symmetrical Standard) */}
         <View style={styles.topBadgesRow}>
-          <View style={[styles.categoryPill, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={[styles.categoryPill32, { backgroundColor: C.surface, borderColor: C.border }]}>
             <Icon name={cat.icon} size={15} color={C.text} />
             <Text style={[styles.categoryPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               {report.category}
             </Text>
           </View>
-          <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
+          <View style={[styles.statusPill32, { backgroundColor: statusStyle.bg, borderColor: statusStyle.text + '35' }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusStyle.text }]} />
             <Text style={[styles.statusText, { color: statusStyle.text, fontFamily: FontFamily.jakartaBold }]}>
               {t.status[report.status] ?? report.status}
             </Text>
@@ -450,7 +490,13 @@ export function ReportDetailScreen({ route, navigation }: any) {
                     Assigned to
                   </Text>
                   {isAdmin && (
-                    <TouchableOpacity onPress={() => setAssignModalOpen(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setAssignTab('trade');
+                        setAssignModalOpen(true);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
                       <Text style={[styles.reassignActionTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                         Reassign
                       </Text>
@@ -471,7 +517,10 @@ export function ReportDetailScreen({ route, navigation }: any) {
                 </Text>
                 <TouchableOpacity
                   style={[styles.assignQuickBtn, { backgroundColor: C.brand + '14', borderColor: C.brand }]}
-                  onPress={() => setAssignModalOpen(true)}
+                  onPress={() => {
+                    setAssignTab('trade');
+                    setAssignModalOpen(true);
+                  }}
                   activeOpacity={0.75}
                 >
                   <Icon name="userPlus" size={13} color={C.brand} />
@@ -650,77 +699,139 @@ export function ReportDetailScreen({ route, navigation }: any) {
         </View>
       </Modal>
 
-      {/* Staff Assignment Bottom Sheet Modal for Admin */}
+      {/* Full-Screen Staff Assignment Modal for Admin */}
       {isAdmin && (
         <Modal
           visible={assignModalOpen}
-          transparent
           animationType="slide"
+          presentationStyle="fullScreen"
           onRequestClose={() => setAssignModalOpen(false)}
         >
-          <TouchableOpacity
-            style={styles.overlay}
-            activeOpacity={1}
-            onPress={() => setAssignModalOpen(false)}
-          />
-          <View style={[styles.sheet, { backgroundColor: C.surface, borderColor: C.border, borderTopWidth: 1, maxHeight: '80%' }]}>
-            <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                {assigneeName ? 'Reassign Staff' : 'Assign Maintenance Staff'}
-              </Text>
+          <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+            {/* Top Navigation Bar */}
+            <View style={[styles.modalHeader, { borderBottomColor: C.border }]}>
               <TouchableOpacity
-                style={styles.closeBtn}
                 onPress={() => setAssignModalOpen(false)}
+                style={styles.modalBackBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Icon name="close" size={20} color={C.textMuted} />
+                <Icon name="arrow-left" size={20} color={C.text} />
+              </TouchableOpacity>
+              <View style={styles.modalHeaderTitleBlock}>
+                <Text style={[styles.modalHeaderTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]} numberOfLines={1}>
+                  {assigneeName ? 'Reassign Staff' : 'Assign Maintenance Staff'}
+                </Text>
+                <Text style={[styles.modalHeaderSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                  {code} · {report.category} · {displayRoom}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setAssignModalOpen(false)} style={styles.modalCancelBtn}>
+                <Text style={[styles.modalCancelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  {t.common.cancel}
+                </Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
-              {rankedStaff.map((s) => {
-                const isMatch = s.expertise === report.category;
+            {/* Ticket Context Strip */}
+            <View style={[styles.contextStrip, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
+              <View style={styles.contextStripLeft}>
+                <View style={[styles.contextDot, { backgroundColor: C.brand }]} />
+                <Text style={[styles.contextTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Requires {tradeLabel}
+                </Text>
+              </View>
+              <View style={[styles.categoryBadgeTiny, { backgroundColor: C.brand + '15', borderColor: C.brand + '40' }]}>
+                <Text style={[styles.categoryBadgeTinyTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                  {report.category}
+                </Text>
+              </View>
+            </View>
+
+            {/* 58dp Segmented Tab Bar with Native Spring Animation */}
+            <View style={styles.tabContainer58}>
+              <SegmentedTabs<'trade' | 'all'>
+                tabs={assignTabs}
+                activeTab={assignTab}
+                onTabChange={(id) => setAssignTab(id)}
+                size="md"
+              />
+            </View>
+
+            {/* Staff List Container */}
+            <ScrollView
+              contentContainerStyle={styles.staffScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {displayedStaff.map((s) => {
+                const isMatch = isTradeMatch(s.expertise, report.category);
                 const isCurrent = report.assigned_staff_id === s.id;
+                const activeCount = activeByStaff[s.id] ?? 0;
                 return (
                   <TouchableOpacity
                     key={s.id}
                     style={[
-                      styles.actionRow58,
+                      styles.staffCard58,
                       {
-                        backgroundColor: isCurrent ? (C.brand + '14') : C.surface2,
+                        backgroundColor: isCurrent ? (C.brand + '14') : C.surface,
                         borderColor: isCurrent ? C.brand : C.border,
-                        marginBottom: 8,
                       },
                     ]}
                     onPress={() => handleAssignStaff(s.id)}
-                    activeOpacity={0.7}
+                    activeOpacity={0.72}
                     disabled={assigningStaff}
                   >
                     <Avatar name={s.full_name} size="sm" />
-                    <View style={styles.actionRowBody}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={[styles.actionRowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    <View style={styles.staffCardBody}>
+                      <View style={styles.staffCardTopRow}>
+                        <Text style={[styles.staffNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                           {s.full_name}
                         </Text>
                         {isMatch && (
-                          <View style={[styles.matchBadge, { backgroundColor: C.successBg }]}>
+                          <View style={[styles.matchBadge, { backgroundColor: C.successBg, borderColor: C.success + '40' }]}>
                             <Text style={[styles.matchBadgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                              Match
+                              Trade Match
                             </Text>
                           </View>
                         )}
                       </View>
+                      <Text style={[styles.staffMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                        {s.expertise ?? s.department ?? 'Maintenance'} · {activeCount === 1 ? '1 active job' : `${activeCount} active jobs`}
+                      </Text>
                     </View>
                     {isCurrent ? (
-                      <Icon name="check" size={18} color={C.brand} />
+                      <View style={[styles.selectedCheckWrap, { backgroundColor: C.brand }]}>
+                        <Icon name="check" size={14} color="#ffffff" />
+                      </View>
                     ) : (
-                      <Icon name="chevR" size={16} color={C.textMuted} />
+                      <Icon name="chevR" size={18} color={C.textMuted} />
                     )}
                   </TouchableOpacity>
                 );
               })}
+
+              {/* Empty State when no specialists found */}
+              {assignTab === 'trade' && matchingStaff.length === 0 && (
+                <View style={[styles.emptySpecialistCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <Icon name="userX" size={28} color={C.textMuted} />
+                  <Text style={[styles.emptySpecialistTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                    No Registered {tradeLabel}
+                  </Text>
+                  <Text style={[styles.emptySpecialistSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                    No staff members currently have their trade set to {report.category}.
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.emptySpecialistBtn, { backgroundColor: C.brand }]}
+                    onPress={() => setAssignTab('all')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.emptySpecialistBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                      View All Campus Staff ({staffList.length})
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </ScrollView>
-          </View>
+          </SafeAreaView>
         </Modal>
       )}
     </SafeAreaView>
@@ -731,31 +842,40 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 12, paddingBottom: 20 } as ViewStyle,
 
-  // Top Badges Row
+  // Top Badges Row (32dp Symmetrical Standard)
   topBadgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
     marginTop: 4,
   } as ViewStyle,
-  categoryPill: {
+  categoryPill32: {
+    height: 32,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
     paddingHorizontal: 12,
-    height: 32,
     borderRadius: 16,
     borderWidth: 1,
   } as ViewStyle,
   categoryPillTxt: {
     fontSize: 12.5,
   } as TextStyle,
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+  statusPill32: {
+    height: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
     flexShrink: 0,
+  } as ViewStyle,
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   } as ViewStyle,
   statusText: {
     fontSize: 12,
@@ -1030,8 +1150,148 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
+    borderWidth: 1,
   } as ViewStyle,
   matchBadgeTxt: {
     fontSize: 10,
+  } as TextStyle,
+
+  tabContainer58: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: 8,
+  } as ViewStyle,
+  modalHeader: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Layout.screenPadding,
+    borderBottomWidth: 1,
+    gap: 12,
+  } as ViewStyle,
+  modalBackBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalHeaderTitleBlock: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+  } as ViewStyle,
+  modalHeaderTitle: {
+    fontSize: 16,
+  } as TextStyle,
+  modalHeaderSub: {
+    fontSize: 11.5,
+    marginTop: 1,
+  } as TextStyle,
+  modalCancelBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  } as ViewStyle,
+  modalCancelTxt: {
+    fontSize: 13,
+  } as TextStyle,
+  contextStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Layout.screenPadding,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  } as ViewStyle,
+  contextStripLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  } as ViewStyle,
+  contextDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  } as ViewStyle,
+  contextTxt: {
+    fontSize: 12.5,
+  } as TextStyle,
+  categoryBadgeTiny: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  categoryBadgeTinyTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  staffScrollContent: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: 6,
+    paddingBottom: 28,
+  } as ViewStyle,
+  staffCard58: {
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  } as ViewStyle,
+  staffCardBody: {
+    flex: 1,
+    justifyContent: 'center',
+    minWidth: 0,
+  } as ViewStyle,
+  staffCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  } as ViewStyle,
+  staffNameTxt: {
+    fontSize: 14,
+    letterSpacing: -0.1,
+    flexShrink: 1,
+  } as TextStyle,
+  staffMetaTxt: {
+    fontSize: 11.5,
+    marginTop: 2,
+  } as TextStyle,
+  selectedCheckWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  emptySpecialistCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    gap: 8,
+  } as ViewStyle,
+  emptySpecialistTitle: {
+    fontSize: 15,
+    marginTop: 4,
+  } as TextStyle,
+  emptySpecialistSub: {
+    fontSize: 12.5,
+    textAlign: 'center',
+    lineHeight: 18,
+  } as TextStyle,
+  emptySpecialistBtn: {
+    height: 44,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  } as ViewStyle,
+  emptySpecialistBtnTxt: {
+    fontSize: 13,
   } as TextStyle,
 });

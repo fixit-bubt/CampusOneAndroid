@@ -3155,3 +3155,30 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 50s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+---
+
+### 77. Symmetrical 32dp Badges, 58dp Spring-Animated SegmentedTabs & Full-Page Staff Assignment Architecture (`ReportDetailScreen.tsx`, `AdminDashboardScreen.tsx`, `AllReportsScreen.tsx`, `tradeMatcher.ts`) (/performance-optimization, /code-review-and-quality)
+- **Standardized Symmetrical 32dp Top Badges (`ReportDetailScreen.tsx`):**
+  - Resolved the asymmetrical box mismatch where Category was 32dp with border and Status was ~24dp without border.
+  - Standardized both `categoryPill32` and `statusPill32` to strict `height: 32`, `borderRadius: 16`, `borderWidth: 1`, and `paddingHorizontal: 12`.
+  - Added vector status dot indicator (`statusDot`, 6dp) and subtle themed border (`statusStyle.text + '35'`) to the status badge for cohesive visual hierarchy.
+- **Full-Screen Staff Assignment Experience (`ReportDetailScreen.tsx`, `AdminDashboardScreen.tsx`, `AllReportsScreen.tsx`):**
+  - Replaced the cramped 80% bottom sheet modal with a dedicated full-screen modal (`presentationStyle="fullScreen"`, `<SafeAreaView>`).
+  - Added dedicated top navigation bar with back arrow (`Icon name="arrow-left"`), title, ticket context subtitle (code, category, location), and cancel button.
+  - Added ticket context strip showing "Requires {tradeLabel}" with the category accent pill.
+- **58dp Spring-Animated Segmented Control (`SegmentedTabs.tsx`):**
+  - Integrated `SegmentedTabs` (`size="md"`, 58dp track height) with native spring pill sliding animation (`tension: 240, friction: 18, useNativeDriver: true`).
+  - Dual tabs: Primary tab dynamically labels the trade specialists (e.g. `⚡ Electricians (2)`, `Plumbers (1)`, `Cleaners (3)`) with specialist count and accent color; secondary tab shows `All Staff (N)` with total staff count.
+- **Smart Trade Matching Engine (`tradeMatcher.ts`):**
+  - Created reusable `isTradeMatch` and `getTradeLabel` utility supporting trade synonyms (e.g. Electrical ↔ Electrician/electric, Plumbing ↔ Plumber/pipe, Cleanliness ↔ Cleaner/janitor, IT / Network ↔ IT/network/hardware, Furniture ↔ Carpenter/wood, Safety / Security ↔ Security/guard).
+  - Primary view automatically filters to qualified trade specialists by default, preventing accidental misassignment of electrical faults to non-electrical personnel.
+  - Implemented graceful empty state card with 1-tap fallback to "View All Campus Staff ({count})" when no trade specialists are registered.
+- **Strict 58dp Staff Banners (`staffCard58`):**
+  - Standardized all staff candidate items across all three admin screens to `height: 58`, `borderRadius: 16`, `borderWidth: 1`, and `paddingHorizontal: 14`.
+  - Content layout: 36dp Avatar (`size="sm"`), full name with green `Trade Match` badge on line 1, department/expertise with active workload counter (`X active jobs`) on line 2, and blue checkmark / chevron on the right.
+- **Performance & Zero N+1 Queries:**
+  - Parallelized workload count query on admin load (`select('assigned_staff_id').in('status', ['Open', 'In Progress'])`), mapping counts in memory without per-row queries.
+  - Instant in-memory tab switching via `useMemo` with zero network overhead.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
