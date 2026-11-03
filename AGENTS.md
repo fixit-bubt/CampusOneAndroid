@@ -3407,3 +3407,24 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Unit Tests: 18 test suites passed, 140/140 tests passing (`npm test`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified clean startup (`ReactNativeJS: Running "main"`).
+
+---
+
+### 86. Club Category Dropdown Monochrome Polish, Vector Icon Enlarge to 28dp & Zero-Slop White Line Removal (ManageClubsScreen.tsx, ClubManageScreen.tsx, ClubsScreen.tsx, ClubDetailScreen.tsx) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Eliminated Left-Edge White Line on `+ New Club` (ManageClubsScreen.tsx):**
+  - Removed accidental `borderLeftColor: C.text, borderLeftWidth: 4` on the 58dp `+ New Club` trigger bar. The bar now uses uniform `borderColor: C.border`, restoring visual symmetry with adjacent dropdown bars.
+- **Fixed Category Mismatch across Club Screens (ClubManageScreen.tsx & ClubDetailScreen.tsx):**
+  - Purged legacy `CL_CATS` dictionary containing rainbow accent colors (`Accent.purple`, `Accent.pink`, `Accent.teal`, `Accent.blue`, `Accent.amber`) and removed colored indicator dots (`dot10`).
+  - Standardized `ClubManageScreen.tsx` to match `ManageClubsScreen.tsx`:
+    - Dropdown bar and "Select Club Category" bottom sheet use pure monochrome styling (`CATEGORY_ICONS`, `C.surface2` active background, `C.text` active border).
+    - Removed rainbow color dots and colored borders from category picker options.
+  - Cleaned up category labeling in `ClubDetailScreen.tsx` to eliminate unused color maps.
+- **Enlarged Vector Icons to Prominent 28dp Tier Standard:**
+  - Upgraded vector icons across all 58dp category bars, dropdown sheets, and department selectors from small `size={20}` to bold, high-contrast `size={28}` (Feather `cpu`, `music`, `activity`, `briefcase`, `users`, `layers`, `globe`, `zap`, `shield`, `book-open`, `compass`, `trending-up`).
+  - Increased `barLeft` spacing to `gap: 14` for comfortable breathing room alongside typography.
+  - Upgraded selection checkmarks to `size={20}` and chevrons to `size={20}` for tactile clarity.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main`.
