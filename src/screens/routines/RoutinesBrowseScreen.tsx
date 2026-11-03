@@ -611,7 +611,12 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
 
       {/* ──────────────── STEP 2: DEPARTMENTS (ALL 72-SIZE BARS) ──────────────── */}
       {step === 'departments' && (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Breadcrumb & Search */}
           <View style={styles.metaRow}>
             <Text style={[styles.breadcrumbText, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>

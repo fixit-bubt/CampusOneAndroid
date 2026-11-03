@@ -2979,18 +2979,16 @@ export function StudyHubScreen({ navigation }: any) {
       ) : (
         <SubBar title={barTitle} onBack={handleBack} />
       )}
-      <OfflineBanner
-        visible={isOffline}
-        message="Showing cached study hub courses and materials."
-        style={{ marginHorizontal: Layout.screenPadding }}
-      />
-
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        <OfflineBanner
+          visible={isOffline}
+          message="Showing cached study hub courses and materials."
+        />
         {isAdmin
           ? renderAdminQueue()
           : sub === 'browse'

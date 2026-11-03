@@ -439,7 +439,7 @@ export function AllReportsScreen({ navigation }: any) {
             {/* 1. Strict 58dp Search Bar */}
             <View style={[styles.searchBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.iconSlot32}>
-                <Icon name="search" size={20} color={C.text} />
+                <Icon name="search" size={22} color={C.text} />
               </View>
               <TextInput
                 style={[styles.searchInputTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
@@ -453,7 +453,7 @@ export function AllReportsScreen({ navigation }: any) {
               />
               {query.length > 0 && (
                 <TouchableOpacity onPress={() => setQuery('')} hitSlop={8} style={{ padding: 4 }}>
-                  <Icon name="close" size={16} color={C.textMuted} />
+                  <Icon name="close" size={18} color={C.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -465,14 +465,14 @@ export function AllReportsScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.iconSlot32}>
-                <Icon name={currentStatusOption.icon} size={24} color={C.text} />
+                <Icon name={currentStatusOption.icon} size={30} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {currentStatusOption.label}
                 </Text>
               </View>
-              <Icon name="chevD" size={18} color={C.textMuted} />
+              <Icon name="chevD" size={20} color={C.textMuted} />
             </TouchableOpacity>
 
             {/* 3. Strict 58dp Category Dropdown Bar */}
@@ -482,14 +482,14 @@ export function AllReportsScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.iconSlot32}>
-                <Icon name={currentCategoryOption.icon} size={24} color={C.text} />
+                <Icon name={currentCategoryOption.icon} size={30} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {currentCategoryOption.label}
                 </Text>
               </View>
-              <Icon name="chevD" size={18} color={C.textMuted} />
+              <Icon name="chevD" size={20} color={C.textMuted} />
             </TouchableOpacity>
           </View>
         }
@@ -574,14 +574,14 @@ export function AllReportsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.iconSlot32}>
-                      <Icon name={opt.icon} size={22} color={C.text} />
+                      <Icon name={opt.icon} size={30} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                         {opt.label}
                       </Text>
                     </View>
-                    {isSelected && <Icon name="check" size={18} color={C.brand} />}
+                    {isSelected && <Icon name="check" size={22} color={C.brand} />}
                   </TouchableOpacity>
                 );
               })}
@@ -638,14 +638,14 @@ export function AllReportsScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.iconSlot32}>
-                      <Icon name={opt.icon} size={22} color={C.text} />
+                      <Icon name={opt.icon} size={30} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                         {opt.label}
                       </Text>
                     </View>
-                    {isSelected && <Icon name="check" size={18} color={C.brand} />}
+                    {isSelected && <Icon name="check" size={22} color={C.brand} />}
                   </TouchableOpacity>
                 );
               })}
@@ -828,11 +828,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   } as ViewStyle,
   iconSlot32: {
-    width: 32,
-    height: 32,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 12,
   } as ViewStyle,
   barTitleTxt: {
     fontSize: 14,

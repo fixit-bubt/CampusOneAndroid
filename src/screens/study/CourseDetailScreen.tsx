@@ -499,11 +499,6 @@ export function CourseDetailScreen({ route, navigation }: any) {
         }
       />
 
-      <OfflineBanner
-        visible={isOffline}
-        message="Showing cached course materials. Connect to the internet to download new files or bookmark."
-      />
-
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -511,6 +506,10 @@ export function CourseDetailScreen({ route, navigation }: any) {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
+        <OfflineBanner
+          visible={isOffline}
+          message="Showing cached course materials. Connect to the internet to download new files or bookmark."
+        />
         <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{course.name}</Text>
         {batchOptions.length > 1 ? (
           <View style={[styles.readOnlyBadge, { backgroundColor: isDark ? 'rgba(45, 212, 191, 0.12)' : '#f0fdfa', borderColor: isDark ? 'rgba(45, 212, 191, 0.3)' : '#99f6e4' }]}>

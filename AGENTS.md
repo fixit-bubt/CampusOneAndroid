@@ -499,6 +499,16 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Real-Time GPS Distance Calculation:** In `MarketDetailScreen.tsx` and `LostFoundDetailScreen.tsx`, the handover location resolves against master Dhaka landmarks (`findMasterLocationByName`) and calculates real-time distance from the customer's phone coordinates (`getCurrentUserCoordinates()`), displaying `X km away · Tap for directions`.
 - **Wishlist Scoping by User ID:** Scoped saved wishlist IDs in `marketService.ts` to `@c1_saved_listings_${userId}` to prevent bookmark state leakage across different user accounts on shared devices.
 
+### 5.11 Universal Natural Native Scrolling Architecture
+- **Problem Solved:** Pinning top controls (search bars, filter chips/tabs, category dropdowns, sync cards, action banners, and add-item buttons) outside scrollable containers squishes the visible content feed down to 200–300dp on mobile screens, suffocating cards and forcing users to scroll in a cramped viewport.
+- **Universal Architecture Standard:**
+  1. **SubBar / TopBar as Only Sticky Element:** The top navigation bar (back button, title, and primary actions) remains the sole fixed element at the top edge of the screen.
+  2. **Top Controls Moved Inside `ListHeaderComponent` or Root `ScrollView`:** All search inputs, category dropdown triggers, filter segment tabs, sync cards, action banners, and add-item trigger bars are moved INSIDE the `ListHeaderComponent` of `FlatList` (or inside the root `ScrollView`).
+  3. **100% Screen Height Unlocked on Scroll:** As the user scrolls down through feed cards, all header controls smoothly and naturally scroll off-screen with native momentum, unlocking the entire screen height for content consumption.
+  4. **Instant Control Reappearance:** On scrolling up or initiating pull-to-refresh (`RefreshControl`), all top controls reappear immediately.
+  5. **React TextInput Focus Preservation Rule:** Passing an inline anonymous function component to `ListHeaderComponent` (e.g. `ListHeaderComponent={() => <View>...<TextInput />...</View>}`) causes React to unmount and remount the DOM/native subtree on every single keystroke, immediately dismissing the keyboard and losing focus. To preserve continuous focus, always pass a stable JSX element (`ListHeaderComponent={<View>...<TextInput />...</View>}` or `ListHeaderComponent={listHeaderJSX}`) so React reconciles the tree in-place without unmounting.
+  6. **Fluid Keyboard & Momentum Configuration:** Every scroll container strictly specifies `keyboardDismissMode="on-drag"` and `keyboardShouldPersistTaps="handled"`, allowing users to tap items while dismissing the keyboard seamlessly when dragging.
+
 ---
 
 ## 6. Expo SDK 56 & Android Quirks
@@ -4008,7 +4018,11 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
     2. **Category Dropdown Bar (58dp):** Displays active category (`All Categories`, `Electrical`, `Plumbing`, `Cleanliness`, `IT / Network`, `Furniture`, `Safety / Security`, `Other`) with leading vector icon (`layers`, `bolt`, `droplets`, `sparkles`, `wifi`, `box`, `shield`, `sliders`) and trailing `chevron-down`.
 - **Slide-Up Bottom Sheet Filter Modals:**
   - Tapping either 58dp bar opens a native slide-up bottom modal sheet (`Modal transparent animationType="slide"`, `modalOverlay`, `modalBox` with 24dp top radius and grab handle bar `handleBar: 38x4dp`).
-  - Contains title, close button, and full-width 58dp selectable option rows (`styles.bar58`) with 22dp monochrome vector icons, bold labels, and active checkmarks (`check`).
+  - Contains title, close button, and full-width 58dp selectable option rows (`styles.bar58`) with enlarged 30dp monochrome vector icons in 38dp slots (`iconSlot32`), bold labels, and 22dp active checkmarks (`check`).
+- **Enlarged 30dp Dropdown Vector Icons:**
+  - Upgraded dropdown button trigger icons and bottom sheet option icons from small 22-24dp to prominent **30dp** monochrome vector icons.
+  - Expanded `iconSlot32` layout slot to `width: 38, height: 38, marginRight: 12` to ensure ample breathing room with zero boundary clipping.
+  - Enlarged dropdown trailing chevrons (`size={20}`) and search bar leading icon (`size={22}`).
 - **Natural Native Scrolling Architecture (`ListHeaderComponent`):**
   - Integrated the 58dp Search Bar (`searchBar58`) and both 58dp Dropdown Bars (`bar58`) into `FlatList`'s `ListHeaderComponent`.
   - All filter controls naturally scroll off-screen as the administrator reviews reports, maximizing screen real estate on mobile and maintaining smooth pull-to-refresh (`RefreshControl`).

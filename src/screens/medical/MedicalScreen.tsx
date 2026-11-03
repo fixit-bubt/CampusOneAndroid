@@ -504,6 +504,8 @@ export function MedicalScreen({ navigation }: any) {
           { paddingHorizontal: Layout.screenPadding },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

@@ -176,6 +176,8 @@ export function AcademicCalendarScreen({ navigation }: any) {
       <FlatList
         data={calendars}
         keyExtractor={(item) => item.id}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: insets.bottom + 32 },

@@ -421,6 +421,8 @@ export function ManageBannerScreen({ navigation }: any) {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
       >
         {/* Visual Live Carousel Preview */}
         <View style={[styles.previewWrapper, { borderColor: C.border, backgroundColor: C.surface }]}>
