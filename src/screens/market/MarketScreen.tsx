@@ -14,7 +14,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
+import { FontFamily, Layout, Accent, SectorColors, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { fetchPeople, type Person } from '../../services/peopleService';
@@ -52,7 +52,8 @@ export function MarketScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
 
   // Primary filters
   const [tab, setTab] = useState<Tab>('all');
@@ -429,6 +430,50 @@ export function MarketScreen({ navigation }: any) {
       {/* Main Container */}
       <View style={{ flex: 1 }}>
         <OfflineBanner visible={isOffline} onRetry={load} />
+
+        {/* Admin Moderation 72dp Shortcut Strip */}
+        {isAdmin && (
+          <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 4 }}>
+            <TouchableOpacity
+              style={[
+                styles.adminBar72,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.brand + '45',
+                },
+              ]}
+              onPress={() => navigation.navigate('ManageMarket')}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t.market2.adminShortcutTitle ?? 'Admin: Marketplace Moderation'}
+            >
+              <View style={styles.adminIconSlot32}>
+                <Feather name="shield" size={32} color={C.brand} />
+              </View>
+              <View style={styles.adminBarTextCol}>
+                <Text
+                  style={[
+                    styles.adminBarTitle,
+                    { color: C.text, fontFamily: FontFamily.jakartaBold },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {t.market2.adminShortcutTitle ?? 'Admin: Marketplace Moderation'}
+                </Text>
+                <Text
+                  style={[
+                    styles.adminBarSubtitle,
+                    { color: C.textMuted, fontFamily: FontFamily.jakartaMedium },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {t.market2.adminShortcutSub ?? 'Review listings, take down violations & manage student posts'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={20} color={C.brand} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* 2. Prominent Emerald Hero Action Bar */}
         <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4, paddingBottom: 6 }}>
@@ -974,6 +1019,40 @@ export function MarketScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
+
+  // Admin 72dp Shortcut Bar
+  adminBar72: {
+    height: 72,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 6,
+  } as ViewStyle,
+  adminIconSlot32: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  } as ViewStyle,
+  adminBarTextCol: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingRight: 8,
+  } as ViewStyle,
+  adminBarTitle: {
+    flexShrink: 1,
+    fontSize: 14.5,
+    lineHeight: 20,
+  } as TextStyle,
+  adminBarSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  } as TextStyle,
 
   // Prominent Hero Action Bar
   heroActBtn: {

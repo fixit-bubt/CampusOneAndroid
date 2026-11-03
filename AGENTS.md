@@ -3824,3 +3824,26 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx tsc --noEmit`).
   - Native Local Release Build: Locally compiled via Gradle (`assembleRelease`) with release keystore.
   - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
+
+---
+
+### 105. Marketplace Administration Command Center, 72dp Shortcut Strip, 58dp Dropdown Bars & Reasoned Moderation (`ManageMarketScreen.tsx`, `MarketScreen.tsx`, `MarketDetailScreen.tsx`, `ModerationReasonModal.tsx`, `marketService.ts`, `en.ts`, `bn.ts`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Administration Explore Deduplication Standard:**
+  - Preserved canonical Marketplace navigation strictly under Campus Life / Community in `ExploreScreen.tsx` without creating any duplicate or redundant marketplace bars inside the Administration ("manage") section.
+- **72dp Admin Management Shortcut Bar (`MarketScreen.tsx`):**
+  - Integrated a dedicated 72dp shortcut bar (`styles.adminBar72`, `height: 72`, `borderRadius: Radius.lg`) at the top of `MarketScreen.tsx` visible exclusively to administrators.
+  - Rendered 32dp monochrome vector shield icon (`Feather name="shield" size={32} color={C.brand}`) within transparent slot with clean title (*"Admin: Marketplace Moderation"*) and subtitle (*"Review listings, take down violations & manage student posts"*).
+- **Dedicated Marketplace Moderation Center (`ManageMarketScreen.tsx`):**
+  - Built full admin management dashboard with strict 58dp architecture:
+    - 58dp Search Bar (`searchBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`) searching titles, codes (`L-xxx`), descriptions, and seller names.
+    - 58dp Category Dropdown Bar (`bar58`, `height: 58`, `borderRadius: 16`) opening a 58dp monochrome option sheet.
+    - 58dp Status Filter Tabs (`tabsRow58`, `height: 58`, `borderRadius: 16`) toggling between All Items, Available, and Sold.
+    - Clean card layout with seller profile details (full name, department, role, student verification), item code, price, status, and handover meetup location.
+- **58dp Reasoned Moderation & Automated Seller Notification (`ModerationReasonModal.tsx`, `MarketDetailScreen.tsx`, `marketService.ts`):**
+  - Replaced uninformative blind deletion with structured 58dp reason picker modal (Policy violation, Misleading pricing/scam, Inappropriate photos/language, Duplicate spam, or Custom note).
+  - Wired into both `ManageMarketScreen.tsx` and `MarketDetailScreen.tsx`.
+  - Added `moderateListingRow` pipeline and Supabase migration `20261104040000_admin_marketplace_moderation_rpc.sql` notifying sellers immediately in `public.notifications` (and FCM push) with the exact administrative reason before item removal.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`npx tsc --noEmit`).
+  - Native Local Release Build: Locally compiled via Gradle (`assembleRelease`) with release keystore in 42s.
+  - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).

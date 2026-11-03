@@ -29,9 +29,11 @@ import {
   openListingDmThread,
   updateListingStatus,
   deleteListingRow,
+  moderateListingRow,
   getSavedListingIds,
   toggleSavedListing,
 } from '../../services/marketService';
+import { ModerationReasonModal } from '../../components/market/ModerationReasonModal';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -72,6 +74,8 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [userCoords, setUserCoords] = useState<Coordinates | null>(null);
   const [distanceText, setDistanceText] = useState<string | null>(null);
+  const [moderateModalOpen, setModerateModalOpen] = useState(false);
+  const [moderateLoading, setModerateLoading] = useState(false);
 
   // Obtain user's live coordinates for distance calculation
   useEffect(() => {
@@ -228,13 +232,20 @@ export function MarketDetailScreen({ route, navigation }: any) {
     ]);
   }
 
-  // Delete listing action
+  // Delete / Moderate listing action
   function handleDeleteListing() {
     if (!id || !listing) return;
     if (listing.seller_id !== user?.id && !isAdmin) {
       toast({ type: 'error', title: t.common.error, message: 'You are not authorized to delete this listing' });
       return;
     }
+
+    // If an administrator is moderating someone else's listing, require a structured reason
+    if (isAdmin && !isOwn) {
+      setModerateModalOpen(true);
+      return;
+    }
+
     Alert.alert(t.market2.deleteListingTitle, t.market2.deleteListingBody, [
       { text: t.common.cancel, style: 'cancel' },
       {
@@ -250,6 +261,24 @@ export function MarketDetailScreen({ route, navigation }: any) {
         },
       },
     ]);
+  }
+
+  // Admin reasoned moderation confirmation
+  async function handleConfirmModeration(reason: string) {
+    if (!id || !listing) return;
+    setModerateLoading(true);
+    try {
+      const res = await moderateListingRow(id, reason, listing.seller_id, listing.title, listing.code);
+      if (!res.success) {
+        toast({ type: 'error', title: t.common.error, message: res.error });
+        return;
+      }
+      setModerateModalOpen(false);
+      toast({ type: 'success', title: t.common.done, message: t.market2.removedToast ?? 'Listing removed and seller notified' });
+      navigation.goBack();
+    } finally {
+      setModerateLoading(false);
+    }
   }
 
   // Navigate to course in Study Hub
@@ -636,6 +665,15 @@ export function MarketDetailScreen({ route, navigation }: any) {
         sectorColor={MARKET_COLOR}
         iconName="map-pin"
         title="Meetup Route & Directions"
+      />
+
+      {/* Admin Moderation Reason Modal */}
+      <ModerationReasonModal
+        visible={moderateModalOpen}
+        onClose={() => setModerateModalOpen(false)}
+        onConfirm={handleConfirmModeration}
+        loading={moderateLoading}
+        listingTitle={listing?.title}
       />
     </SafeAreaView>
   );

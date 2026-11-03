@@ -115,3 +115,52 @@ export async function deleteListingRow(id: string): Promise<{ success: boolean; 
     return { success: false, error: e?.message ?? 'Failed to delete listing' };
   }
 }
+
+/**
+ * Moderate listing by taking it down with an official reason and notifying the seller.
+ */
+export async function moderateListingRow(
+  id: string,
+  reason: string,
+  sellerId?: string,
+  listingTitle?: string,
+  listingCode?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // 1. Try RPC with automated server-side notification
+    const { error: rpcErr } = await (supabase.rpc as any)('admin_moderate_listing', {
+      p_listing_id: id,
+      p_reason: reason,
+    });
+
+    if (rpcErr) {
+      // 2. Direct fallback: If RPC function is not yet deployed, insert notification and hard-delete
+      if (sellerId) {
+        try {
+          await supabase.from('notifications').insert({
+            user_id: sellerId,
+            sector: 'market',
+            title: 'Marketplace Listing Removed',
+            body: `Your listing "${listingTitle || 'item'}" was taken down by campus administration. Reason: ${reason}`,
+            reference_id: listingCode || id,
+            reference_type: 'listing',
+          });
+        } catch {
+          // non-fatal if notification RLS rejects client-side insert
+        }
+      }
+      return await deleteListingRow(id);
+    }
+
+    // 3. Update local cache
+    const cached = await getCache<Listing[]>(CacheKeys.MARKET_LISTINGS);
+    if (cached) {
+      const filtered = cached.filter(l => l.id !== id);
+      setCache(CacheKeys.MARKET_LISTINGS, filtered);
+    }
+
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? 'Failed to moderate listing' };
+  }
+}

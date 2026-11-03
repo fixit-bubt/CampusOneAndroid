@@ -55,6 +55,7 @@ import { ManageStudyHubScreen }    from '../screens/dashboard/ManageStudyHubScre
 import { ManageBannerScreen }      from '../screens/dashboard/ManageBannerScreen';
 import { ManageAnnouncementsScreen } from '../screens/dashboard/ManageAnnouncementsScreen';
 import { ManageAcademicCalendarScreen } from '../screens/dashboard/ManageAcademicCalendarScreen';
+import { ManageMarketScreen }           from '../screens/dashboard/ManageMarketScreen';
 import { AllReportsScreen }        from '../screens/dashboard/AllReportsScreen';
 import { ReportDetailScreen }      from '../screens/reports/ReportDetailScreen';
 import { MarketPostScreen }        from '../screens/market/MarketPostScreen';
@@ -209,6 +210,7 @@ export function AppNavigator() {
       <Stack.Screen name="ManageBanner"    component={ManageBannerScreen} />
       <Stack.Screen name="ManageAnnouncements" component={ManageAnnouncementsScreen} />
       <Stack.Screen name="ManageAcademicCalendar" component={ManageAcademicCalendarScreen} />
+      <Stack.Screen name="ManageMarket"   component={ManageMarketScreen} />
       <Stack.Screen name="AllReports"     component={AllReportsScreen} />
 
       {/* Report detail */}
