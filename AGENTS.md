@@ -3567,3 +3567,16 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+
+---
+
+### 95. Removal of Redundant Add Member Bar inside ClubMembersScreen (`ClubMembersScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Problem Solved:** With the introduction of the dual member action bar on the club detail screen (`[ + Add Member | 👥 Manage ]`), tapping 'Add Member' already opens the dedicated full-page enrollment directory. Keeping an additional 'Add Club Member' bar inside the 'Manage' screen (`ClubMembersScreen.tsx`) was redundant and pushed down the pending join requests and member roster.
+- **Architectural & UI/UX Resolution:**
+  - Removed the `Add Club Member` bar from `ClubMembersScreen.tsx`.
+  - Streamlined `ClubMembersScreen` to focus strictly on member administration: reviewing/approving/declining join requests, promoting/changing member roles (VP, Editor, Member), and member removals.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
