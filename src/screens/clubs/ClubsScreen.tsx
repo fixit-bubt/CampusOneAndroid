@@ -63,45 +63,60 @@ export function ClubsScreen({ navigation }: any) {
       setLoading(false);
     }
 
-    // 2. Fetch fresh from Supabase
-    const [clubsRes, countsRes] = await Promise.all([
-      supabase
-        .from('clubs')
-        .select('id, name, tagline, category, is_active, club_members!left(role, user_id)')
-        .eq('is_active', true)
-        .order('name')
-        .limit(60),
-      supabase.rpc('club_member_counts'),
-    ]);
+    try {
+      // 2. Fetch fresh from Supabase
+      const [clubsRes, myRolesRes, countsRes] = await Promise.all([
+        supabase
+          .from('clubs')
+          .select('id, name, tagline, category, is_active')
+          .eq('is_active', true)
+          .order('name')
+          .limit(60),
+        user?.id
+          ? supabase.from('club_members').select('club_id, role').eq('user_id', user.id)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase.rpc('club_member_counts'),
+      ]);
 
-    if (clubsRes.error) {
+      if (clubsRes.error) {
+        if (cached && cached.length > 0) {
+          setIsOffline(true);
+        } else {
+          setLoadErr(true);
+        }
+        return;
+      }
+
+      setLoadErr(false);
+      setIsOffline(false);
+
+      const countMap: Record<string, number> = {};
+      ((countsRes as any)?.data ?? []).forEach((r: any) => { countMap[r.club_id] = Number(r.members); });
+
+      const roleMap: Record<string, string> = {};
+      ((myRolesRes as any)?.data ?? []).forEach((m: any) => { roleMap[m.club_id] = m.role; });
+
+      if (clubsRes.data) {
+        const mapped = (clubsRes.data as any[]).map(c => ({
+          id: c.id,
+          name: c.name,
+          tagline: c.tagline ?? null,
+          category: c.category,
+          member_count: countMap[c.id] ?? 0,
+          user_role: roleMap[c.id] ?? null,
+        }));
+        setClubs(mapped as Club[]);
+        setCache(CacheKeys.CLUBS, mapped as Club[]);
+      }
+    } catch {
       if (cached && cached.length > 0) {
         setIsOffline(true);
       } else {
         setLoadErr(true);
       }
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoadErr(false);
-    setIsOffline(false);
-    const countMap: Record<string, number> = {};
-    (countsRes.data ?? []).forEach((r: any) => { countMap[r.club_id] = Number(r.members); });
-
-    if (clubsRes.data) {
-      const mapped = (clubsRes.data as any[]).map(c => ({
-        id: c.id,
-        name: c.name,
-        tagline: c.tagline ?? null,
-        category: c.category,
-        member_count: countMap[c.id] ?? c.club_members?.length ?? 0,
-        user_role: c.club_members?.find((m: any) => m.user_id === user?.id)?.role ?? null,
-      }));
-      setClubs(mapped as Club[]);
-      setCache(CacheKeys.CLUBS, mapped as Club[]);
-    }
-    setLoading(false);
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
