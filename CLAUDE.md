@@ -3820,3 +3820,17 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 41s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+
+---
+
+### 96. Universal 58dp Member Search Bar Inside Manage Screen (`ClubMembersScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Problem Solved:** When managing larger club rosters inside the 'Manage' screen (`ClubMembersScreen.tsx`), officers had to manually scroll through all members to find specific students, check roles, or promote/remove members.
+- **Architectural & UI/UX Resolution:**
+  - Integrated the universal 58dp search bar (`styles.bar58`, 20dp vector icon `search`, placeholder 'Search members by name or role...', and clear `x-circle` trigger) directly at the top of the scroll view.
+  - Implemented responsive, real-time memoized filtering (`filteredMembers`) matching both student full name and assigned club roles (President, VP, Editor, Member).
+  - Added dynamic counter header (`MEMBERS · {filteredMembers.length}`) and empty search state (`No members match '...'`) when queries return no matches.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 48s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
