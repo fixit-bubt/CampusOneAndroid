@@ -145,6 +145,7 @@ export type AppStackParams = {
   AdminDashboard: undefined;
   ManageUsers:    undefined;
   ManageFaculty:  undefined;
+  ManageStudyHub: undefined;
   AllReports:     undefined;
 
   // Legal & Policy

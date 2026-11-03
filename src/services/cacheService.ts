@@ -55,6 +55,8 @@ export const CacheKeys = {
   NOTIFICATIONS: (uid: string) => `notifications_${uid}`,
   STAFF_REPORTS: (uid: string) => `staff_assigned_reports_${uid}`,
   ASSIGNED_REPORTS: (uid: string) => `staff_assigned_reports_${uid}`,
+  ADMIN_REPORTS: 'admin_reports_feed',
+  ADMIN_STATS: 'admin_stats_counts',
 } as const;
 
 export function getCacheSync<T>(key: string): T | null {

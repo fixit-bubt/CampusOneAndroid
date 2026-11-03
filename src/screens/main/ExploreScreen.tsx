@@ -85,8 +85,9 @@ export function ExploreScreen({ navigation }: any) {
 
   // Admin excluded sectors: Student Directory (security-definer gated to students),
   // Lost & Found (student claiming with proof), Cover Page generator (student assignment covers),
-  // and Class Routines (student class lecture schedules).
-  const ADMIN_EXCLUDED: SectorKey[] = ['directory', 'lostfound', 'coverpage', 'routines'];
+  // and Class Routines (student class lecture schedules). Reports, Faculty, and Clubs are
+  // elevated to the dedicated Administration section below.
+  const ADMIN_EXCLUDED: SectorKey[] = ['directory', 'lostfound', 'coverpage', 'routines', 'reports', 'faculty', 'clubs'];
 
   const sectors = isStaff
     ? SECTORS.filter((s) => STAFF_SECTORS.includes(s.id))
@@ -105,6 +106,7 @@ export function ExploreScreen({ navigation }: any) {
       s.id === 'reports' && isAdmin ? 'AllReports' :
       s.id === 'faculty' && isAdmin ? 'ManageFaculty' :
       s.id === 'clubs' && isAdmin ? 'ManageClubs' :
+      s.id === 'study' && isAdmin ? 'ManageStudyHub' :
       SECTOR_ROUTE[s.id];
     return (
       <TouchableOpacity
@@ -231,6 +233,166 @@ export function ExploreScreen({ navigation }: any) {
             {t.exploreGroups.directory}
           </Text>
         </View>
+
+        {/* Administration - admin-only full 72dp bars */}
+        {isAdmin && (
+          <CollapsibleSection
+            title={t.dash.manage ?? 'ADMINISTRATION'}
+            icon="shield"
+            accentColor={C.brand}
+            count={7}
+            countLabel={t.exploreGroups.toolsLabel}
+            open={openSection === 'administration' || openSection === null}
+            onToggle={() => toggleSection('administration')}
+          >
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('AllReports')}
+              activeOpacity={0.7}
+            >
+              <SectorIcon sector="reports" size="md" dark={isDark} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {t.dash.manageAllReports ?? 'All Reports'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('ManageUsers')}
+              activeOpacity={0.7}
+            >
+              <SectorIcon sector="directory" size="md" dark={isDark} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {t.dash.manageUsers ?? 'User Directory & Roles'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('ManageFaculty')}
+              activeOpacity={0.7}
+            >
+              <SectorIcon sector="faculty" size="md" dark={isDark} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {t.dash.manageFaculty ?? 'Faculty Directory'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('ManageStudyHub')}
+              activeOpacity={0.7}
+            >
+              <SectorIcon sector="study" size="md" dark={isDark} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {t.dash.manageStudyHub ?? 'Study Hub Moderation'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('ManageClubs')}
+              activeOpacity={0.7}
+            >
+              <SectorIcon sector="clubs" size="md" dark={isDark} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {t.dash.manageClubs ?? 'Clubs & Communities'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('JobsModerate')}
+              activeOpacity={0.7}
+            >
+              <SectorIcon sector="jobs" size="md" dark={isDark} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {t.jobs?.moderation ?? 'Job Moderation'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('AnnouncePost')}
+              activeOpacity={0.7}
+            >
+              <SectorIcon sector="announce" size="md" dark={isDark} />
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  {t.dash.manageAnnouncements ?? 'Broadcast Announcement'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+          </CollapsibleSection>
+        )}
 
         {showAcademics && (
           <CollapsibleSection

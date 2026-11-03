@@ -23,6 +23,7 @@ import type { BottomTabParams } from '../types/navigation';
 
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { StudyHubScreen } from '../screens/study/StudyHubScreen';
+import { ManageStudyHubScreen } from '../screens/dashboard/ManageStudyHubScreen';
 import { MessagesHome } from '../screens/messages/MessagesHome';
 import { ExploreScreen } from '../screens/main/ExploreScreen';
 import { SettingsScreen } from '../screens/main/SettingsScreen';
@@ -278,7 +279,7 @@ export function BottomTabNavigator() {
     >
       <Tab.Screen name="Home" component={HomeComponent} />
       {showStudyHub && (
-        <Tab.Screen name="StudyHub" component={StudyHubScreen} />
+        <Tab.Screen name="StudyHub" component={profile?.role === 'admin' ? ManageStudyHubScreen : StudyHubScreen} />
       )}
       {isStudent && (
         <Tab.Screen name="Messages" component={MessagesHome} />
