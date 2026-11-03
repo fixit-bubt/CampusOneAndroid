@@ -3518,3 +3518,17 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 54s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+
+---
+
+### 92. Create Club Post Bar Placement Above Feed & Centered Action Ergonomics (ClubDetailScreen.tsx) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Problem Solved:** The 'Create Club Post' action was initially located inside the feed tab content list. When the user switched tabs or scrolled, the post action was visually coupled with the post feed rather than serving as a clear top-level officer tool. Additionally, the user requested that the text and icon be centered in the middle of the 58dp bar.
+- **Architectural & UI/UX Resolution:**
+  - **Relocated Above Segmented Tabs:** Positioned the 58dp 'Create Club Post' bar directly below the club description card and above the [Feed] [Members] segmented tabs.
+  - **Centered 58dp Action Bar Styling:** Created styles.bar58Center with justifyContent: 'center', lignItems: 'center', lexDirection: 'row', and gap: 10. Uses a 24dp vector icon (plus-circle) and centered 15px bold typography (styles.barTitleCenter).
+  - **Strict Officer Security Guard:** Preserved canPost condition (myRole === 'president' || myRole === 'vp' || myRole === 'editor'), ensuring only verified club executives see the creation trigger.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (	sc --noEmit).
+  - Native Release APK: Locally compiled via Gradle (ssembleRelease) with local release keystore (BUILD SUCCESSFUL in 1m 4s).
+  - Direct ADB Deployment: Streamed install (db install -r) and launched on physical phone 8734b5da (Performing Streamed Install -> Success).
