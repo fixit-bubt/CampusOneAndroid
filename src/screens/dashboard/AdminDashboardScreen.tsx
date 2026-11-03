@@ -735,8 +735,8 @@ export function AdminDashboardScreen({ navigation }: any) {
                         {s.full_name}
                       </Text>
                       {isMatch && (
-                        <View style={[styles.matchBadge, { backgroundColor: C.successBg, borderColor: C.success + '40' }]}>
-                          <Text style={[styles.matchBadgeTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+                        <View style={[styles.matchBadge, { backgroundColor: C.brand + '15', borderColor: C.brand + '35' }]}>
+                          <Text style={[styles.matchBadgeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
                             Trade Match
                           </Text>
                         </View>
@@ -992,30 +992,50 @@ const styles = StyleSheet.create({
   actionTxt: {
     fontSize: 13,
   } as any,
-  reassignBtn: {
+  staffRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 12,
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    marginTop: 10,
+    borderTopWidth: 1,
+    gap: 10,
   } as ViewStyle,
-  reassignTxt: {
-    fontSize: 13,
+  staffInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  } as ViewStyle,
+  staffLabelTxt: {
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   } as any,
-  resolvedBtn: {
+  staffNameTxt: {
+    fontSize: 12.5,
+    lineHeight: 16,
+  } as any,
+  reassignCompactBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
+  reassignCompactTxt: {
+    fontSize: 11.5,
+  } as any,
+  resolvedBadgeCompact: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    height: 38,
-    borderRadius: 12,
-    marginTop: 12,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
   } as ViewStyle,
-  resolvedTxt: {
-    fontSize: 12.5,
+  resolvedBadgeTxt: {
+    fontSize: 11,
   } as any,
 
   // Empty State Card
