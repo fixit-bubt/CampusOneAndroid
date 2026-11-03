@@ -134,22 +134,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Dedicated 58dp Add Club Member Bar for President & VP */}
-        {canManage && (
-          <TouchableOpacity
-            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}
-            onPress={() => navigation.navigate('ClubAddMember', { clubId, clubName: route.params?.clubName })}
-            activeOpacity={0.75}
-          >
-            <View style={styles.barLeft}>
-              <Feather name="user-plus" size={28} color={C.text} />
-              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                Add Club Member
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={20} color={C.textMuted} />
-          </TouchableOpacity>
-        )}
+
         {requests.length > 0 && (
           <View style={{ marginBottom: 16 }}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
