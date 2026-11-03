@@ -3682,3 +3682,27 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Direct Remote Supabase Query Verification: Confirmed with live query `SELECT id, title, clubs(id, name, cover_url) FROM club_posts` returning `success: true`.
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat confirmed clean execution (`ReactNativeJS: Running "main"`).
+
+---
+
+### 88. Club President Resolution RLS Fix & Live Verification (ManageClubsScreen.tsx, peopleService.ts) (/zero-slop, /performance-optimization, /systematic-debugging)
+- **Root-Cause Analysis for "President Not Appearing" Bug:**
+  - When the admin appoints a student as president in `ManageClubsScreen`, the `club_set_president` RPC executes and commits atomically to PostgreSQL (`public.club_members` with `role = 'president'`).
+  - However, `load()` previously queried:
+    `supabase.from('club_members').select('club_id, role, profiles:profiles!user_id(full_name)')`
+  - Two failure points occurred:
+    1. Foreign Key Ambiguity: `club_members` contains two foreign keys to `profiles` (`user_id` and `added_by`). PostgREST could not unambiguously resolve `profiles:profiles!user_id` without explicit constraint naming (`club_members_user_id_fkey`).
+    2. RLS Privacy Boundary: The `profiles` table RLS hides personal contact and identity rows for third-party callers. As documented in `peopleService.ts`, embedded profile selects resolve to `null` for other users.
+  - As a result, `president_name` remained `null`, and the UI card continuously rendered "No President" even though the appointment succeeded in the database.
+- **Architectural Resolution via `fetchPeople` (ManageClubsScreen.tsx):**
+  - Replaced the embedded query with clean separation:
+    `supabase.from('club_members').select('club_id, user_id, role')`
+  - Extracted all president `user_id`s and passed them to `fetchPeople(presUserIds)`, which queries the Security Definer `directory_profiles()` RPC.
+  - Dynamically resolved and mapped `presName = people[pres.user_id]?.full_name`, correctly rendering the president's name (e.g. "Monir Monir") alongside the award badge on the club card.
+- **Live Database Evidence:**
+  - Queried production table `public.club_members` on project `xhgpxvyqrufbbuivttmi`:
+    Verified row `b960e2b0-47cf-4b2f-a5da-06b983ade81d`: `user_id: cfc1f8a9-f514-4cd7-a3a6-f6aecb1df6b2` ("Monir Monir", email `dracunyt@gmail.com`), `role: president`, `club: BUBT Civil Engineering Club`.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 43s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
