@@ -3400,3 +3400,31 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 45s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`. Logcat verified `ReactNativeJS: Running "main"`.
   - Remote Database Push: Successfully pushed migration `20261103030000_clubs_hero_banner_curation.sql` to remote Supabase (`xhgpxvyqrufbbuivttmi`).
+
+
+---
+
+### 84. Clubs Universal Monochrome Refinement, Symmetrical 2-Button Action Bar & Full-Page Appoint President Architecture (`ManageClubsScreen.tsx`, `ClubsScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Zero-Color Monochrome Standard:**
+  - Completely purged all rainbow category accent colors (`Accent.purple`, `Accent.pink`, `Accent.teal`, etc.) and colored dot chips across `ManageClubsScreen.tsx` and `ClubsScreen.tsx`.
+  - Upgraded all category pills, active filter bars, and sheets to the high-contrast monochrome design system (`C.surface`, `C.surface2`, `C.border`, `C.text`, `C.text2`).
+- **Symmetrical 2-Button Action Bar Standard:**
+  - Removed the `Roster` and `Deactivate / Reactivate` action buttons and deleted the colored active/inactive status dot and badge.
+  - Symmetrically balanced the action bar across the full card width with strictly **2 equal-sized buttons** (`flex: 1`, `height: 44, borderRadius: 12`):
+    - **President:** One-tap appointment launcher with monochrome `user-check` vector icon.
+    - **Edit:** Direct management portal (`ClubManageScreen`) with monochrome `edit-2` vector icon.
+- **Big Monochrome Category Dropdown Bar:**
+  - Upgraded the Category Filter Dropdown Bar to a full-width 58dp bar (`height: 58, borderRadius: 16, borderWidth: 1`) rendered in clean monochrome with 20dp vector icons.
+- **Full-Page Appoint President Modal with 58dp Department Dropdown Bar:**
+  - Tapping "President" launches a dedicated full-page modal (`Modal animationType="slide"`) featuring:
+    - Target club header banner (`targetClubBanner`) displaying current club identity and incumbent president.
+    - 58dp Student Search Bar (`styles.bar58`) with real-time text query filter and one-tap clear button.
+    - **58dp Department Dropdown Bar (`styles.bar58`, `styles.dropdownBar`):** Displays active department icon, title, student count pill, and chevron, opening a bottom sheet with 58dp option bars across all 9 BUBT departments (`All`, `CSE`, `EEE`, `BBA`, `Law`, `English`, `Civil`, `Textile`, `Economics`).
+    - **58dp Student Roster List (`FlatList`):** Renders students with avatar, bold full name, formatted meta subtitle (`Department · Intake · Student ID`), and 1-tap "Appoint" button with alert confirmation before atomic RPC execution.
+- **Human-Designed Vector Icons in Create Club Category Sheet:**
+  - Replaced all colored dot chips with clean 20dp vector icons from vetted libraries (21st.dev / Feather: `cpu` for Tech, `music` for Cultural, `activity` for Sports, `briefcase` for Professional, `users` for Social) inside 58dp option bars.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 52s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
