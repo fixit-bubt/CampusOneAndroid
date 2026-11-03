@@ -80,6 +80,11 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const [myRequest, setMyRequest] = useState<{ id: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const CLUB_TABS: TabItem<Tab>[] = useMemo(() => [
+    { id: 'feed',    label: t.clubs.feed,    color: C.brand },
+    { id: 'members', label: t.clubs.members, count: members.length > 0 ? members.length : undefined, color: Accent.teal },
+  ], [t.clubs.feed, t.clubs.members, members.length, C.brand]);
+
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
     load();
@@ -216,11 +221,6 @@ export function ClubDetailScreen({ route, navigation }: any) {
     ]);
   }
 
-  const CLUB_TABS: TabItem<Tab>[] = useMemo(() => [
-    { id: 'feed',    label: t.clubs.feed,    color: C.brand },
-    { id: 'members', label: t.clubs.members, count: members.length > 0 ? members.length : undefined, color: Accent.teal },
-  ], [t.clubs.feed, t.clubs.members, members.length, C.brand]);
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -279,11 +279,8 @@ export function ClubDetailScreen({ route, navigation }: any) {
           <Text style={[styles.desc, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>{club.about}</Text>
         ) : null}
 
-        {/* Self-serve join: request to join, or withdraw a pending request.
-            No is_admin() carve-out here either - an admin who wants club
-            content access joins like anyone else and gets real membership
-            permissions, rather than the UI pretending they already have some. */}
-        {!isMember && (
+        {/* Self-serve join: request to join, or withdraw a pending request for students. */}
+        {!isMember && !isAdmin && (
           myRequest ? (
             <View style={[styles.inviteCard, { backgroundColor: C.surface2 }]}>
               <View style={[styles.pendingDot, { backgroundColor: Accent.amber }]} />

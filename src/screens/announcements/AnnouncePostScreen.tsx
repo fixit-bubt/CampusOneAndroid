@@ -20,6 +20,7 @@ import { BUCKETS, MAX_FILE_SIZE_MB } from '../../constants/app';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
+import { removeCache, CacheKeys } from '../../services/cacheService';
 
 export function AnnouncePostScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -32,6 +33,7 @@ export function AnnouncePostScreen({ navigation }: any) {
   const [priority, setPriority] = useState<Announcement['priority']>('General');
   const [body, setBody] = useState('');
   const [pinned, setPinned] = useState(false);
+  const [inBanner, setInBanner] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
@@ -129,11 +131,14 @@ export function AnnouncePostScreen({ navigation }: any) {
         body:       body.trim(),
         created_by: user.id,
         pinned:     pinned || priority === 'Urgent',
+        in_banner:  inBanner,
+        banner_order: inBanner ? 1 : 0,
         image_url:       imageUri,
         attachment_url:  attachmentUrl,
         attachment_name: attachmentName,
       });
       if (error) throw error;
+      await removeCache(CacheKeys.HOME_BANNER);
       navigation.goBack();
     } catch {
       toast({ type: 'error', title: t.common.error, message: t.announce2.postFailed });
@@ -226,6 +231,18 @@ export function AnnouncePostScreen({ navigation }: any) {
             Pin to top
           </Text>
           <TactileSwitch value={pinned} onValueChange={setPinned} />
+        </View>
+
+        <View style={styles.pinRow}>
+          <View style={{ flex: 1, paddingRight: 10 }}>
+            <Text style={[styles.pinLbl, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>
+              Show in Home Hero Banner
+            </Text>
+            <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 1, fontFamily: FontFamily.jakartaMedium }}>
+              Feature in the rotating top banner on the student dashboard
+            </Text>
+          </View>
+          <TactileSwitch value={inBanner} onValueChange={setInBanner} />
         </View>
 
         <TouchableOpacity

@@ -34,21 +34,29 @@ export async function runNoticesAdapter(
     activeBatch.push(n);
   }
 
-  // Pre-fetch existing pin status to protect manual admin pins from being overwritten
+  // Pre-fetch existing pin, banner and order status to protect manual admin curation from being overwritten
   const candidateCodes = activeBatch.map(n => `BUBT-N-${n.id}`);
   const existingPinMap = new Map<string, boolean>();
+  const existingBannerMap = new Map<string, boolean>();
+  const existingOrderMap = new Map<string, number>();
+  const existingBannerImgMap = new Map<string, string | null>();
 
   const CHUNK_SIZE = 50;
   for (let i = 0; i < candidateCodes.length; i += CHUNK_SIZE) {
     const chunk = candidateCodes.slice(i, i + CHUNK_SIZE);
     const { data: existingRows } = await supabase
       .from('announcements')
-      .select('code, pinned')
+      .select('code, pinned, in_banner, banner_order, banner_image_url')
       .in('code', chunk);
 
     if (existingRows) {
       for (const row of existingRows) {
-        if (row.code) existingPinMap.set(row.code, Boolean(row.pinned));
+        if (row.code) {
+          existingPinMap.set(row.code, Boolean(row.pinned));
+          existingBannerMap.set(row.code, Boolean(row.in_banner));
+          existingOrderMap.set(row.code, Number(row.banner_order ?? 0));
+          existingBannerImgMap.set(row.code, row.banner_image_url ?? null);
+        }
       }
     }
   }
@@ -112,7 +120,11 @@ export async function runNoticesAdapter(
       ? rawDesc
       : `Official circular published by BUBT for ${categoryName}. View or download the attached document for full details.`;
 
-    const fingerprint = await computeFingerprint(`${n.title}|${body}|${attachmentUrl || ''}|${imageUrl || ''}|${pinned}`);
+    const inBanner = existingBannerMap.get(code) ?? false;
+    const bannerOrder = existingOrderMap.get(code) ?? 0;
+    const bannerImageUrl = existingBannerImgMap.get(code) ?? null;
+
+    const fingerprint = await computeFingerprint(`${n.title}|${body}|${attachmentUrl || ''}|${imageUrl || ''}|${pinned}|${inBanner}|${bannerOrder}`);
 
     candidateItems.push({
       code,
@@ -122,6 +134,9 @@ export async function runNoticesAdapter(
       department_code: deptCode || null,
       priority,
       pinned,
+      in_banner: inBanner,
+      banner_order: bannerOrder,
+      banner_image_url: bannerImageUrl,
       category: categoryName,
       category_slug: categorySlug,
       attachment_url: attachmentUrl || null,

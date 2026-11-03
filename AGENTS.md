@@ -3235,3 +3235,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 18s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 81. Club Detail Fatal Crash Resolution, Student Profile Club Badges & Modernized Admin Manage Clubs Screen (`ManageClubsScreen.tsx`, `ClubDetailScreen.tsx`, `StudentProfileScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Club Detail Fatal Crash Root-Cause Fix (`ClubDetailScreen.tsx`):**
+  - **Root Cause Identified via ADB Logcat:** `Rendered more hooks than during the previous render` in `updateWorkInProgressHook` at `updateMemo` in `ClubDetailScreen`. `useMemo` for `CLUB_TABS` was declared *after* the early return guard `if (!club) return <ActivityIndicator />`. When club data finished loading from Supabase, the second render executed the extra hook, causing a fatal React Native exception and terminating the app process immediately on Android.
+  - **Resolution:** Re-ordered all hooks unconditionally at top of component.
+  - **Admin Context Fix:** Suppressed the student-only "Request to Join" button when an administrator views a club, since admins govern clubs via top bar management tools (`ClubMembers` and `ClubManage`).
+- **Student Public Profile Official Club Badges (`StudentProfileScreen.tsx`):**
+  - Integrated official Club Badges (`[Club Name · President/VP/Editor/Member]`) into `StudentProfileScreen`'s varsity badge row (`badgeRow`), fetching active club memberships via `club_members`.
+  - Tapping any club badge navigates directly to `ClubDetail` with `{ clubId: c.id }`.
+  - Applied `flexWrap: 'wrap'` to prevent horizontal clipping across different screen dimensions.
+- **Admin Manage Clubs Modernization (`ManageClubsScreen.tsx`):**
+  - **Top Stat Cards (Linear / Raycast Style):** Added 4 interactive metric cards: **Total Clubs**, **Active Clubs**, **Inactive Clubs**, and **Total Enrolled Members** with one-tap status filtering.
+  - **Standard 58dp Search Bar (`styles.searchBar`):** Added a 58dp search bar filtering instantly by club name, tagline, president name, or category with one-tap clear button.
+  - **Horizontal Category Filter Pills:** Integrated quick filter chips across all 5 official categories (`All`, `Tech`, `Cultural`, `Sports`, `Professional`, `Social`).
+  - **32dp Tier 1 Monochrome Vector Icons:** Standardized club emblems inside transparent slots (`styles.thumb`, `size={32}`), purging all outer squircle box slop.
+  - **Ergonomic 4-Action Bar:** Equipped every club card with 4 touch-friendly actions: `President` (appoint), `Edit` (`ClubManage`), `Roster` (`ClubMembers`), and `Deactivate / Reactivate`.
+  - **Safety Confirmation Dialogs:** Added explicit `Alert.alert` prompts before deactivating or reactivating any club, preventing accidental disabling in production Supabase.
+  - **58dp Form Inputs in Sheets:** Standardized Create Club modal and Assign President student directory search sheets with 58dp inputs (`height: 58, borderRadius: 16`).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across all source files (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 47s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched cleanly on physical phone `8734b5da`.

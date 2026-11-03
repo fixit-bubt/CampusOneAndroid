@@ -11,7 +11,9 @@ jest.mock('../../lib/supabase', () => ({
 import {
   ANNOUNCEMENT_CATEGORIES,
   KNOWN_DEPARTMENTS,
+  FALLBACK_SLIDES,
 } from '../announcementService';
+import { resolveBannerSource } from '../../utils/bannerUrl';
 
 describe('announcementService constants and categories', () => {
   it('should include all required official BUBT categories', () => {
@@ -45,5 +47,25 @@ describe('announcementService constants and categories', () => {
 
     const semesterCat = ANNOUNCEMENT_CATEGORIES.find(c => c.id === 'semester');
     expect(semesterCat?.slug).toBe('semester');
+  });
+
+  it('should have exactly 4 valid fallback slides with non-empty titles and routes', () => {
+    expect(FALLBACK_SLIDES.length).toBe(4);
+    FALLBACK_SLIDES.forEach(slide => {
+      expect(slide.title.length).toBeGreaterThan(0);
+      expect(slide.route.length).toBeGreaterThan(0);
+      expect(slide.inBanner).toBe(true);
+    });
+  });
+
+  it('should resolve local asset banner and external web URLs cleanly', () => {
+    const local = resolveBannerSource('convocation-2026.jpg');
+    expect(local).toBeDefined();
+
+    const web = resolveBannerSource('https://example.com/banner.jpg');
+    expect(web).toEqual({ uri: 'https://example.com/banner.jpg' });
+
+    const relative = resolveBannerSource('/announcements/test.jpg');
+    expect(web).toBeDefined();
   });
 });

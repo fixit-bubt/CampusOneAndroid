@@ -147,6 +147,8 @@ export type AppStackParams = {
   CreateStaffAdmin: undefined;
   ManageFaculty:  undefined;
   ManageStudyHub: undefined;
+  ManageBanner:   undefined;
+  ManageAnnouncements: undefined;
   AllReports:     undefined;
 
   // Legal & Policy

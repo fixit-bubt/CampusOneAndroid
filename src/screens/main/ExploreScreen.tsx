@@ -241,7 +241,7 @@ export function ExploreScreen({ navigation }: any) {
             title={t.dash.manage ?? 'ADMINISTRATION'}
             icon="shield"
             accentColor={C.brand}
-            count={8}
+            count={9}
             countLabel={t.exploreGroups.toolsLabel}
             open={openSection === 'administration' || openSection === null}
             onToggle={() => toggleSection('administration')}
@@ -402,13 +402,36 @@ export function ExploreScreen({ navigation }: any) {
                   borderLeftColor: C.brand,
                 },
               ]}
-              onPress={() => navigation.navigate('AnnouncePost')}
+              onPress={() => navigation.navigate('ManageAnnouncements')}
               activeOpacity={0.7}
             >
               <SectorIcon sector="announce" size="md" dark={isDark} />
               <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageAnnouncements ?? 'Broadcast Announcement'}
+                  {t.dash.manageAnnouncements ?? 'Announcements & Circulars'}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.childBar,
+                {
+                  backgroundColor: C.surface,
+                  borderColor: C.border,
+                  borderLeftColor: C.brand,
+                },
+              ]}
+              onPress={() => navigation.navigate('ManageBanner')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.toolIcon}>
+                <AnimatedIcon family="feather" name="image" size={32} color={C.text} />
+              </View>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                  Dashboard Banner Slides
                 </Text>
               </View>
               <Feather name="chevron-right" size={18} color={C.textMuted} />

@@ -28,6 +28,7 @@ import {
   fetchStudentProfileDetail,
 } from '../../services/connectionsService';
 import { FontFamily, Layout, Accent, SectorColors, pillBg } from '../../theme';
+import { supabase } from '../../lib/supabase';
 
 export type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
@@ -65,6 +66,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
   const targetId: string | undefined = initial?.id ?? route.params?.studentId ?? route.params?.id ?? route.params?.userId;
 
   const [student, setStudent] = useState<DirectoryStudent | null>(initial ?? null);
+  const [studentClubs, setStudentClubs] = useState<{ id: string; name: string; role: string }[]>([]);
   const [loading, setLoading] = useState<boolean>(!initial && !!targetId);
   const [isOffline, setIsOffline] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -74,7 +76,13 @@ export function StudentProfileScreen({ route, navigation }: any) {
   const refresh = useCallback(async () => {
     if (!targetId) return;
     try {
-      const res = await fetchStudentProfileDetail(targetId);
+      const [res, clubsRes] = await Promise.all([
+        fetchStudentProfileDetail(targetId),
+        supabase
+          .from('club_members')
+          .select('role, clubs:clubs!club_id(id, name, is_active)')
+          .eq('user_id', targetId),
+      ]);
       if (res.ok && res.data) {
         setIsOffline(false);
         setStudent({
@@ -83,6 +91,12 @@ export function StudentProfileScreen({ route, navigation }: any) {
         });
       } else {
         if (!res.ok) setIsOffline(true);
+      }
+      if (clubsRes.data) {
+        const active = (clubsRes.data as any[])
+          .filter(m => m.clubs && m.clubs.is_active !== false)
+          .map(m => ({ id: m.clubs.id, name: m.clubs.name, role: m.role }));
+        setStudentClubs(active);
       }
     } catch {
       setIsOffline(true);
@@ -305,6 +319,45 @@ export function StudentProfileScreen({ route, navigation }: any) {
                     </Text>
                   </View>
                 ) : null}
+
+                {/* Official Club Badges */}
+                {studentClubs.map(c => {
+                  const isPresident = c.role === 'president';
+                  const isVP = c.role === 'vp';
+                  const isLead = isPresident || isVP;
+                  const roleTxt = isPresident ? 'President' : isVP ? 'Vice President' : c.role === 'editor' ? 'Editor' : 'Member';
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[
+                        styles.clubBadge,
+                        {
+                          backgroundColor: isLead
+                            ? (isDark ? 'rgba(168, 85, 247, 0.2)' : '#f3e8ff')
+                            : (isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff'),
+                          borderColor: isLead
+                            ? (isDark ? 'rgba(168, 85, 247, 0.45)' : '#d8b4fe')
+                            : (isDark ? 'rgba(59, 130, 246, 0.35)' : '#bfdbfe'),
+                        },
+                      ]}
+                      onPress={() => navigation.navigate('ClubDetail', { clubId: c.id, id: c.id })}
+                      activeOpacity={0.75}
+                    >
+                      <Icon name="clubs" size={13} color={isLead ? Accent.purple : C.brand} />
+                      <Text
+                        style={[
+                          styles.clubBadgeTxt,
+                          {
+                            color: isLead ? (isDark ? '#c084fc' : '#7e22ce') : C.brand,
+                            fontFamily: FontFamily.jakartaBold,
+                          },
+                        ]}
+                      >
+                        {c.name}{isLead ? ` · ${roleTxt}` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
                 {connected ? (
                   <View style={[styles.connBadge, { backgroundColor: pillBg(Accent.teal, isDark), borderColor: isDark ? 'rgba(20, 184, 166, 0.4)' : '#99f6e4' }]}>
                     <View style={[styles.connDot, { backgroundColor: Accent.teal }]} />
@@ -594,7 +647,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 13, marginTop: 3 } as TextStyle,
   studentIdTxt: { fontSize: 12, marginTop: 2 } as TextStyle,
 
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 7 } as ViewStyle,
+  badgeRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 7 } as ViewStyle,
   crBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 6, borderWidth: 1,
@@ -605,6 +658,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 6, borderWidth: 1,
   } as ViewStyle,
   bloodBadgeTxt: { fontSize: 11 } as TextStyle,
+
+  clubBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1,
+  } as ViewStyle,
+  clubBadgeTxt: { fontSize: 11 } as TextStyle,
 
   connBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,

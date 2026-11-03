@@ -50,6 +50,8 @@ import { ManageUsersScreen }       from '../screens/dashboard/ManageUsersScreen'
 import { CreateStaffAdminScreen }   from '../screens/dashboard/CreateStaffAdminScreen';
 import { ManageFacultyScreen }     from '../screens/dashboard/ManageFacultyScreen';
 import { ManageStudyHubScreen }    from '../screens/dashboard/ManageStudyHubScreen';
+import { ManageBannerScreen }      from '../screens/dashboard/ManageBannerScreen';
+import { ManageAnnouncementsScreen } from '../screens/dashboard/ManageAnnouncementsScreen';
 import { AllReportsScreen }        from '../screens/dashboard/AllReportsScreen';
 import { ReportDetailScreen }      from '../screens/reports/ReportDetailScreen';
 import { MarketPostScreen }        from '../screens/market/MarketPostScreen';
@@ -199,6 +201,8 @@ export function AppNavigator() {
       <Stack.Screen name="CreateStaffAdmin" component={CreateStaffAdminScreen} />
       <Stack.Screen name="ManageFaculty"  component={ManageFacultyScreen} />
       <Stack.Screen name="ManageStudyHub"  component={ManageStudyHubScreen} />
+      <Stack.Screen name="ManageBanner"    component={ManageBannerScreen} />
+      <Stack.Screen name="ManageAnnouncements" component={ManageAnnouncementsScreen} />
       <Stack.Screen name="AllReports"     component={AllReportsScreen} />
 
       {/* Report detail */}

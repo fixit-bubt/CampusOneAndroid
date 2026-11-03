@@ -1,9 +1,8 @@
-// Admin-only. Create clubs, deactivate / reactivate, and assign a president
-// via the club_set_president RPC, which atomically demotes the previous one.
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, RefreshControl, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
+  Modal, RefreshControl, ActivityIndicator, KeyboardAvoidingView, Alert,
+  Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,17 +11,22 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent } from '../../theme';
+import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 
-const CATEGORIES = ['Tech', 'Cultural', 'Sports', 'Professional', 'Social'];
+const CATEGORIES = ['All', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
+type CategoryFilter = typeof CATEGORIES[number];
 
 const CL_CATS: Record<string, string> = {
-  Tech: Accent.purple, Cultural: Accent.pink, Sports: Accent.teal,
-  Professional: Accent.blue, Social: Accent.amber, other: Accent.slate,
+  Tech: Accent.purple,
+  Cultural: Accent.pink,
+  Sports: Accent.teal,
+  Professional: Accent.blue,
+  Social: Accent.amber,
+  other: Accent.slate,
 };
 
 interface ClubRow {
@@ -35,46 +39,105 @@ interface ClubRow {
   member_count?: number;
 }
 
+type StatusFilter = 'all' | 'active' | 'inactive';
+
+const StatCard = memo(function StatCard({
+  num,
+  label,
+  isSelected,
+  onPress,
+  C,
+}: {
+  num: number | string;
+  label: string;
+  isSelected?: boolean;
+  onPress?: () => void;
+  C: any;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.statCard,
+        {
+          backgroundColor: isSelected ? `${C.brand}14` : C.surface,
+          borderColor: isSelected ? C.brand : C.border,
+          borderWidth: isSelected ? 1.5 : 1,
+        },
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.75}
+    >
+      <Text style={[styles.statNum, { color: isSelected ? C.brand : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+        {num}
+      </Text>
+      <Text
+        style={[styles.statLabel, { color: isSelected ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+});
+
 export function ManageClubsScreen({ navigation }: any) {
-  const { C } = useTheme();
+  const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
+
   const [clubs, setClubs] = useState<ClubRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Create sheet
+  // Filter & Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('All');
+
+  // Create Club Sheet state
   const [createOpen, setCreateOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [tagline, setTagline] = useState('');
-  const [category, setCategory] = useState('Tech');
+  const [newName, setNewName] = useState('');
+  const [newTagline, setNewTagline] = useState('');
+  const [newCategory, setNewCategory] = useState<'Tech' | 'Cultural' | 'Sports' | 'Professional' | 'Social'>('Tech');
   const [creating, setCreating] = useState(false);
 
-  // Assign-president sheet
+  // Assign President Sheet state
   const [presTarget, setPresTarget] = useState<ClubRow | null>(null);
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
+  const [studentQuery, setStudentQuery] = useState('');
+  const [studentResults, setStudentResults] = useState<{ id: string; full_name: string; avatar_url: string | null }[]>([]);
+  const [assigning, setAssigning] = useState(false);
 
   const load = useCallback(async () => {
-    const [clubsRes, membersRes] = await Promise.all([
-      supabase.from('clubs').select('*').order('name'),
-      supabase.from('club_members').select('club_id, role, profiles:profiles!user_id(full_name)'),
-    ]);
-    if (clubsRes.data) {
-      const members = (membersRes.data ?? []) as any[];
-      setClubs((clubsRes.data as any[]).map(c => ({
-        ...c,
-        member_count: members.filter(m => m.club_id === c.id).length,
-        president_name: members.find(m => m.club_id === c.id && m.role === 'president')?.profiles?.full_name ?? null,
-      })));
+    try {
+      const [clubsRes, membersRes] = await Promise.all([
+        supabase.from('clubs').select('*').order('name'),
+        supabase.from('club_members').select('club_id, role, profiles:profiles!user_id(full_name)'),
+      ]);
+
+      if (clubsRes.data) {
+        const members = (membersRes.data ?? []) as any[];
+        setClubs((clubsRes.data as any[]).map(c => ({
+          ...c,
+          member_count: members.filter(m => m.club_id === c.id).length,
+          president_name: members.find(m => m.club_id === c.id && m.role === 'president')?.profiles?.full_name ?? null,
+        })));
+      }
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // Debounced search for student directory in President Assignment sheet
   useEffect(() => {
-    const q = query.trim();
-    if (!presTarget || q.length < 2) { setResults([]); return; }
+    const q = studentQuery.trim();
+    if (!presTarget || q.length < 2) {
+      setStudentResults([]);
+      return;
+    }
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from('profiles')
@@ -82,10 +145,10 @@ export function ManageClubsScreen({ navigation }: any) {
         .ilike('full_name', `%${q}%`)
         .eq('role', 'student')
         .limit(12);
-      if (data) setResults(data as any[]);
+      if (data) setStudentResults(data as any[]);
     }, 250);
     return () => clearTimeout(timer);
-  }, [query, presTarget]);
+  }, [studentQuery, presTarget]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -93,47 +156,155 @@ export function ManageClubsScreen({ navigation }: any) {
     setRefreshing(false);
   }
 
-  async function createClub() {
-    if (!name.trim() || creating) return;
+  async function handleCreateClub() {
+    const trimmedName = newName.trim();
+    if (!trimmedName || creating) return;
     setCreating(true);
     const { error } = await supabase.from('clubs').insert({
-      name: name.trim(),
-      tagline: tagline.trim() || null,
-      category,
+      name: trimmedName,
+      tagline: newTagline.trim() || null,
+      category: newCategory,
       is_active: true,
       created_by: user?.id,
     });
     setCreating(false);
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    if (error) {
+      toast({ type: 'error', title: t.common.error, message: error.message });
+      return;
+    }
+    toast({ type: 'success', title: 'Club Created', message: `${trimmedName} is now active.` });
     setCreateOpen(false);
-    setName(''); setTagline(''); setCategory('Tech');
+    setNewName('');
+    setNewTagline('');
+    setNewCategory('Tech');
     await load();
   }
 
-  async function toggleActive(c: ClubRow) {
-    const { error } = await supabase.from('clubs').update({ is_active: !c.is_active }).eq('id', c.id);
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
-    setClubs(prev => prev.map(x => (x.id === c.id ? { ...x, is_active: !c.is_active } : x)));
+  function handleToggleActive(c: ClubRow) {
+    if (c.is_active) {
+      Alert.alert(
+        'Deactivate Club?',
+        `Are you sure you want to deactivate "${c.name}"? It will be hidden from student browsing. All posts, members, and history will remain safely preserved.`,
+        [
+          { text: t.common.cancel, style: 'cancel' },
+          {
+            text: t.clubs.deactivate,
+            style: 'destructive',
+            onPress: async () => {
+              const { error } = await supabase.from('clubs').update({ is_active: false }).eq('id', c.id);
+              if (error) {
+                toast({ type: 'error', title: t.common.error, message: error.message });
+                return;
+              }
+              setClubs(prev => prev.map(x => (x.id === c.id ? { ...x, is_active: false } : x)));
+              toast({ type: 'info', title: 'Club Deactivated', message: `${c.name} is now hidden from students.` });
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Reactivate Club?',
+        `Make "${c.name}" active and visible to all students in the campus directory?`,
+        [
+          { text: t.common.cancel, style: 'cancel' },
+          {
+            text: t.clubs.reactivate,
+            onPress: async () => {
+              const { error } = await supabase.from('clubs').update({ is_active: true }).eq('id', c.id);
+              if (error) {
+                toast({ type: 'error', title: t.common.error, message: error.message });
+                return;
+              }
+              setClubs(prev => prev.map(x => (x.id === c.id ? { ...x, is_active: true } : x)));
+              toast({ type: 'success', title: 'Club Reactivated', message: `${c.name} is now live.` });
+            },
+          },
+        ]
+      );
+    }
   }
 
-  async function assignPresident(userId: string) {
+  function confirmAssignPresident(student: { id: string; full_name: string }) {
     if (!presTarget) return;
+    Alert.alert(
+      'Appoint President',
+      `Appoint ${student.full_name} as President of ${presTarget.name}? The previous president will be atomically reassigned as a member.`,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: 'Confirm Handover',
+          onPress: () => performAssignPresident(student.id, student.full_name),
+        },
+      ]
+    );
+  }
+
+  async function performAssignPresident(userId: string, studentName: string) {
+    if (!presTarget || assigning) return;
+    setAssigning(true);
     const { error } = await supabase.rpc('club_set_president', {
       p_club_id: presTarget.id,
       p_user_id: userId,
     });
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    setAssigning(false);
+    if (error) {
+      toast({ type: 'error', title: t.common.error, message: error.message });
+      return;
+    }
+    toast({ type: 'success', title: 'President Appointed', message: `${studentName} is now President of ${presTarget.name}.` });
     setPresTarget(null);
-    setQuery('');
+    setStudentQuery('');
     await load();
   }
+
+  // Filtered dataset
+  const filteredClubs = useMemo(() => {
+    let result = clubs;
+
+    // Status filter
+    if (statusFilter === 'active') {
+      result = result.filter(c => c.is_active);
+    } else if (statusFilter === 'inactive') {
+      result = result.filter(c => !c.is_active);
+    }
+
+    // Category filter
+    if (categoryFilter !== 'All') {
+      result = result.filter(c => c.category === categoryFilter);
+    }
+
+    // Search query
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.tagline && c.tagline.toLowerCase().includes(q)) ||
+        (c.president_name && c.president_name.toLowerCase().includes(q)) ||
+        c.category.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [clubs, statusFilter, categoryFilter, searchQuery]);
+
+  // Aggregate stats
+  const stats = useMemo(() => {
+    const total = clubs.length;
+    const active = clubs.filter(c => c.is_active).length;
+    const inactive = total - active;
+    const totalMembers = clubs.reduce((acc, c) => acc + (c.member_count ?? 0), 0);
+    return { total, active, inactive, totalMembers };
+  }, [clubs]);
 
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
         <SubBar title={t.clubs.manageClubs} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
-          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>{t.manage.accessDenied}</Text>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>
+            {t.manage.accessDenied}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -150,7 +321,7 @@ export function ManageClubsScreen({ navigation }: any) {
             onPress={() => setCreateOpen(true)}
             activeOpacity={0.8}
           >
-            <Feather name="plus" size={13} color={C.white} />
+            <Feather name="plus" size={14} color={C.white} />
             <Text style={[styles.newBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
               {t.clubs.newClub}
             </Text>
@@ -161,22 +332,135 @@ export function ManageClubsScreen({ navigation }: any) {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
-        {clubs.length === 0 ? (
+        {/* Top Stats Overview Row */}
+        <View style={styles.statsRow}>
+          <StatCard
+            num={stats.total}
+            label="Total"
+            isSelected={statusFilter === 'all'}
+            onPress={() => setStatusFilter('all')}
+            C={C}
+          />
+          <StatCard
+            num={stats.active}
+            label="Active"
+            isSelected={statusFilter === 'active'}
+            onPress={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
+            C={C}
+          />
+          <StatCard
+            num={stats.inactive}
+            label="Inactive"
+            isSelected={statusFilter === 'inactive'}
+            onPress={() => setStatusFilter(statusFilter === 'inactive' ? 'all' : 'inactive')}
+            C={C}
+          />
+          <StatCard
+            num={stats.totalMembers}
+            label="Members"
+            C={C}
+          />
+        </View>
+
+        {/* 58dp Search Bar Standard */}
+        <View style={[styles.searchBar, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Icon name="search" size={20} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            placeholder="Search clubs, categories, or presidents..."
+            placeholderTextColor={C.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} activeOpacity={0.7}>
+              <Feather name="x-circle" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Category Horizontal Filter Pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.catScroll}
+        >
+          {CATEGORIES.map(cat => {
+            const isSelected = categoryFilter === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.filterPill,
+                  isSelected
+                    ? { backgroundColor: C.brand, borderColor: C.brand }
+                    : { backgroundColor: C.surface, borderColor: C.border },
+                ]}
+                onPress={() => setCategoryFilter(cat)}
+                activeOpacity={0.75}
+              >
+                <Text
+                  style={[
+                    styles.filterPillTxt,
+                    {
+                      color: isSelected ? C.white : C.text2,
+                      fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                    },
+                  ]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Club Cards Listing */}
+        {loading && clubs.length === 0 ? (
           <View style={styles.center}>
-            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {t.clubs.noClubs}
+            <ActivityIndicator color={C.brand} size="large" />
+          </View>
+        ) : filteredClubs.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Icon name="clubs" size={32} color={C.textMuted} />
+            <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {searchQuery ? 'No clubs match your search' : t.clubs.noClubs}
             </Text>
+            {searchQuery ? (
+              <TouchableOpacity
+                style={[styles.clearSearchBtn, { backgroundColor: C.surface2 }]}
+                onPress={() => { setSearchQuery(''); setStatusFilter('all'); setCategoryFilter('All'); }}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.clearSearchTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                  Reset Filters
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
-          <View style={{ gap: 10 }}>
-            {clubs.map(c => {
-              const fg = CL_CATS[c.category] ?? Accent.slate;
+          <View style={{ gap: 12 }}>
+            {filteredClubs.map(c => {
+              const catColor = CL_CATS[c.category] ?? Accent.slate;
               return (
-                <View key={c.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border, opacity: c.is_active ? 1 : 0.65 }]}>
+                <View
+                  key={c.id}
+                  style={[
+                    styles.clubCard,
+                    {
+                      backgroundColor: C.surface,
+                      borderColor: C.border,
+                      opacity: c.is_active ? 1 : 0.72,
+                    },
+                  ]}
+                >
+                  {/* Card Header & Information */}
                   <TouchableOpacity
-                    style={styles.cardTop}
+                    style={styles.cardHeader}
                     onPress={() => navigation.navigate('ClubDetail', { clubId: c.id })}
                     activeOpacity={0.75}
                   >
@@ -184,39 +468,96 @@ export function ManageClubsScreen({ navigation }: any) {
                       <Icon name="clubs" size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {c.name}
-                      </Text>
-                      <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {c.member_count ?? 0} {t.clubs.members.toLowerCase()}
-                        {c.president_name ? ` · ${t.clubs.roleLabels.president}: ${c.president_name}` : ''}
-                      </Text>
-                    </View>
-                    <View style={[styles.statePill, { backgroundColor: c.is_active ? C.successBg : C.surface2 }]}>
-                      <Text style={[styles.stateTxt, { color: c.is_active ? C.success : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                        {c.is_active ? t.clubs.active : t.clubs.inactive}
-                      </Text>
+                      <View style={styles.titleRow}>
+                        <Text style={[styles.clubName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          {c.name}
+                        </Text>
+                        <View style={[styles.statusBadge, { backgroundColor: c.is_active ? C.successBg : C.surface2 }]}>
+                          <View style={[styles.statusDot, { backgroundColor: c.is_active ? C.success : C.textMuted }]} />
+                          <Text style={[styles.statusTxt, { color: c.is_active ? C.success : C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                            {c.is_active ? t.clubs.active : t.clubs.inactive}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {c.tagline ? (
+                        <Text style={[styles.tagline, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+                          {c.tagline}
+                        </Text>
+                      ) : null}
+
+                      <View style={styles.metaRow}>
+                        <View style={[styles.categoryPill, { backgroundColor: isDark ? `${catColor}24` : `${catColor}14` }]}>
+                          <Text style={[styles.categoryTxt, { color: catColor, fontFamily: FontFamily.jakartaBold }]}>
+                            {c.category}
+                          </Text>
+                        </View>
+
+                        <Text style={[styles.memberCount, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                          {c.member_count ?? 0} {t.clubs.members.toLowerCase()}
+                        </Text>
+
+                        {c.president_name ? (
+                          <View style={styles.presRow}>
+                            <Feather name="award" size={12} color={Accent.amber} />
+                            <Text style={[styles.presidentTxt, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]} numberOfLines={1}>
+                              {c.president_name}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text style={[styles.noPresTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                            No President
+                          </Text>
+                        )}
+                      </View>
                     </View>
                   </TouchableOpacity>
 
-                  <View style={[styles.cardFoot, { borderTopColor: C.border }]}>
+                  {/* 4 Standard Action Buttons */}
+                  <View style={[styles.actionRow, { borderTopColor: C.border }]}>
                     <TouchableOpacity
-                      style={[styles.footBtn, { backgroundColor: C.surface2 }]}
+                      style={[styles.actionBtn, { backgroundColor: C.surface2 }]}
                       onPress={() => setPresTarget(c)}
                       activeOpacity={0.75}
                     >
-                      <Feather name="user-check" size={13} color={C.text2} />
-                      <Text style={[styles.footBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.clubs.assignPresident}
+                      <Feather name="user-check" size={13} color={C.brand} />
+                      <Text style={[styles.actionBtnTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+                        President
                       </Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
-                      style={[styles.footBtn, { backgroundColor: c.is_active ? C.dangerBg : C.successBg }]}
-                      onPress={() => toggleActive(c)}
+                      style={[styles.actionBtn, { backgroundColor: C.surface2 }]}
+                      onPress={() => navigation.navigate('ClubManage', { clubId: c.id })}
+                      activeOpacity={0.75}
+                    >
+                      <Feather name="edit-2" size={13} color={C.text2} />
+                      <Text style={[styles.actionBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                        Edit
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: C.surface2 }]}
+                      onPress={() => navigation.navigate('ClubMembers', { clubId: c.id })}
+                      activeOpacity={0.75}
+                    >
+                      <Feather name="users" size={13} color={C.text2} />
+                      <Text style={[styles.actionBtnTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                        Roster
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.actionBtn,
+                        { backgroundColor: c.is_active ? C.dangerBg : C.successBg },
+                      ]}
+                      onPress={() => handleToggleActive(c)}
                       activeOpacity={0.75}
                     >
                       <Feather name="power" size={13} color={c.is_active ? C.danger : C.success} />
-                      <Text style={[styles.footBtnTxt, { color: c.is_active ? C.danger : C.success, fontFamily: FontFamily.jakartaBold }]}>
+                      <Text style={[styles.actionBtnTxt, { color: c.is_active ? C.danger : C.success, fontFamily: FontFamily.jakartaBold }]}>
                         {c.is_active ? t.clubs.deactivate : t.clubs.reactivate}
                       </Text>
                     </TouchableOpacity>
@@ -226,96 +567,141 @@ export function ManageClubsScreen({ navigation }: any) {
             })}
           </View>
         )}
-        <View style={{ height: 16 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Create club sheet */}
+      {/* Modern 58dp Create Club Sheet */}
       <Modal visible={createOpen} transparent animationType="slide" onRequestClose={() => setCreateOpen(false)}>
         <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setCreateOpen(false)} />
           <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+            <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
               {t.clubs.newClub}
             </Text>
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.clubName}</Text>
+
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {t.clubs.clubName}
+            </Text>
             <TextInput
-              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={name} onChangeText={setName} placeholder={t.manage.clubNamePlaceholder} placeholderTextColor={C.textMuted}
+              style={[styles.input58, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={newName}
+              onChangeText={setNewName}
+              placeholder="e.g. BUBT IT Club"
+              placeholderTextColor={C.textMuted}
             />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.tagline}</Text>
+
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {t.clubs.tagline}
+            </Text>
             <TextInput
-              style={[styles.field, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={tagline} onChangeText={setTagline} placeholder={t.manage.taglinePlaceholder} placeholderTextColor={C.textMuted}
+              style={[styles.input58, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+              value={newTagline}
+              onChangeText={setNewTagline}
+              placeholder="One-line summary for students"
+              placeholderTextColor={C.textMuted}
             />
-            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs.category}</Text>
-            <View style={styles.catRow}>
-              {CATEGORIES.map(c => {
-                const on = category === c;
+
+            <Text style={[styles.fieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              {t.clubs.category}
+            </Text>
+            <View style={styles.catChipsRow}>
+              {(['Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const).map(cat => {
+                const on = newCategory === cat;
                 return (
                   <TouchableOpacity
-                    key={c}
-                    style={[styles.catChip, on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.bg, borderColor: C.border }]}
-                    onPress={() => setCategory(c)}
+                    key={cat}
+                    style={[
+                      styles.modalCatChip,
+                      on
+                        ? { backgroundColor: C.brand, borderColor: C.brand }
+                        : { backgroundColor: C.bg, borderColor: C.border },
+                    ]}
+                    onPress={() => setNewCategory(cat)}
                     activeOpacity={0.75}
                   >
-                    <Text style={[styles.catChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                    <Text style={[styles.modalCatChipTxt, { color: on ? C.white : C.text2, fontFamily: FontFamily.jakartaBold }]}>
+                      {cat}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
+
             <TouchableOpacity
-              style={[styles.createBtn, { backgroundColor: C.brand, opacity: name.trim() && !creating ? 1 : 0.55 }]}
-              onPress={createClub}
-              disabled={!name.trim() || creating}
+              style={[styles.submitBtn58, { backgroundColor: C.brand, opacity: newName.trim() && !creating ? 1 : 0.55 }]}
+              onPress={handleCreateClub}
+              disabled={!newName.trim() || creating}
               activeOpacity={0.8}
             >
-              {creating
-                ? <ActivityIndicator color={C.white} size="small" />
-                : (
-                  <Text style={[styles.createBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
-                    {t.clubs.newClub}
-                  </Text>
-                )}
+              {creating ? (
+                <ActivityIndicator color={C.white} size="small" />
+              ) : (
+                <Text style={[styles.submitBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                  Create Club
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Assign president sheet */}
+      {/* Modern 58dp Assign President Sheet */}
       <Modal visible={!!presTarget} transparent animationType="slide" onRequestClose={() => setPresTarget(null)}>
-        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }} behavior="padding">
+        <KeyboardAvoidingView style={styles.overlay} behavior="padding">
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setPresTarget(null)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '80%' }]}>
+            <View style={styles.sheetHandle} />
             <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {t.clubs.assignPresident} - {presTarget?.name}
+              Appoint President
             </Text>
-            <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border }]}>
-              <Icon name="search" size={18} color={C.textMuted} />
+            <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {presTarget?.name}
+            </Text>
+
+            <View style={[styles.searchBar, { backgroundColor: C.bg, borderColor: C.border, marginTop: 12 }]}>
+              <Icon name="search" size={20} color={C.textMuted} />
               <TextInput
-                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-                placeholder={t.common.search + '...'}
+                style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                placeholder="Search registered students..."
                 placeholderTextColor={C.textMuted}
-                value={query}
-                onChangeText={setQuery}
+                value={studentQuery}
+                onChangeText={setStudentQuery}
                 autoFocus
               />
+              {studentQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setStudentQuery('')} hitSlop={8} activeOpacity={0.7}>
+                  <Feather name="x-circle" size={18} color={C.textMuted} />
+                </TouchableOpacity>
+              )}
             </View>
-            <ScrollView style={{ maxHeight: 320 }} keyboardShouldPersistTaps="handled">
-              {results.map(r => (
-                <TouchableOpacity key={r.id} style={styles.resultRow} onPress={() => assignPresident(r.id)} activeOpacity={0.7}>
+
+            <ScrollView style={{ maxHeight: 300, marginTop: 8 }} keyboardShouldPersistTaps="handled">
+              {assigning ? (
+                <ActivityIndicator color={C.brand} style={{ paddingVertical: 24 }} />
+              ) : studentResults.map(r => (
+                <TouchableOpacity
+                  key={r.id}
+                  style={[styles.studentResultCard, { backgroundColor: C.bg, borderColor: C.border }]}
+                  onPress={() => confirmAssignPresident(r)}
+                  activeOpacity={0.7}
+                >
                   <Avatar uri={r.avatar_url} name={r.full_name} size="sm" />
-                  <Text style={[styles.name, { color: C.text, fontFamily: FontFamily.jakartaBold, flex: 1 }]} numberOfLines={1}>
-                    {r.full_name}
-                  </Text>
-                  <Feather name="user-check" size={16} color={C.brand} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[styles.studentResultName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {r.full_name}
+                    </Text>
+                  </View>
+                  <View style={[styles.appointPill, { backgroundColor: C.brand }]}>
+                    <Text style={[styles.appointTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
+                      Appoint
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
-              {query.trim().length >= 2 && results.length === 0 && (
-                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', paddingVertical: 18 }]}>
+
+              {studentQuery.trim().length >= 2 && studentResults.length === 0 && (
+                <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, textAlign: 'center', paddingVertical: 24 }]}>
                   {t.common.noResults}
                 </Text>
               )}
@@ -329,49 +715,103 @@ export function ManageClubsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 50 } as ViewStyle,
-  scroll: { paddingTop: 10, paddingBottom: 20 } as ViewStyle,
+  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 } as ViewStyle,
+  scroll: { paddingTop: 12, paddingBottom: 24 } as ViewStyle,
 
-  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10 } as ViewStyle,
-  newBtnTxt: { fontSize: 12 } as TextStyle,
+  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 36, borderRadius: 12 } as ViewStyle,
+  newBtnTxt: { fontSize: 13 } as TextStyle,
 
-  card: { borderRadius: 16, borderWidth: 1, padding: 13 } as ViewStyle,
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 11 } as ViewStyle,
-  thumb: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  name: { fontSize: 14 } as TextStyle,
-  meta: { fontSize: 11.5, marginTop: 2 } as TextStyle,
-  statePill: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 } as ViewStyle,
-  stateTxt: { fontSize: 10.5 } as TextStyle,
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 } as ViewStyle,
+  statCard: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  statNum: { fontSize: 16 } as TextStyle,
+  statLabel: { fontSize: 11, marginTop: 2 } as TextStyle,
 
-  cardFoot: {
+  searchBar: {
     flexDirection: 'row',
-    gap: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    marginTop: 11,
-    paddingTop: 10,
+    alignItems: 'center',
+    gap: 10,
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    marginBottom: 10,
   } as ViewStyle,
-  footBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 8, borderRadius: 10 } as ViewStyle,
-  footBtnTxt: { fontSize: 11.5 } as TextStyle,
+  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' } as ViewStyle,
+  catScroll: { gap: 8, paddingBottom: 12 } as ViewStyle,
+  filterPill: { paddingHorizontal: 14, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  filterPillTxt: { fontSize: 12.5 } as TextStyle,
+
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50, gap: 10 } as ViewStyle,
+  emptyTitle: { fontSize: 15 } as TextStyle,
+  clearSearchBtn: { paddingHorizontal: 16, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 4 } as ViewStyle,
+  clearSearchTxt: { fontSize: 13 } as TextStyle,
+
+  clubCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
+  cardHeader: { flexDirection: 'row', gap: 12, padding: 14 } as ViewStyle,
+  thumb: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 } as ViewStyle,
+  clubName: { fontSize: 15, flex: 1 } as TextStyle,
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 } as ViewStyle,
+  statusDot: { width: 6, height: 6, borderRadius: 3 } as ViewStyle,
+  statusTxt: { fontSize: 11 } as TextStyle,
+  tagline: { fontSize: 12.5, marginTop: 3 } as TextStyle,
+  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 } as ViewStyle,
+  categoryPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 } as ViewStyle,
+  categoryTxt: { fontSize: 11 } as TextStyle,
+  memberCount: { fontSize: 12 } as TextStyle,
+  presRow: { flexDirection: 'row', alignItems: 'center', gap: 4 } as ViewStyle,
+  presidentTxt: { fontSize: 12 } as TextStyle,
+  noPresTxt: { fontSize: 12, fontStyle: 'italic' } as TextStyle,
+
+  actionRow: {
+    flexDirection: 'row',
+    gap: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  } as ViewStyle,
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    height: 38,
+    borderRadius: 10,
+  } as ViewStyle,
+  actionBtnTxt: { fontSize: 12 } as TextStyle,
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' } as ViewStyle,
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: Layout.screenPadding,
-    paddingTop: 20,
-    paddingBottom: 34,
+    paddingTop: 12,
+    paddingBottom: 36,
   } as ViewStyle,
-  sheetTitle: { fontSize: 17, marginBottom: 8 } as TextStyle,
+  sheetHandle: { width: 38, height: 4, borderRadius: 2, backgroundColor: '#888', alignSelf: 'center', marginBottom: 16 } as ViewStyle,
+  sheetTitle: { fontSize: 18 } as TextStyle,
+  sheetSub: { fontSize: 13, marginTop: 2, marginBottom: 8 } as TextStyle,
   fieldLabel: { fontSize: 11, letterSpacing: 0.7, marginTop: 12, marginBottom: 6 } as TextStyle,
-  field: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 13, fontSize: 14 } as TextStyle,
-  catRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 } as ViewStyle,
-  catChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, borderWidth: 1 } as ViewStyle,
-  catChipTxt: { fontSize: 12 } as TextStyle,
-  createBtn: { height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 18 } as ViewStyle,
-  createBtnTxt: { fontSize: 14.5 } as TextStyle,
+  input58: { height: 58, borderRadius: 16, borderWidth: 1, paddingHorizontal: 16, fontSize: 14.5 } as TextStyle,
+  catChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 } as ViewStyle,
+  modalCatChip: { paddingHorizontal: 14, height: 38, borderRadius: 19, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
+  modalCatChipTxt: { fontSize: 12.5 } as TextStyle,
+  submitBtn58: { height: 58, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 22 } as ViewStyle,
+  submitBtnTxt: { fontSize: 15 } as TextStyle,
 
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, height: 58, borderRadius: 16, borderWidth: 1, marginBottom: 8, marginTop: 6 } as ViewStyle,
-  searchInput: { flex: 1, fontSize: 14.5, paddingVertical: 0 } as TextStyle,
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 10 } as ViewStyle,
+  studentResultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 8,
+  } as ViewStyle,
+  studentResultName: { fontSize: 14 } as TextStyle,
+  appointPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 } as ViewStyle,
+  appointTxt: { fontSize: 12 } as TextStyle,
   emptyTxt: { fontSize: 13 } as TextStyle,
 });

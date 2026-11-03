@@ -553,6 +553,27 @@ export function AdminDashboardScreen({ navigation }: any) {
               </View>
             </View>
 
+            {/* Executive Quick Shortcuts */}
+            <View style={styles.quickShortcutsRow}>
+              <TouchableOpacity
+                style={[styles.shortcutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => navigation.navigate('ManageBanner')}
+                activeOpacity={0.8}
+              >
+                <Feather name="image" size={15} color={C.brand} />
+                <Text style={[styles.shortcutBtnTxt, { color: C.text }]}>Hero Banner</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.shortcutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => navigation.navigate('ManageAnnouncements')}
+                activeOpacity={0.8}
+              >
+                <Feather name="bell" size={15} color={C.brand} />
+                <Text style={[styles.shortcutBtnTxt, { color: C.text }]}>Announcements</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Interactive 3-Stat Counters: Tap to filter */}
             <View style={styles.statRow}>
               <StatCard
@@ -827,6 +848,28 @@ const styles = StyleSheet.create({
   heroSub: {
     fontSize: 12,
     marginTop: 2,
+  } as any,
+
+  quickShortcutsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+    marginBottom: 12,
+  } as ViewStyle,
+  shortcutBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+  } as ViewStyle,
+  shortcutBtnTxt: {
+    fontFamily: FontFamily.jakartaBold,
+    fontSize: 12.5,
   } as any,
 
   // Balanced 3-Stat Counters Row - Standard 58dp Metric Cards

@@ -533,10 +533,31 @@ export function AnnouncementsScreen({ navigation }: any) {
             {isAdmin && (
               <TouchableOpacity
                 style={styles.headerBtn}
+                onPress={() => navigation.navigate('ManageBanner')}
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+              >
+                <Feather name="image" size={19} color={C.text} />
+              </TouchableOpacity>
+            )}
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.headerBtn}
+                onPress={() => navigation.navigate('ManageAnnouncements')}
+                activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+              >
+                <Feather name="sliders" size={19} color={C.text} />
+              </TouchableOpacity>
+            )}
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.headerBtn}
                 onPress={() => navigation.navigate('AnnouncePost')}
                 activeOpacity={0.75}
+                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
               >
-                <Feather name="plus" size={22} color={C.text} />
+                <Feather name="plus" size={20} color={C.text} />
               </TouchableOpacity>
             )}
             <LogoMark size={28} shadow={false} />

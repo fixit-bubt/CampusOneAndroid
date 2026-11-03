@@ -1,7 +1,69 @@
 import { DeviceEventEmitter } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { getCache, setCache, removeCache, CacheKeys } from './cacheService';
+import { getCache, setCache, removeCache, getCacheSync, CacheKeys } from './cacheService';
 import type { Announcement } from '../types/database';
+import { BANNERS_MAP } from '../utils/bannerUrl';
+
+export interface BannerSlide {
+  id: string;
+  sourceId: string;
+  type: 'Event' | 'Notice';
+  title: string;
+  subtitle: string;
+  imageUri?: string;
+  localImage?: any;
+  route: string;
+  params?: any;
+  bannerOrder?: number;
+  inBanner?: boolean;
+}
+
+export const FALLBACK_SLIDES: BannerSlide[] = [
+  {
+    id: 'fallback-blood',
+    sourceId: 'fallback-blood',
+    type: 'Event',
+    title: 'Voluntary Blood Donation Drive & Free Health Camp',
+    subtitle: 'Building 2 Main Lobby · 10:00',
+    localImage: BANNERS_MAP['blood-drive.jpg'],
+    route: 'Blood',
+    bannerOrder: 1,
+    inBanner: true,
+  },
+  {
+    id: 'fallback-routine',
+    sourceId: 'fallback-routine',
+    type: 'Notice',
+    title: 'Tri-Semester Final Examination Routine Published',
+    subtitle: 'Examination Controller Department',
+    localImage: BANNERS_MAP['exam-routine.jpg'],
+    route: 'RoutinesBrowse',
+    bannerOrder: 2,
+    inBanner: true,
+  },
+  {
+    id: 'fallback-convocation',
+    sourceId: 'fallback-convocation',
+    type: 'Notice',
+    title: '10th Convocation Ceremony - Registration Open',
+    subtitle: 'Office of the Registrar · Graduating Students',
+    localImage: BANNERS_MAP['convocation-2026.jpg'],
+    route: 'Announcements',
+    bannerOrder: 3,
+    inBanner: true,
+  },
+  {
+    id: 'fallback-hackathon',
+    sourceId: 'fallback-hackathon',
+    type: 'Event',
+    title: 'Innovate & Code: BUBT Inter-University Hackathon 2026',
+    subtitle: 'Campus Auditorium & CSE Lab 402 · 09:30 AM',
+    localImage: BANNERS_MAP['hackathon-2026.jpg'],
+    route: 'EventsBrowse',
+    bannerOrder: 4,
+    inBanner: true,
+  },
+];
 
 export interface AnnouncementCategoryItem {
   id: string;
@@ -190,3 +252,239 @@ export async function triggerNoticeSync(isDeep = false, force = false): Promise<
     return { success: false, error: err.message || 'Failed to sync notices' };
   }
 }
+
+let lastBannerFetchTime = 0;
+const BANNER_CACHE_TTL_MS = 15 * 60 * 1000;
+
+export async function fetchCuratedBannerSlides(forceRefresh = false): Promise<BannerSlide[]> {
+  const now = Date.now();
+  if (!forceRefresh && now - lastBannerFetchTime < BANNER_CACHE_TTL_MS) {
+    const cached = getCacheSync<BannerSlide[]>(CacheKeys.HOME_BANNER);
+    if (cached && cached.length > 0) {
+      return cached;
+    }
+  }
+
+  try {
+    const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
+    const today = new Date().toISOString().slice(0, 10);
+
+    const [annRes, evRes] = await Promise.all([
+      supabase
+        .from('announcements')
+        .select('id, title, department, priority, image_url, banner_image_url, attachment_url, in_banner, banner_order, created_at')
+        .eq('in_banner', true)
+        .is('deleted_at', null)
+        .gte('created_at', fourMonthsAgo)
+        .order('banner_order', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(6),
+      supabase
+        .from('events')
+        .select('id, title, venue, time, date, category, banner_url, in_banner, banner_order')
+        .eq('in_banner', true)
+        .is('deleted_at', null)
+        .gte('date', today)
+        .order('banner_order', { ascending: true })
+        .order('date', { ascending: true })
+        .limit(6),
+    ]);
+
+    const slides: BannerSlide[] = [];
+
+    if (annRes.data && annRes.data.length > 0) {
+      annRes.data.forEach((a: any) => {
+        const img = a.banner_image_url || a.image_url ||
+          (a.attachment_url && /\.(jpg|jpeg|png|webp|gif)$/i.test(a.attachment_url) ? a.attachment_url : null);
+        slides.push({
+          id: `ann-${a.id}`,
+          sourceId: a.id,
+          type: 'Notice',
+          title: a.title,
+          subtitle: a.department ? `${a.department} Department` : 'BUBT Notice',
+          imageUri: img,
+          route: 'AnnouncementDetail',
+          params: { announcementId: a.id },
+          bannerOrder: a.banner_order ?? 0,
+          inBanner: true,
+        });
+      });
+    }
+
+    if (evRes.data && evRes.data.length > 0) {
+      evRes.data.forEach((e: any) => {
+        slides.push({
+          id: `ev-${e.id}`,
+          sourceId: e.id,
+          type: 'Event',
+          title: e.title,
+          subtitle: `${e.venue || 'Campus'}${e.time ? ` · ${e.time}` : ''}`,
+          imageUri: e.banner_url,
+          route: 'EventDetail',
+          params: { eventId: e.id },
+          bannerOrder: e.banner_order ?? 0,
+          inBanner: true,
+        });
+      });
+    }
+
+    slides.sort((a, b) => (a.bannerOrder ?? 0) - (b.bannerOrder ?? 0));
+    const capped = slides.slice(0, 6);
+
+    if (capped.length > 0) {
+      lastBannerFetchTime = now;
+      await setCache(CacheKeys.HOME_BANNER, capped);
+      return capped;
+    }
+
+    lastBannerFetchTime = now;
+    await setCache(CacheKeys.HOME_BANNER, FALLBACK_SLIDES);
+    return FALLBACK_SLIDES;
+  } catch {
+    const cached = getCacheSync<BannerSlide[]>(CacheKeys.HOME_BANNER);
+    return cached && cached.length > 0 ? cached : FALLBACK_SLIDES;
+  }
+}
+
+export async function updateAnnouncementBannerStatus(
+  id: string,
+  inBanner: boolean,
+  bannerOrder = 0
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.rpc('set_announcement_banner', {
+      p_id: id,
+      p_in_banner: inBanner,
+      p_order: bannerOrder,
+    });
+
+    if (error) {
+      const { error: directErr } = await supabase
+        .from('announcements')
+        .update({ in_banner: inBanner, banner_order: inBanner ? bannerOrder : 0 })
+        .eq('id', id);
+      if (directErr) throw directErr;
+    }
+
+    lastBannerFetchTime = 0;
+    await removeCache(CacheKeys.HOME_BANNER);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to update banner status' };
+  }
+}
+
+export async function saveBannerOrder(
+  items: Array<{ id: string; type: 'announcement' | 'event'; order: number }>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const cleanItems = items.slice(0, 6);
+    const { error } = await supabase.rpc('reorder_banner_items', {
+      p_items: cleanItems,
+    });
+
+    if (error) {
+      for (const item of cleanItems) {
+        if (item.type === 'event') {
+          await supabase.from('events').update({ in_banner: true, banner_order: item.order }).eq('id', item.id);
+        } else {
+          await supabase.from('announcements').update({ in_banner: true, banner_order: item.order }).eq('id', item.id);
+        }
+      }
+    }
+
+    lastBannerFetchTime = 0;
+    await removeCache(CacheKeys.HOME_BANNER);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to reorder banner items' };
+  }
+}
+
+export async function fetchAdminBannerPool(): Promise<{
+  activeSlides: BannerSlide[];
+  availableAnnouncements: Announcement[];
+  availableEvents: any[];
+  error?: string;
+}> {
+  try {
+    const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
+    const today = new Date().toISOString().slice(0, 10);
+
+    const [annRes, evRes] = await Promise.all([
+      supabase
+        .from('announcements')
+        .select('*')
+        .is('deleted_at', null)
+        .gte('created_at', fourMonthsAgo)
+        .order('banner_order', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(100),
+      supabase
+        .from('events')
+        .select('*')
+        .is('deleted_at', null)
+        .gte('date', today)
+        .order('banner_order', { ascending: true })
+        .order('date', { ascending: true })
+        .limit(40),
+    ]);
+
+    if (annRes.error) throw annRes.error;
+    if (evRes.error) throw evRes.error;
+
+    const allAnn = (annRes.data ?? []) as Announcement[];
+    const allEvents = evRes.data ?? [];
+
+    const activeSlides: BannerSlide[] = [];
+
+    allAnn.filter(a => a.in_banner).forEach(a => {
+      const img = (a as any).banner_image_url || a.image_url ||
+        (a.attachment_url && /\.(jpg|jpeg|png|webp|gif)$/i.test(a.attachment_url) ? a.attachment_url : null);
+      activeSlides.push({
+        id: `ann-${a.id}`,
+        sourceId: a.id,
+        type: 'Notice',
+        title: a.title,
+        subtitle: a.department ? `${a.department} Department` : 'BUBT Notice',
+        imageUri: img,
+        route: 'AnnouncementDetail',
+        params: { announcementId: a.id },
+        bannerOrder: (a as any).banner_order ?? 0,
+        inBanner: true,
+      });
+    });
+
+    allEvents.filter((e: any) => e.in_banner).forEach((e: any) => {
+      activeSlides.push({
+        id: `ev-${e.id}`,
+        sourceId: e.id,
+        type: 'Event',
+        title: e.title,
+        subtitle: `${e.venue || 'Campus'}${e.time ? ` · ${e.time}` : ''}`,
+        imageUri: e.banner_url,
+        route: 'EventDetail',
+        params: { eventId: e.id },
+        bannerOrder: e.banner_order ?? 0,
+        inBanner: true,
+      });
+    });
+
+    activeSlides.sort((a, b) => (a.bannerOrder ?? 0) - (b.bannerOrder ?? 0));
+
+    return {
+      activeSlides,
+      availableAnnouncements: allAnn,
+      availableEvents: allEvents,
+    };
+  } catch (err: any) {
+    return {
+      activeSlides: [],
+      availableAnnouncements: [],
+      availableEvents: [],
+      error: err.message,
+    };
+  }
+}
+
+

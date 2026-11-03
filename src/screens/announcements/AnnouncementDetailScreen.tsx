@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
-  Modal, Share, Pressable, Dimensions, type ViewStyle, type TextStyle, type ImageSourcePropType,
+  Modal, Share, Pressable, Dimensions, Alert, type ViewStyle, type TextStyle, type ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -20,37 +20,8 @@ import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
-import { toggleAnnouncementBookmark, markAnnouncementAsRead } from '../../services/announcementService';
-
-const BANNERS_MAP: Record<string, ImageSourcePropType> = {
-  'blood-drive.jpg': require('../../../assets/banners/blood-drive.jpg'),
-  'convocation-2026.jpg': require('../../../assets/banners/convocation-2026.jpg'),
-  'exam-routine.jpg': require('../../../assets/banners/exam-routine.jpg'),
-  'hackathon-2026.jpg': require('../../../assets/banners/hackathon-2026.jpg'),
-};
-
-function resolveNoticeImage(rawUrl?: string | null): ImageSourcePropType | null {
-  if (!rawUrl) return null;
-  const cleaned = rawUrl.trim();
-  const filename = cleaned.split('/').pop()?.split('?')[0] || '';
-  if (filename && BANNERS_MAP[filename]) {
-    return BANNERS_MAP[filename];
-  }
-  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
-    return { uri: cleaned };
-  }
-  if (cleaned.startsWith('/')) {
-    return { uri: `https://campusonebubt.vercel.app${cleaned}` };
-  }
-  if (cleaned.startsWith('notices/') || cleaned.startsWith('storage/')) {
-    const withoutStorage = cleaned.replace(/^storage\//, '').replace(/^\/+/, '');
-    return { uri: `https://www.bubt.edu.bd/storage/${withoutStorage}` };
-  }
-  if (cleaned.startsWith('uploads/')) {
-    return { uri: `https://www.bubt.edu.bd/${cleaned}` };
-  }
-  return { uri: cleaned };
-}
+import { toggleAnnouncementBookmark, markAnnouncementAsRead, updateAnnouncementBannerStatus } from '../../services/announcementService';
+import { resolveBannerSource } from '../../utils/bannerUrl';
 
 function priTone(C: any, priority: string, isDark?: boolean): { fg: string; bg: string } {
   switch (priority) {
@@ -69,7 +40,7 @@ function timeAgo(iso: string): string {
 
 export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
 
@@ -201,6 +172,65 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
     }
   }
 
+  async function handleToggleBanner() {
+    if (!item) return;
+    const nextInBanner = !item.in_banner;
+    setItem({ ...item, in_banner: nextInBanner });
+    const res = await updateAnnouncementBannerStatus(item.id, nextInBanner);
+    if (!res.success) {
+      setItem({ ...item, in_banner: !nextInBanner });
+      toast({ type: 'error', title: 'Error', message: res.error });
+    } else {
+      toast({
+        type: 'success',
+        title: nextInBanner ? 'Added to Home Banner' : 'Removed from Banner',
+        message: 'Student home carousel updated.',
+      });
+    }
+  }
+
+  async function handleTogglePin() {
+    if (!item) return;
+    const nextPinned = !item.pinned;
+    setItem({ ...item, pinned: nextPinned });
+    const { error } = await supabase
+      .from('announcements')
+      .update({ pinned: nextPinned })
+      .eq('id', item.id);
+    if (error) {
+      setItem({ ...item, pinned: !nextPinned });
+      toast({ type: 'error', title: 'Error', message: error.message });
+    } else {
+      toast({
+        type: 'success',
+        title: nextPinned ? 'Pinned to Top' : 'Unpinned',
+      });
+    }
+  }
+
+  function handleDeleteNotice() {
+    if (!item) return;
+    Alert.alert('Delete Notice', `Delete "${item.title.slice(0, 32)}..."?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase
+            .from('announcements')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', item.id);
+          if (error) {
+            toast({ type: 'error', title: 'Delete Failed', message: error.message });
+          } else {
+            toast({ type: 'success', title: 'Deleted', message: 'Notice soft-deleted.' });
+            navigation.goBack();
+          }
+        },
+      },
+    ]);
+  }
+
   if (!item) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -219,7 +249,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const { width: winWidth, height: winHeight } = Dimensions.get('window');
   const displayImageUrl = item.image_url ||
     (item.attachment_url && /\.(jpe?g|png|webp|gif)$/i.test(item.attachment_url) ? item.attachment_url : null);
-  const resolvedNoticeImg = resolveNoticeImage(displayImageUrl);
+  const resolvedNoticeImg = resolveBannerSource(displayImageUrl);
 
   const resolvedAttachment = normalizePdfUrl(item.attachment_url);
   const googleDocsPdfViewer = resolvedAttachment
@@ -274,6 +304,58 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
                 <Feather name="external-link" size={16} color={C.brand} />
               </TouchableOpacity>
             )}
+          </View>
+        )}
+
+        {/* Admin Executive Action Strip */}
+        {profile?.role === 'admin' && (
+          <View style={[styles.adminStrip, { backgroundColor: C.surface, borderColor: C.brand }]}>
+            <View style={styles.adminStripHeader}>
+              <View style={[styles.adminBadge, { backgroundColor: C.brand + '18' }]}>
+                <Feather name="shield" size={11} color={C.brand} />
+                <Text style={[styles.adminBadgeTxt, { color: C.brand }]}>Admin Controls</Text>
+              </View>
+              <TouchableOpacity onPress={handleDeleteNotice} hitSlop={8} style={styles.adminDeleteBtn}>
+                <Feather name="trash-2" size={13} color={C.danger} />
+                <Text style={[styles.adminDeleteTxt, { color: C.danger }]}>Delete Notice</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.adminBtnRow}>
+              <TouchableOpacity
+                style={[
+                  styles.adminToggleBtn,
+                  {
+                    backgroundColor: item.in_banner ? (isDark ? 'rgba(59, 130, 246, 0.2)' : '#e0edff') : C.surface2,
+                    borderColor: item.in_banner ? C.brand : C.border,
+                  },
+                ]}
+                onPress={handleToggleBanner}
+                activeOpacity={0.8}
+              >
+                <Feather name="image" size={13} color={item.in_banner ? C.brand : C.textMuted} />
+                <Text style={[styles.adminToggleTxt, { color: item.in_banner ? C.brand : C.text }]}>
+                  {item.in_banner ? 'In Banner' : '+ Banner'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.adminToggleBtn,
+                  {
+                    backgroundColor: item.pinned ? (isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7') : C.surface2,
+                    borderColor: item.pinned ? Accent.gold : C.border,
+                  },
+                ]}
+                onPress={handleTogglePin}
+                activeOpacity={0.8}
+              >
+                <Icon name="pin" size={12} color={item.pinned ? Accent.gold : C.textMuted} />
+                <Text style={[styles.adminToggleTxt, { color: item.pinned ? Accent.gold : C.text }]}>
+                  {item.pinned ? 'Pinned' : 'Pin'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -858,6 +940,60 @@ const styles = StyleSheet.create({
   officialBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 } as ViewStyle,
   officialBannerTitle: { fontSize: 13 } as any,
   officialBannerCode: { fontSize: 11, marginTop: 1 } as any,
+  adminStrip: {
+    padding: 12,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    marginBottom: 14,
+    gap: 8,
+  } as ViewStyle,
+  adminStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  } as ViewStyle,
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: Radius.full,
+  } as ViewStyle,
+  adminBadgeTxt: {
+    fontFamily: FontFamily.jakartaBold,
+    fontSize: 10.5,
+  } as any,
+  adminDeleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  } as ViewStyle,
+  adminDeleteTxt: {
+    fontFamily: FontFamily.jakartaBold,
+    fontSize: 11,
+  } as any,
+  adminBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
+  } as ViewStyle,
+  adminToggleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  } as ViewStyle,
+  adminToggleTxt: {
+    fontFamily: FontFamily.jakartaBold,
+    fontSize: 11.5,
+  } as any,
   openWebBtn: { padding: 4 } as ViewStyle,
 
   // Cohesive Attribute Bar

@@ -23,6 +23,9 @@ export interface NoticeItem {
   department_code: string | null;
   priority: 'Urgent' | 'Important' | 'General';
   pinned: boolean;
+  in_banner?: boolean;
+  banner_order?: number;
+  banner_image_url?: string | null;
   category: string;
   category_slug: string;
   attachment_url: string | null;
