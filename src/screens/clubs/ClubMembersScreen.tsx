@@ -1,7 +1,7 @@
 // Club member management - president/VP only. Add students by search, change
 // member roles (vp / editor / member), remove members. Presidency itself is
 // transferred from the Manage screen.
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, Alert, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
@@ -48,6 +48,16 @@ export function ClubMembersScreen({ route, navigation }: any) {
   const membersRef = useRef<Member[]>([]);
   membersRef.current = members;
   const [roleTarget, setRoleTarget] = useState<Member | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMembers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return members;
+    return members.filter(m =>
+      (m.profiles?.full_name?.toLowerCase().includes(q)) ||
+      (m.role.toLowerCase().includes(q))
+    );
+  }, [members, searchQuery]);
   const toast = useToast();
 
   const load = useCallback(async () => {
@@ -133,7 +143,25 @@ export function ClubMembersScreen({ route, navigation }: any) {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
+        {/* Universal 58dp Search Bar */}
+        <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
+          <Icon name="search" size={20} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            placeholder="Search members by name or role..."
+            placeholderTextColor={C.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8} activeOpacity={0.7}>
+              <Feather name="x-circle" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {requests.length > 0 && (
           <View style={{ marginBottom: 16 }}>
@@ -169,8 +197,21 @@ export function ClubMembersScreen({ route, navigation }: any) {
           </View>
         )}
 
+        <View style={{ marginBottom: 8, paddingHorizontal: 2 }}>
+          <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            MEMBERS · {filteredMembers.length}
+          </Text>
+        </View>
+
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-          {members.map((m, i) => {
+          {filteredMembers.length === 0 ? (
+            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium, fontSize: 13 }}>
+                {searchQuery ? `No members match "${searchQuery}"` : 'No members yet'}
+              </Text>
+            </View>
+          ) : (
+            filteredMembers.map((m, i) => {
             const isLead = m.role === 'president' || m.role === 'vp';
             const canTouch = canManage && m.role !== 'president' && m.user_id !== user?.id;
             const canRole = canSetRole && m.role !== 'president' && m.user_id !== user?.id;
@@ -200,7 +241,8 @@ export function ClubMembersScreen({ route, navigation }: any) {
                 </View>
               </View>
             );
-          })}
+            })
+          )}
         </View>
         <View style={{ height: 16 }} />
       </ScrollView>
