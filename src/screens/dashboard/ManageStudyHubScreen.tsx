@@ -13,7 +13,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -73,6 +73,15 @@ interface StudentOption {
 
 type DrillLevel = 'intakes' | 'sections' | 'section_room';
 
+function generateJoinCode(): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
 function timeAgo(iso: string): string {
   const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
   if (secs < 60) return 'just now';
@@ -98,7 +107,7 @@ function getDeptIcon(name: string): keyof typeof Feather.glyphMap {
 const shortDept = (name = '') => name.replace(/^Department of\s+/i, '');
 
 export function ManageStudyHubScreen({ navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const t = useT();
@@ -386,15 +395,22 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
     setSubmittingSection(true);
     try {
-      const { error } = await supabase.from('study_sections').insert({
-        intake_id: targetIntakeId,
-        number: num,
-      });
+      const code = generateJoinCode();
+      const { error } = await supabase
+        .from('study_sections')
+        .insert({
+          intake_id: targetIntakeId,
+          number: num,
+          is_public: true,
+          join_code: code,
+        })
+        .select('id, intake_id, number');
+
       if (error) {
         toast({
           type: 'error',
           title: 'Error',
-          message: error.code === '23505' ? 'That section already exists.' : error.message,
+          message: error.code === '23505' ? `Section ${num} already exists in this intake.` : (error.message || 'Failed to create section'),
         });
         return;
       }
@@ -618,7 +634,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   }
 
   // ---------------------------------------------------------------------------
-  // PAGE 3: INSIDE SECTION ROOM (58dp Codes Bar & 58dp CR Bar & 58dp Add CR)
+  // PAGE 3: INSIDE SECTION ROOM (Strict 58dp Bars & Clean Title Architecture)
   // ---------------------------------------------------------------------------
   if (drillLevel === 'section_room' && selectedIntake && selectedSection) {
     return (
@@ -636,7 +652,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
               style={styles.headerActionBtn}
               activeOpacity={0.7}
             >
-              <Feather name="trash-2" size={17} color={C.danger} />
+              <Feather name="trash-2" size={18} color={C.textMuted} />
             </TouchableOpacity>
           }
         />
@@ -645,68 +661,39 @@ export function ManageStudyHubScreen({ navigation }: any) {
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Room Header Context Pill */}
-          <View style={[styles.deptContextPill, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 14 }]}>
-            <View style={styles.iconSlot32}>
-              <Feather name="layers" size={26} color={C.brand} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                SECTION DETAILS
-              </Text>
-              <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {shortDept(activeDept?.name)} · Intake {selectedIntake.number} · Section {selectedSection.number}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-            JOIN CODE (58 SIZE BAR)
-          </Text>
-
           {/* 1. 58dp Join Code Bar with 1-Tap Copy */}
-          <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
             <View style={styles.iconSlot32}>
-              <Feather name="key" size={24} color={SectorColors.study} />
+              <Feather name="key" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={[styles.barLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                SECTION JOIN CODE
-              </Text>
-              <Text style={[styles.barCodeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {selectedSection.join_code ?? 'None'}
+              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                Join Code: {selectedSection.join_code ?? 'None'}
               </Text>
             </View>
             {selectedSection.join_code ? (
               <TouchableOpacity
-                style={[styles.copyBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                 onPress={() => copyJoinCode(selectedSection.join_code)}
                 activeOpacity={0.75}
               >
-                <Feather name="copy" size={13} color={C.text} />
-                <Text style={[styles.copyBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                <Feather name="copy" size={14} color={C.text} />
+                <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   Copy
                 </Text>
               </TouchableOpacity>
             ) : null}
           </View>
 
-          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-            CLASS REPRESENTATIVE (58 SIZE BARS)
-          </Text>
-
           {/* 2. Active CR Bars (58dp each with avatar & remove button) */}
           {selectedSection.crs.length === 0 ? (
-            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
               <View style={styles.iconSlot32}>
-                <Feather name="user-x" size={24} color={C.textMuted} />
+                <Feather name="user" size={32} color={C.textMuted} />
               </View>
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.barTitleTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
                   No CR Assigned
-                </Text>
-                <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  Tap below to appoint a class representative
                 </Text>
               </View>
             </View>
@@ -718,17 +705,13 @@ export function ManageStudyHubScreen({ navigation }: any) {
                   <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                     {cr.full_name}
                   </Text>
-                  <Text style={[styles.barSubTxt, { color: C.brand, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                    Active Class Representative
-                  </Text>
                 </View>
                 <TouchableOpacity
-                  style={[styles.removeCrBtn, { backgroundColor: C.dangerBg }]}
+                  style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                   onPress={() => confirmRemoveCr(cr, selectedSection.number)}
                   activeOpacity={0.75}
                 >
-                  <Feather name="user-minus" size={13} color={C.danger} />
-                  <Text style={[styles.removeCrBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     Remove
                   </Text>
                 </TouchableOpacity>
@@ -738,7 +721,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
           {/* 3. Add CR Bar (58dp — opens Page 4 Full Page) */}
           <TouchableOpacity
-            style={[styles.bar58, styles.bar58Dashed, { backgroundColor: C.surface2, borderColor: C.brand }]}
+            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}
             onPress={() => {
               setCrSearch('');
               setAssignTargetSection({
@@ -750,22 +733,15 @@ export function ManageStudyHubScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.iconSlot32}>
-              <Feather name="user-plus" size={24} color={C.brand} />
+              <Feather name="user-plus" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={[styles.barTitleTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 {selectedSection.crs.length > 0 ? '+ Add Co-CR' : '+ Assign Class Representative'}
               </Text>
-              <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Search students in Intake {selectedIntake.number}
-              </Text>
             </View>
-            <Feather name="chevron-right" size={18} color={C.brand} />
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
           </TouchableOpacity>
-
-          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 14 }]}>
-            SECTION CONTROLS (58 SIZE BAR)
-          </Text>
 
           {/* 4. Delete Section Bar (58dp) */}
           <TouchableOpacity
@@ -774,21 +750,14 @@ export function ManageStudyHubScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.iconSlot32}>
-              <Feather name="trash-2" size={24} color={C.danger} />
+              <Feather name="trash-2" size={32} color={C.textMuted} />
             </View>
             <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-              <Text style={[styles.barTitleTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+              <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                 Delete Section {selectedSection.number}
               </Text>
-              <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Permanently delete this section room
-              </Text>
             </View>
-            <View style={[styles.badgePill, { backgroundColor: C.dangerBg }]}>
-              <Text style={[styles.badgePillTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                Destructive
-              </Text>
-            </View>
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
           </TouchableOpacity>
         </ScrollView>
 
@@ -820,7 +789,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
               style={styles.headerActionBtn}
               activeOpacity={0.7}
             >
-              <Feather name="trash-2" size={17} color={C.danger} />
+              <Feather name="trash-2" size={18} color={C.textMuted} />
             </TouchableOpacity>
           }
         />
@@ -836,48 +805,44 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 await loadSections(selectedIntake.id);
                 setRefreshing(false);
               }}
-              tintColor={C.brand}
-              colors={[C.brand]}
+              tintColor={C.textMuted}
+              colors={[C.textMuted]}
             />
           }
         >
-          {/* TOP BUTTON BAR 58 SIZE: SAYS "ADD SECTION" (EXACT USER SPEC) */}
+          {/* TOP BUTTON BAR 58 SIZE: SAYS "ADD SECTION" */}
           <TouchableOpacity
-            style={[styles.topAddSectionBar58, { backgroundColor: C.surface, borderColor: C.brand }]}
+            style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, justifyContent: 'center', marginBottom: 10 }]}
             onPress={() => {
-              setSecNumInput('');
+              const currentList = sectionsByIntake[selectedIntake.id] ?? [];
+              const nextNum = currentList.length > 0 ? Math.max(...currentList.map(s => s.number)) + 1 : 1;
+              setSecNumInput(String(nextNum));
               setAddSectionIntakeId(selectedIntake.id);
             }}
             activeOpacity={0.75}
           >
-            <Feather name="plus-circle" size={20} color={C.brand} />
-            <Text style={[styles.topAddSectionTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            <View style={styles.iconSlot32}>
+              <Feather name="plus" size={22} color={C.text} />
+            </View>
+            <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               Add Section to Intake {selectedIntake.number}
             </Text>
           </TouchableOpacity>
 
-          <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 12 }]}>
-            SECTIONS IN INTAKE {selectedIntake.number} (TAP TO MANAGE)
-          </Text>
-
           {isSectionsLoading && sections.length === 0 ? (
             <View style={styles.centerBox}>
-              <ActivityIndicator size="small" color={C.brand} />
+              <ActivityIndicator size="small" color={C.text} />
             </View>
           ) : sections.length === 0 ? (
-            <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginTop: 8 }]}>
+            <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginTop: 4 }]}>
               <Icon name="study" size={32} color={C.textMuted} />
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 No sections in Intake {selectedIntake.number}
               </Text>
-              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Tap "+ Add Section" above to create Section 1.
-              </Text>
             </View>
           ) : (
-            <View style={{ gap: 9 }}>
+            <View style={{ gap: 8 }}>
               {sections.map(sec => {
-                const crNames = sec.crs.map(c => c.full_name).join(', ');
                 return (
                   <TouchableOpacity
                     key={sec.id}
@@ -889,23 +854,11 @@ export function ManageStudyHubScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.iconSlot32}>
-                      <Feather name="grid" size={24} color={C.text} />
+                      <Feather name="grid" size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                          Section {sec.number}
-                        </Text>
-                        {sec.join_code ? (
-                          <View style={[styles.inlineCodePill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                            <Text style={[styles.inlineCodeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                              {sec.join_code}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text style={[styles.barSubTxt, { color: crNames ? C.textMuted : C.warn, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {crNames ? `CR: ${crNames}` : 'No CR Assigned'}
+                      <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                        Section {sec.number}
                       </Text>
                     </View>
                     <Feather name="chevron-right" size={18} color={C.textMuted} />
@@ -926,7 +879,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   }
 
   // ---------------------------------------------------------------------------
-  // PAGE 1: INTAKES LIST (Clicking Intake opens Page 2)
+  // PAGE 1: INTAKES LIST (Strict 58dp Bars & Clean Title Architecture)
   // ---------------------------------------------------------------------------
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -950,7 +903,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} colors={[C.brand]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.textMuted} colors={[C.textMuted]} />}
       >
         {activeTab === 'catalogue' ? (
           <>
@@ -961,12 +914,9 @@ export function ManageStudyHubScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.iconSlot32}>
-                <Feather name={getDeptIcon(activeDept?.name ?? '')} size={28} color={C.text} />
+                <Feather name={getDeptIcon(activeDept?.name ?? '')} size={32} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                <Text style={[styles.barLabelTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  DEPARTMENT
-                </Text>
                 <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   {activeDept ? shortDept(activeDept.name) : (t.faculty2?.selectDepartment ?? 'Select Department')}
                 </Text>
@@ -984,19 +934,17 @@ export function ManageStudyHubScreen({ navigation }: any) {
               }}
               activeOpacity={0.75}
             >
-              <Feather name="plus" size={18} color={C.brand} />
+              <View style={styles.iconSlot32}>
+                <Feather name="plus" size={22} color={C.text} />
+              </View>
               <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {t.study2?.addIntake ?? 'Add Intake'}
               </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              SELECT INTAKE (TAP TO OPEN PAGE)
-            </Text>
-
             {loading && intakes.length === 0 ? (
               <View style={styles.centerBox}>
-                <ActivityIndicator size="small" color={C.brand} />
+                <ActivityIndicator size="small" color={C.text} />
               </View>
             ) : intakes.length === 0 ? (
               <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border }]}>
@@ -1004,12 +952,9 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.study2?.noIntakesForDept ?? 'No intakes for this department'}
                 </Text>
-                <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  Tap "+ Add Intake" above to set up the first intake.
-                </Text>
               </View>
             ) : (
-              <View style={{ gap: 9 }}>
+              <View style={{ gap: 8 }}>
                 {intakes.map(ik => {
                   const secCount = sectionsByIntake[ik.id]?.length;
                   return (
@@ -1024,25 +969,20 @@ export function ManageStudyHubScreen({ navigation }: any) {
                       activeOpacity={0.75}
                     >
                       <View style={styles.iconSlot32}>
-                        <Icon name="study" size={28} color={C.text} />
+                        <Icon name="study" size={32} color={C.text} />
                       </View>
                       <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                            Intake {ik.number}
-                          </Text>
-                          {secCount !== undefined ? (
-                            <View style={[styles.inlineCodePill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                              <Text style={[styles.inlineCodeTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                                {secCount} {secCount === 1 ? 'Sec' : 'Secs'}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                        <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                          {ik.years ?? 'No year set'} · {ik.is_public ? (t.study2?.public ?? 'Public') : (t.study2?.private ?? 'Private')}
+                        <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                          Intake {ik.number}
                         </Text>
                       </View>
+                      {secCount !== undefined ? (
+                        <View style={[styles.countPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                          <Text style={[styles.countPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                            {secCount} {secCount === 1 ? 'Sec' : 'Secs'}
+                          </Text>
+                        </View>
+                      ) : null}
                       <Feather name="chevron-right" size={18} color={C.textMuted} />
                     </TouchableOpacity>
                   );
@@ -1055,16 +995,13 @@ export function ManageStudyHubScreen({ navigation }: any) {
           <View>
             {pendingRequests.length === 0 ? (
               <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
-                <Feather name="check-circle" size={32} color={C.success} />
+                <Feather name="check-circle" size={32} color={C.textMuted} />
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.study2?.allClear ?? 'All Clear'}
                 </Text>
-                <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  No pending section creation requests from students.
-                </Text>
               </View>
             ) : (
-              <View style={{ gap: 11, marginTop: 6 }}>
+              <View style={{ gap: 10, marginTop: 6 }}>
                 {pendingRequests.map(req => {
                   const isBusy = processingId === req.id;
                   return (
@@ -1088,7 +1025,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                       {/* Optional reason */}
                       {req.reason ? (
                         <View style={[styles.reasonBox, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                          <Text style={[styles.reasonTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                          <Text style={[styles.reasonTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
                             "{req.reason}"
                           </Text>
                         </View>
@@ -1097,29 +1034,29 @@ export function ManageStudyHubScreen({ navigation }: any) {
                       {/* Actions */}
                       <View style={styles.reqActions}>
                         <TouchableOpacity
-                          style={[styles.rejectBtn, { backgroundColor: C.dangerBg }]}
+                          style={[styles.actionBtn, { flex: 1, height: 42, backgroundColor: C.surface2, borderColor: C.border }]}
                           onPress={() => setRejectTarget(req)}
                           disabled={isBusy}
                           activeOpacity={0.75}
                         >
-                          <Feather name="x" size={14} color={C.danger} />
-                          <Text style={[styles.rejectBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                          <Feather name="x" size={16} color={C.text} />
+                          <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                             {t.study2?.reject ?? 'Reject'}
                           </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                          style={[styles.approveBtn, { backgroundColor: C.brand }]}
+                          style={[styles.actionBtn, { flex: 1, height: 42, backgroundColor: C.surface2, borderColor: C.border }]}
                           onPress={() => handleApproveRequest(req)}
                           disabled={isBusy}
                           activeOpacity={0.8}
                         >
                           {isBusy ? (
-                            <ActivityIndicator size="small" color="#fff" />
+                            <ActivityIndicator size="small" color={C.text} />
                           ) : (
                             <>
-                              <Feather name="check" size={14} color="#fff" />
-                              <Text style={[styles.approveBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                              <Feather name="check" size={16} color={C.text} />
+                              <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                                 {t.study2?.approve ?? 'Approve'}
                               </Text>
                             </>
@@ -1172,26 +1109,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
             >
-              {activeDept && (
-                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <View style={styles.iconSlot32}>
-                    <Feather name={getDeptIcon(activeDept.name)} size={28} color={C.text} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      DEPARTMENT
-                    </Text>
-                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {shortDept(activeDept.name)}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
               <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {t.study2?.intakeNumber ?? 'INTAKE NUMBER'}
+                INTAKE NUMBER
               </Text>
-              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <View style={[styles.bar58, { backgroundColor: C.surface2, borderColor: C.border, marginBottom: 12 }]}>
                 <View style={styles.iconSlot32}>
                   <Feather name="hash" size={24} color={C.text} />
                 </View>
@@ -1206,9 +1127,9 @@ export function ManageStudyHubScreen({ navigation }: any) {
               </View>
 
               <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {t.study2?.yearsOptional ?? 'YEARS (OPTIONAL)'}
+                YEARS (OPTIONAL)
               </Text>
-              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <View style={[styles.bar58, { backgroundColor: C.surface2, borderColor: C.border, marginBottom: 12 }]}>
                 <View style={styles.iconSlot32}>
                   <Feather name="calendar" size={24} color={C.text} />
                 </View>
@@ -1223,9 +1144,12 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
               <TouchableOpacity
                 style={[
-                  styles.primaryBtn58,
+                  styles.bar58,
                   {
-                    backgroundColor: C.brand,
+                    backgroundColor: C.surface2,
+                    borderColor: C.border,
+                    justifyContent: 'center',
+                    marginTop: 8,
                     opacity: intakeNumInput.trim() && !submittingIntake ? 1 : 0.6,
                   },
                 ]}
@@ -1234,11 +1158,11 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 activeOpacity={0.8}
               >
                 {submittingIntake ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={C.text} />
                 ) : (
                   <>
-                    <Feather name="plus" size={20} color="#fff" />
-                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    <Feather name="plus" size={20} color={C.text} />
+                    <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       {t.study2?.addIntake ?? 'Add Intake'}
                     </Text>
                   </>
@@ -1273,7 +1197,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
 
             <View style={styles.sheetHeaderRow}>
-              <Text style={[styles.sheetTitle, { color: C.danger, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
+              <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold, marginBottom: 0 }]}>
                 Reject Section Request
               </Text>
               <TouchableOpacity
@@ -1290,20 +1214,6 @@ export function ManageStudyHubScreen({ navigation }: any) {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
             >
-              {rejectTarget && (
-                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <Avatar uri={rejectTarget.requester_avatar} name={rejectTarget.requester_name} size="sm" />
-                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      STUDENT REQUEST
-                    </Text>
-                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {rejectTarget.requester_name} · Intake {rejectTarget.intake_number} · Sec {rejectTarget.section_number}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
               <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                 NOTE FOR STUDENT (OPTIONAL)
               </Text>
@@ -1319,17 +1229,17 @@ export function ManageStudyHubScreen({ navigation }: any) {
               </View>
 
               <TouchableOpacity
-                style={[styles.primaryBtn58, { backgroundColor: C.danger, marginTop: 14 }]}
+                style={[styles.bar58, { backgroundColor: C.surface2, borderColor: C.border, justifyContent: 'center', marginTop: 14 }]}
                 onPress={handleRejectRequest}
                 disabled={processingId === rejectTarget?.id}
                 activeOpacity={0.8}
               >
                 {processingId === rejectTarget?.id ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={C.text} />
                 ) : (
                   <>
-                    <Feather name="x" size={18} color="#fff" />
-                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    <Feather name="x" size={18} color={C.text} />
+                    <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       Confirm Rejection
                     </Text>
                   </>
@@ -1373,12 +1283,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
                   <TouchableOpacity
                     key={d.id}
                     style={[
-                      styles.deptPickerItem,
+                      styles.bar58,
                       {
-                        backgroundColor: isSelected
-                          ? (isDark ? 'rgba(91, 133, 247, 0.15)' : 'rgba(91, 133, 247, 0.08)')
-                          : C.surface2,
-                        borderColor: isSelected ? C.brand : C.border,
+                        backgroundColor: isSelected ? C.surface2 : C.surface,
+                        borderColor: isSelected ? C.text : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -1388,14 +1296,14 @@ export function ManageStudyHubScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.iconSlot32}>
-                      <Feather name={getDeptIcon(d.name)} size={28} color={isSelected ? C.brand : C.text} />
+                      <Feather name={getDeptIcon(d.name)} size={32} color={C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
                         style={[
-                          styles.deptPickerItemTxt,
+                          styles.barTitleTxt,
                           {
-                            color: isSelected ? C.brand : C.text,
+                            color: C.text,
                             fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           },
                         ]}
@@ -1403,19 +1311,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
                       >
                         {shortDept(d.name)}
                       </Text>
-                      {d.dept_number ? (
-                        <Text style={[styles.deptPickerItemSub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          Dept #{d.dept_number}
-                        </Text>
-                      ) : null}
                     </View>
                     {isSelected ? (
-                      <View style={[styles.deptCheckCircle, { backgroundColor: C.brand }]}>
-                        <Feather name="check" size={12} color="#fff" />
-                      </View>
-                    ) : (
-                      <View style={[styles.deptEmptyCircle, { borderColor: C.border }]} />
-                    )}
+                      <Feather name="check" size={18} color={C.text} />
+                    ) : null}
                   </TouchableOpacity>
                 );
               })}
@@ -1427,7 +1326,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   );
 
   // ---------------------------------------------------------------------------
-  // HELPER MODAL: ADD SECTION MODAL
+  // HELPER MODAL: ADD SECTION MODAL (Strict 58dp Bars & Pre-Filled Next Number)
   // ---------------------------------------------------------------------------
   function renderAddSectionModal() {
     return (
@@ -1465,26 +1364,10 @@ export function ManageStudyHubScreen({ navigation }: any) {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
             >
-              {(activeDept || targetIntakeForSection) && (
-                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                  <View style={styles.iconSlot32}>
-                    <Feather name={getDeptIcon(activeDept?.name ?? '')} size={28} color={C.text} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                      TARGET INTAKE
-                    </Text>
-                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {activeDept ? shortDept(activeDept.name) : 'Department'}{targetIntakeForSection ? ` · Intake ${targetIntakeForSection.number}` : ''}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
               <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                {t.study2?.sectionNumber ?? 'SECTION NUMBER'}
+                SECTION NUMBER
               </Text>
-              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+              <View style={[styles.bar58, { backgroundColor: C.surface2, borderColor: C.border, marginBottom: 12 }]}>
                 <View style={styles.iconSlot32}>
                   <Feather name="hash" size={24} color={C.text} />
                 </View>
@@ -1500,9 +1383,12 @@ export function ManageStudyHubScreen({ navigation }: any) {
 
               <TouchableOpacity
                 style={[
-                  styles.primaryBtn58,
+                  styles.bar58,
                   {
-                    backgroundColor: C.brand,
+                    backgroundColor: C.surface2,
+                    borderColor: C.border,
+                    justifyContent: 'center',
+                    marginTop: 8,
                     opacity: secNumInput.trim() && !submittingSection ? 1 : 0.6,
                   },
                 ]}
@@ -1511,11 +1397,11 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 activeOpacity={0.8}
               >
                 {submittingSection ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={C.text} />
                 ) : (
                   <>
-                    <Feather name="plus" size={20} color="#fff" />
-                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                    <Feather name="plus" size={20} color={C.text} />
+                    <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                       {t.study2?.addSection ?? 'Add Section'}
                     </Text>
                   </>
@@ -1529,7 +1415,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   }
 
   // ---------------------------------------------------------------------------
-  // HELPER MODAL: DEDICATED FULL-PAGE ASSIGN CR (PAGE 4)
+  // HELPER MODAL: DEDICATED FULL-PAGE ASSIGN CR (PAGE 4 — Strict 58dp Standard)
   // ---------------------------------------------------------------------------
   function renderAssignCrModal() {
     return (
@@ -1546,36 +1432,14 @@ export function ManageStudyHubScreen({ navigation }: any) {
             onBack={() => setAssignTargetSection(null)}
           />
 
-          {/* Context Banner */}
-          {assignTargetSection && (
-            <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 4, marginBottom: 8 }}>
-              <View style={[styles.deptContextPill, { backgroundColor: C.surface, borderColor: C.border, marginVertical: 0 }]}>
-                <View style={styles.iconSlot32}>
-                  <Feather name="award" size={26} color={C.brand} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                  <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    ASSIGNING CR FOR
-                  </Text>
-                  <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {activeDept ? shortDept(activeDept.name) : 'Dept'} · Intake {assignTargetSection.intakeNum} · Section {assignTargetSection.number}
-                  </Text>
-                </View>
-                <View style={[styles.badgePill, { backgroundColor: isDark ? 'rgba(91, 133, 247, 0.15)' : 'rgba(91, 133, 247, 0.1)' }]}>
-                  <Text style={[styles.badgePillTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                    Scoped
-                  </Text>
-                </View>
+          {/* Search Bar strictly 58dp */}
+          <View style={{ paddingHorizontal: Layout.screenPadding, marginTop: 6, marginBottom: 10 }}>
+            <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+              <View style={styles.iconSlot32}>
+                <Feather name="search" size={24} color={C.textMuted} />
               </View>
-            </View>
-          )}
-
-          {/* 52dp Search Bar strictly scoped to target intake */}
-          <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 10 }}>
-            <View style={[styles.searchBar52, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Feather name="search" size={20} color={C.textMuted} />
               <TextInput
-                style={[styles.searchBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={crSearch}
                 onChangeText={setCrSearch}
                 placeholder={assignTargetSection ? `Search student in Intake ${assignTargetSection.intakeNum}…` : 'Search students…'}
@@ -1590,25 +1454,16 @@ export function ManageStudyHubScreen({ navigation }: any) {
             </View>
           </View>
 
-          <View style={{ paddingHorizontal: Layout.screenPadding, marginBottom: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={[styles.sectionHeading, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              CANDIDATES IN INTAKE {assignTargetSection?.intakeNum}
-            </Text>
-          </View>
-
           {/* Student Candidate List */}
           {searchLoading ? (
             <View style={styles.centerBox}>
-              <ActivityIndicator size="small" color={C.brand} />
+              <ActivityIndicator size="small" color={C.text} />
             </View>
           ) : studentResults.length === 0 ? (
-            <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginHorizontal: Layout.screenPadding, marginTop: 8 }]}>
+            <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginHorizontal: Layout.screenPadding, marginTop: 4 }]}>
               <Feather name="users" size={32} color={C.textMuted} />
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 No students found in Intake {assignTargetSection?.intakeNum}
-              </Text>
-              <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                Only registered students belonging to Intake {assignTargetSection?.intakeNum} can be assigned.
               </Text>
             </View>
           ) : (
@@ -1628,17 +1483,14 @@ export function ManageStudyHubScreen({ navigation }: any) {
                       <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                         {st.full_name}
                       </Text>
-                      <Text style={[styles.barSubTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {st.student_id ? `ID: ${st.student_id} · ` : ''}{st.department ?? 'Student'} · Intake {st.intake ?? assignTargetSection?.intakeNum}
-                      </Text>
                     </View>
                     <TouchableOpacity
-                      style={[styles.assignPillBtn, { backgroundColor: C.brand }]}
+                      style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                       onPress={() => handleAssignCr(st)}
                       activeOpacity={0.8}
                     >
-                      <Feather name="check" size={13} color="#fff" />
-                      <Text style={[styles.assignPillBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      <Feather name="check" size={14} color={C.text} />
+                      <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                         Assign
                       </Text>
                     </TouchableOpacity>
@@ -1666,7 +1518,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  // Universal 58dp Bar Standard
+  // Universal 58dp Bar Standard (Strict Fixed Height 58dp with Centered Titles)
   bar58: {
     height: 58,
     borderRadius: 16,
@@ -1676,41 +1528,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
   } as ViewStyle,
-  bar58Dashed: {
-    borderStyle: 'dashed',
-    marginTop: 8,
-  } as ViewStyle,
-  barLabelTxt: {
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  } as any,
+
   barTitleTxt: {
     fontSize: 14.5,
   } as any,
-  barCodeTxt: {
-    fontSize: 15,
-    letterSpacing: 1.5,
-  } as any,
-  barSubTxt: {
-    fontSize: 11.5,
-    marginTop: 1.5,
-  } as any,
 
-  // Top 58dp Add Section Button Bar (User Spec: prominent top bar)
-  topAddSectionBar58: {
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    gap: 9,
-    marginBottom: 6,
-  } as ViewStyle,
-  topAddSectionTxt: {
-    fontSize: 15,
+  inputBarTxt: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
   } as any,
 
   iconSlot32: {
@@ -1721,133 +1547,27 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   } as ViewStyle,
 
-  sectionHeading: {
-    fontSize: 10.5,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    paddingHorizontal: 4,
-    paddingTop: 4,
-    marginBottom: 8,
-  } as any,
-
-  inlineCodePill: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-  } as ViewStyle,
-  inlineCodeTxt: {
-    fontSize: 10.5,
-    letterSpacing: 0.3,
-  } as any,
-
-  copyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4.5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-  } as ViewStyle,
-  copyBtnTxt: {
-    fontSize: 11.5,
-  } as any,
-
-  removeCrBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  } as ViewStyle,
-  removeCrBtnTxt: {
-    fontSize: 11.5,
-  } as any,
-
-  badgePill: {
+  countPill: {
     paddingHorizontal: 8,
     paddingVertical: 3.5,
     borderRadius: 8,
+    borderWidth: 1,
   } as ViewStyle,
-  badgePillTxt: {
-    fontSize: 10.5,
+  countPillTxt: {
+    fontSize: 11,
   } as any,
 
-  assignPillBtn: {
+  actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 10,
+    borderWidth: 1,
   } as ViewStyle,
-  assignPillBtnTxt: {
+  actionBtnTxt: {
     fontSize: 12,
-  } as any,
-
-  searchBar52: {
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 10,
-  } as ViewStyle,
-  searchBarTxt: {
-    flex: 1,
-    fontSize: 13.5,
-    paddingVertical: 0,
-  } as any,
-
-  deptContextPill: {
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 12,
-    marginVertical: 10,
-  } as ViewStyle,
-  deptContextLabel: {
-    fontSize: 9.5,
-    letterSpacing: 0.6,
-  } as any,
-  deptContextName: {
-    fontSize: 13,
-    marginTop: 1,
-  } as any,
-
-  inputBar58: {
-    height: 58,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 10,
-    marginBottom: 12,
-  } as ViewStyle,
-  inputBarTxt: {
-    flex: 1,
-    fontSize: 14,
-    paddingVertical: 0,
-  } as any,
-
-  primaryBtn58: {
-    height: 58,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 8,
-  } as ViewStyle,
-  primaryBtnTxt: {
-    fontSize: 15,
   } as any,
 
   modalFieldLabel: {
@@ -1863,46 +1583,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 6,
     gap: 8,
   } as ViewStyle,
-  emptyTitle: { fontSize: 15, textAlign: 'center' } as any,
-  emptySub: { fontSize: 12.5, textAlign: 'center' } as any,
-
-  deptPickerItem: {
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 14,
-  } as ViewStyle,
-  deptPickerItemTxt: {
-    fontSize: 14,
-  } as any,
-  deptPickerItemSub: {
-    fontSize: 11.5,
-    marginTop: 1,
-  } as any,
-  deptCheckCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  deptEmptyCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-  } as ViewStyle,
+  emptyTitle: { fontSize: 14.5, textAlign: 'center' } as any,
 
   /* Sheets & Modals */
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   } as ViewStyle,
   sheet: {
@@ -1922,10 +1611,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 14,
   } as ViewStyle,
   sheetTitle: {
-    fontSize: 17,
+    fontSize: 16.5,
   } as any,
   sheetCloseBtn: {
     width: 32,
@@ -1975,24 +1664,4 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 2,
   } as ViewStyle,
-  rejectBtn: {
-    flex: 1,
-    height: 38,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-  } as ViewStyle,
-  rejectBtnTxt: { fontSize: 12.5 } as any,
-  approveBtn: {
-    flex: 1,
-    height: 38,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-  } as ViewStyle,
-  approveBtnTxt: { fontSize: 12.5 } as any,
 });

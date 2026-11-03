@@ -3210,3 +3210,28 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 42s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+
+---
+
+### 80. Study Hub Admin Clean Title Architecture, Strict 58dp Monochrome Refinement & Section Creation Permission Fix (`ManageStudyHubScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Database Column Privilege Resolution (`study_sections` Add Section Error):**
+  - **Root Cause:** Migration `0061_study_hub_security_fixes.sql:22` ran `revoke select (join_code) on public.study_sections from authenticated;`. When executing `study_sections.insert()` without specifying columns to return, PostgREST requests `RETURNING *`. PostgreSQL threw `permission denied for column join_code of relation study_sections`, breaking section creation.
+  - **Resolution:** Implemented client-side 6-character alphanumeric code generator (`generateJoinCode()`) and restricted the PostgREST return selection strictly to non-restricted columns `.select('id, intake_id, number')`.
+  - **Auto-Increment Pre-Fill:** Pre-calculated `max(existing_section_numbers) + 1` (e.g. automatically pre-filling "3" if Sections 1 and 2 exist) upon opening the modal, preventing unique constraint collision errors (`23505`).
+- **Clean Title Architecture Standard (Zero Redundant Subtitles):**
+  - Completely purged cluttered explanatory subtitles across all 4 admin views (`"Tap to manage sections"`, `"2022 - 2026 · Public Room"`, `"CR: None assigned"`, `"Tap to select category"`, `"Search students in Intake..."`, `"CR: Tap + Assign"`).
+  - Titles are cleanly vertically centered (`justifyContent: 'center'`) inside high-contrast rows.
+- **Universal 58dp Fixed Height Standard (`styles.bar58`):**
+  - Standardized every interactive row to strictly `height: 58` (`styles.bar58` with `height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 16`), ensuring flawless 48dp+ touch target ergonomics.
+- **Pure Monochrome & Zero Distracting Colors:**
+  - Removed all loud neon blues, red background pills, red warning text, and amber outlines. Replaced with clean OLED dark mode surfaces (`C.surface`), subtle neutral zinc borders (`C.border`), and high-contrast monochrome text (`C.text` / `C.textMuted`).
+- **32dp Tier 1 Monochrome Vector Icons:**
+  - Standardized all leading icons inside 32dp transparent slots (`styles.iconSlot32`) with monochrome `#f4f4f5` white / `#a1a1aa` zinc strokes.
+- **Interactive High-Fidelity UI Preview (`study_hub_intake_redesign_preview.html`):**
+  - Crafted interactive showcase mirroring `report_and_staff_design_preview.html`: realistic 375x780dp mobile frame, status bar, 5 interactive views (Intakes, Full-Page Sections, Inside Section Room, Full-Page Add CR, and Before vs After), toast alerts, live student search filter, and strict inline constraints preventing SVG blowups.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 18s`).
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
