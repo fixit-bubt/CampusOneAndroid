@@ -3834,3 +3834,43 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore (`BUILD SUCCESSFUL in 48s`).
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da` (`Performing Streamed Install -> Success`).
+
+
+---
+
+### 97. Admin Jobs Moderation Overhaul, 58dp Dual Action Bars & 58dp Dropdown Form Standardization (`AdminDashboardScreen.tsx`, `JobsBrowseScreen.tsx`, `JobPostScreen.tsx`, `JobsModerateScreen.tsx`, `JobDetailScreen.tsx`, `jobsService.ts`, `ExploreScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Cleaned Admin Home Dashboard (`AdminDashboardScreen.tsx`):**
+  - Removed cluttering quick shortcuts (`Hero Banner` and `Announcements`) and unused styles.
+  - Eliminated quick action button clutter on the Admin Dashboard, cleanly transitioning directly from the executive hero identity card into the 3-stat metric filter cards (`Unassigned`, `In Progress`, `Resolved`).
+- **Unified Navigation & Removed Redundant Entry (`ExploreScreen.tsx`):**
+  - Removed duplicate 'Job Moderation' childBar from under 'Administrative Controls' in Explore.
+  - Retained 'Jobs & Internships' under 'Campus Life' as the single unified entry point for all campus career features.
+- **Admin Dual 58dp Action Bars & Segmented Tab Removal (`JobsBrowseScreen.tsx`):**
+  - Removed the small shield and plus icons from `SubBar.rightSlot` for Admins.
+  - Eliminated student-only `[ Browse | Saved | Applied ]` segmented tabs row for Admins (admins do not submit outgoing student job applications or bookmark personal jobs).
+  - Added two dedicated, full-width 58dp action bars at the top of the jobs board for Admins:
+    1. `Post an Opportunity` (58dp height, 20dp vector icon `plus-circle`, bold title, chevron right, navigates to `JobPost`).
+    2. `Job Moderation` (58dp height, 20dp vector icon `shield`, bold title, live pending reports badge e.g. `{reportedCount} reported`, chevron right, navigates to `JobsModerate`).
+- **Full 58dp Dropdown Form Standardization (`JobPostScreen.tsx`):**
+  - Completely replaced all messy scattered chips, horizontal swipe scrolls, and cramped tabs across all 6 core form fields with standardized, full-width **58dp dropdown bars**:
+    1. **Job Type**: 58dp trigger bar with 58dp modal option bars for `Internship`, `Private Tuition`, `On-Campus Job`, `Part-Time`, `Full-Time`, `Freelance & Projects`.
+    2. **Target Department**: 58dp trigger bar with 58dp modal option bars for `All Departments`, `CSE`, `EEE`, `BBA`, `LAW`, `ENG`, `ECO`, `MATH`, `TEX`.
+    3. **Work Mode**: 58dp trigger bar with 58dp modal option bars for `On-site`, `Remote`, `Hybrid`.
+    4. **Compensation Model**: 58dp trigger bar with 58dp modal option bars for `Paid`, `Conveyance Only`, `Unpaid`, `Negotiable`, plus a 54dp text input for salary when Paid is picked.
+    5. **Location / Area**: 58dp trigger bar with 58dp modal option bars for top Dhaka zones (`Mirpur (Near BUBT)`, `Dhanmondi`, `Uttara`, `Gulshan`, `Mohakhali`, `Remote`, etc.) + 54dp custom specific address input.
+    6. **Minimum Semester**: 58dp trigger bar with 58dp modal option bars for `Any Semester`, `2nd+`, `3rd+`, `4th+`, `5th+`, `6th+`, `7th+`, `Final Year`.
+  - Every option inside every picker sheet strictly maintains full 58dp height, bold title vertically centered, 18dp vector icon, and active checkmark.
+- **Direct Moderation Actions (`JobsModerateScreen.tsx`):**
+  - Added direct **Dismiss Reports** action on reported cards, calling `adminDismissJobReports(job.id)` to clear false flags while keeping listings active.
+  - Added direct **Remove Listing** action opening a slide-up modal with presets (`Spam / Misleading`, `Fraud / Scam`, `Expired Listing`, `Policy Violation`) and custom reason input.
+  - Added full touch target **Restore Listing** button on removed listings.
+- **Admin Candidate Pipeline Oversight (`JobDetailScreen.tsx`):**
+  - Unlocked candidate application pipeline for Admins (`isOwn || isAdmin`).
+  - Admins can inspect applicant credentials, view attached CV/resume PDFs, and manage candidate statuses (`submitted` -> `viewed` -> `shortlisted` -> `rejected`).
+  - Replaced student 'Apply Now' button with admin controls.
+- **Backend Service Extension (`jobsService.ts`):**
+  - Added `adminDismissJobReports(jobId)` utilizing Supabase RLS `job_reports_delete` policy for admins.
+- **Verification Evidence:**
+  - TypeScript Compilation: `npx tsc --noEmit` passed with 0 errors.
+  - Native Release Build: `cd android; .\gradlew assembleRelease` succeeded with local release keystore (BUILD SUCCESSFUL in 47s).
+  - ADB Deployment: Installed via ADB and launched on physical phone `8734b5da`.

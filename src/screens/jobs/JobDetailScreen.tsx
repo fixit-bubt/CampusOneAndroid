@@ -126,8 +126,8 @@ export function JobDetailScreen({ route, navigation }: any) {
     setSaved(!!saveRes.data);
     setMyApplication(appRes.applied ? appRes.application ?? null : null);
 
-    // If caller is the poster, load received applications
-    if (jobRes.data.posted_by === user?.id) {
+    // If caller is the poster or an admin, load received applications
+    if (jobRes.data.posted_by === user?.id || isAdmin) {
       const apps = await getApplicationsForJob(jobId);
       setJobApplications(apps.applications);
     }
@@ -139,7 +139,7 @@ export function JobDetailScreen({ route, navigation }: any) {
         setPoster(people[jobRes.data.posted_by]);
       }
     }
-  }, [jobId, user?.id]);
+  }, [jobId, user?.id, isAdmin]);
 
   useFocusEffect(useCallback(() => { loadJob(); }, [loadJob]));
 
@@ -541,8 +541,8 @@ export function JobDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        {/* Poster View: Candidates Applied Banner */}
-        {isOwn && (
+        {/* Poster & Admin View: Candidates Applied Banner */}
+        {(isOwn || isAdmin) && (
           <View style={[styles.candidatesBanner, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.candidatesBannerTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -565,7 +565,7 @@ export function JobDetailScreen({ route, navigation }: any) {
         )}
 
         {/* Student View: Application Status Banner (If Already Applied) */}
-        {!isOwn && myApplication && myAppTone && (
+        {!isOwn && !isAdmin && myApplication && myAppTone && (
           <View style={[styles.appliedBanner, { backgroundColor: myAppTone.bg, borderColor: myAppTone.fg }]}>
             <View style={styles.appliedBannerHead}>
               <View style={[styles.statusDot, { backgroundColor: myAppTone.fg }]} />
@@ -640,7 +640,7 @@ export function JobDetailScreen({ route, navigation }: any) {
           </>
         ) : (
           <>
-            {!isExpired && !isOwn && !myApplication && (
+            {!isExpired && !isOwn && !isAdmin && !myApplication && (
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: C.brand }]}
                 onPress={() => {
@@ -729,7 +729,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                   {t.jobs2.withdrawListing}
                 </Text>
               </TouchableOpacity>
-            ) : (
+            ) : !isAdmin ? (
               <TouchableOpacity
                 style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
                 onPress={() => setReportOpen(true)}
@@ -740,9 +740,9 @@ export function JobDetailScreen({ route, navigation }: any) {
                   {t.jobs2.reportListing}
                 </Text>
               </TouchableOpacity>
-            )}
+            ) : null}
 
-            {isAdmin && !isOwn && (
+            {isAdmin && (
               <TouchableOpacity
                 style={[styles.secondaryBtn, { backgroundColor: C.dangerBg, borderColor: C.dangerBg }]}
                 onPress={() => setRemoveOpen(true)}

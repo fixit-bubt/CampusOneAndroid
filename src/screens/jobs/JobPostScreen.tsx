@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  StyleSheet, ActivityIndicator, type ViewStyle,
+  StyleSheet, ActivityIndicator, Modal, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -15,18 +15,78 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
-import { isValidDate, localToday, formatFileSize } from '../../utils/format';
+import { localToday, formatFileSize } from '../../utils/format';
 import { uploadJobCircular } from '../../services/jobsService';
-import { MAX_FILE_SIZE_MB, JOB_DEPARTMENTS, DHAKA_AREAS, COMPENSATION_TYPES } from '../../constants/app';
+import { MAX_FILE_SIZE_MB } from '../../constants/app';
 import type { Job } from '../../types/database';
 
-const JOB_TYPES: { id: Job['job_type']; label: string }[] = [
-  { id: 'internship', label: 'Internship' },
-  { id: 'tuition',    label: 'Tuition' },
-  { id: 'on_campus',  label: 'On-Campus' },
-  { id: 'part_time',  label: 'Part-time' },
-  { id: 'full_time',  label: 'Full-time' },
-  { id: 'freelance',  label: 'Freelance' },
+interface PickedCircular {
+  uri: string;
+  name: string;
+  size?: number;
+}
+
+interface DropdownItem<T> {
+  id: T;
+  label: string;
+  icon?: keyof typeof Feather.glyphMap;
+}
+
+const JOB_TYPE_OPTIONS: DropdownItem<Job['job_type']>[] = [
+  { id: 'internship', label: 'Internship', icon: 'briefcase' },
+  { id: 'tuition',    label: 'Private Tuition', icon: 'book' },
+  { id: 'on_campus',  label: 'On-Campus Job', icon: 'home' },
+  { id: 'part_time',  label: 'Part-Time', icon: 'clock' },
+  { id: 'full_time',  label: 'Full-Time', icon: 'award' },
+  { id: 'freelance',  label: 'Freelance & Projects', icon: 'code' },
+];
+
+const DEPT_OPTIONS: DropdownItem<string>[] = [
+  { id: 'ALL',  label: 'All Departments (Open to all)', icon: 'layers' },
+  { id: 'CSE',  label: 'Computer Science & Engineering (CSE)', icon: 'cpu' },
+  { id: 'EEE',  label: 'Electrical & Electronic Engineering (EEE)', icon: 'zap' },
+  { id: 'BBA',  label: 'Business Administration (BBA)', icon: 'trending-up' },
+  { id: 'LAW',  label: 'Department of Law (LLB)', icon: 'shield' },
+  { id: 'ENG',  label: 'Department of English', icon: 'book-open' },
+  { id: 'ECO',  label: 'Department of Economics', icon: 'bar-chart-2' },
+  { id: 'MATH', label: 'Department of Mathematics', icon: 'percent' },
+  { id: 'TEX',  label: 'Textile Engineering (TEX)', icon: 'scissors' },
+];
+
+const WORK_MODE_OPTIONS: DropdownItem<Job['work_mode']>[] = [
+  { id: 'onsite', label: 'On-site (Campus / Office)', icon: 'map-pin' },
+  { id: 'remote', label: 'Remote (Work From Home)', icon: 'wifi' },
+  { id: 'hybrid', label: 'Hybrid (Flexible / Combined)', icon: 'shuffle' },
+];
+
+const COMPENSATION_OPTIONS: DropdownItem<NonNullable<Job['compensation_type']>>[] = [
+  { id: 'paid',       label: 'Paid (Fixed Salary / Stipend)', icon: 'dollar-sign' },
+  { id: 'conveyance', label: 'Conveyance Allowance Only', icon: 'navigation' },
+  { id: 'unpaid',     label: 'Unpaid / Voluntary', icon: 'heart' },
+  { id: 'negotiable', label: 'Negotiable', icon: 'sliders' },
+];
+
+const AREA_OPTIONS: DropdownItem<string>[] = [
+  { id: 'Mirpur (Near BUBT)', label: 'Mirpur (Near BUBT)', icon: 'map-pin' },
+  { id: 'Dhanmondi',          label: 'Dhanmondi', icon: 'map-pin' },
+  { id: 'Uttara',             label: 'Uttara', icon: 'map-pin' },
+  { id: 'Gulshan / Banani',   label: 'Gulshan / Banani', icon: 'map-pin' },
+  { id: 'Mohakhali',          label: 'Mohakhali', icon: 'map-pin' },
+  { id: 'Farmgate',           label: 'Farmgate', icon: 'map-pin' },
+  { id: 'Mohammadpur',        label: 'Mohammadpur', icon: 'map-pin' },
+  { id: 'Motijheel',          label: 'Motijheel', icon: 'map-pin' },
+  { id: 'Remote / Online',    label: 'Remote / Online', icon: 'wifi' },
+];
+
+const SEMESTER_OPTIONS: DropdownItem<number>[] = [
+  { id: 1, label: 'Any Semester (No Restriction)', icon: 'award' },
+  { id: 2, label: '2nd Semester and Above', icon: 'award' },
+  { id: 3, label: '3rd Semester and Above', icon: 'award' },
+  { id: 4, label: '4th Semester and Above', icon: 'award' },
+  { id: 5, label: '5th Semester and Above', icon: 'award' },
+  { id: 6, label: '6th Semester and Above', icon: 'award' },
+  { id: 7, label: '7th Semester and Above', icon: 'award' },
+  { id: 8, label: 'Final Year / Graduating (8th Sem+)', icon: 'award' },
 ];
 
 const APPLY_METHODS: TabItem<Job['apply_method']>[] = [
@@ -35,23 +95,100 @@ const APPLY_METHODS: TabItem<Job['apply_method']>[] = [
   { id: 'file',  label: 'PDF', icon: 'file-text' },
 ];
 
-interface PickedCircular {
-  uri: string;
-  name: string;
-  size?: number;
-}
-
 function addDhakaDays(days: number): string {
   const [y, m, d] = localToday().split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d + days));
   return dt.toISOString().split('T')[0];
 }
 
-function semesterChipLabel(sem: number, anyLabel: string) {
-  if (sem === 1) return anyLabel;
-  if (sem === 2) return '2nd+';
-  if (sem === 3) return '3rd+';
-  return `${sem}th+`;
+interface PickerModalProps<T> {
+  visible: boolean;
+  title: string;
+  options: DropdownItem<T>[];
+  selectedId: T;
+  onSelect: (id: T) => void;
+  onClose: () => void;
+  C: any;
+}
+
+function PickerModalSheet<T extends string | number>({
+  visible,
+  title,
+  options,
+  selectedId,
+  onSelect,
+  onClose,
+  C,
+}: PickerModalProps<T>) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.pickerBackdrop}>
+        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.pickerSheet, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.pickerHeaderRow}>
+            <Text style={[styles.pickerTitle, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+              {title}
+            </Text>
+            <TouchableOpacity onPress={onClose} hitSlop={8}>
+              <Feather name="x" size={20} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={{ maxHeight: 420 }}
+            contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
+          >
+            {options.map((opt) => {
+              const isSelected = selectedId === opt.id;
+              return (
+                <TouchableOpacity
+                  key={String(opt.id)}
+                  style={[
+                    styles.optionBar58,
+                    {
+                      backgroundColor: isSelected ? C.surface2 : C.surface,
+                      borderColor: isSelected ? C.brand : C.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    onSelect(opt.id);
+                    onClose();
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.barIconSlot}>
+                    <Feather
+                      name={opt.icon ?? 'circle'}
+                      size={18}
+                      color={isSelected ? C.brand : C.text}
+                    />
+                  </View>
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <Text
+                      style={[
+                        styles.barTxt,
+                        {
+                          color: isSelected ? C.brand : C.text,
+                          fontFamily: isSelected ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {opt.label}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <Feather name="check" size={16} color={C.brand} style={{ marginLeft: 6 }} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 export function JobPostScreen({ navigation }: any) {
@@ -66,13 +203,13 @@ export function JobPostScreen({ navigation }: any) {
   const [workMode, setWorkMode] = useState<Job['work_mode']>('onsite');
   const [departmentCode, setDepartmentCode] = useState('ALL');
   const [compensationType, setCompensationType] = useState<NonNullable<Job['compensation_type']>>('paid');
-  const [location, setLocation] = useState('');
-  const [areaName, setAreaName] = useState('');
+  const [location, setLocation] = useState('Mirpur (Near BUBT)');
+  const [areaName, setAreaName] = useState('Mirpur (Near BUBT)');
   const [salary, setSalary] = useState('');
   const [minSemester, setMinSemester] = useState(1);
   const [isAlumniReferral, setIsAlumniReferral] = useState(false);
   const [skillsInput, setSkillsInput] = useState('');
-  const [deadline, setDeadline] = useState(addDhakaDays(14)); // default 14 days
+  const [deadline, setDeadline] = useState(addDhakaDays(14));
   const [desc, setDesc] = useState('');
   const [requirements, setRequirements] = useState('');
   const [applyMethod, setApplyMethod] = useState<Job['apply_method']>('email');
@@ -81,6 +218,14 @@ export function JobPostScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [myClubs, setMyClubs] = useState<{ id: string; name: string }[]>([]);
   const [clubId, setClubId] = useState<string | null>(null);
+
+  // Dropdown Picker Modals
+  const [typePickerOpen, setTypePickerOpen] = useState(false);
+  const [deptPickerOpen, setDeptPickerOpen] = useState(false);
+  const [modePickerOpen, setModePickerOpen] = useState(false);
+  const [compPickerOpen, setCompPickerOpen] = useState(false);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+  const [semPickerOpen, setSemPickerOpen] = useState(false);
 
   // Permission guard: ensure only authorized posters can access
   useEffect(() => {
@@ -119,26 +264,12 @@ export function JobPostScreen({ navigation }: any) {
 
   const dhakaToday = localToday();
 
-  const jobTypes: { id: Job['job_type']; label: string }[] = [
-    { id: 'internship', label: t.jobs2?.internship ?? 'Internship' },
-    { id: 'tuition',    label: t.jobs2?.tuition ?? 'Tuition' },
-    { id: 'on_campus',  label: t.jobs2?.onCampus ?? 'On-Campus' },
-    { id: 'part_time',  label: t.jobs2?.partTime ?? 'Part-time' },
-    { id: 'full_time',  label: t.jobs2?.fullTime ?? 'Full-time' },
-    { id: 'freelance',  label: t.jobs2?.freelance ?? 'Freelance' },
-  ];
-
-  const modes: TabItem<Job['work_mode']>[] = useMemo(() => [
-    { id: 'onsite', label: t.jobs2?.onsite ?? 'On-site', icon: 'map-pin' },
-    { id: 'remote', label: t.jobs2?.remote ?? 'Remote', icon: 'wifi' },
-    { id: 'hybrid', label: t.jobs2?.hybrid ?? 'Hybrid', icon: 'shuffle' },
-  ], [t.jobs2]);
-
-  const compensationOptions: TabItem<NonNullable<Job['compensation_type']>>[] = useMemo(() => [
-    { id: 'paid',        label: t.jobs2?.paid ?? 'Paid' },
-    { id: 'conveyance',  label: t.jobs2?.conveyance ?? 'Conveyance' },
-    { id: 'negotiable',  label: t.jobs2?.negotiable ?? 'Negotiable' },
-  ], [t.jobs2]);
+  // Active configurations for display in 58dp bars
+  const selectedType = useMemo(() => JOB_TYPE_OPTIONS.find(o => o.id === jobType) ?? JOB_TYPE_OPTIONS[0], [jobType]);
+  const selectedDept = useMemo(() => DEPT_OPTIONS.find(o => o.id === departmentCode) ?? DEPT_OPTIONS[0], [departmentCode]);
+  const selectedMode = useMemo(() => WORK_MODE_OPTIONS.find(o => o.id === workMode) ?? WORK_MODE_OPTIONS[0], [workMode]);
+  const selectedComp = useMemo(() => COMPENSATION_OPTIONS.find(o => o.id === compensationType) ?? COMPENSATION_OPTIONS[0], [compensationType]);
+  const selectedSem  = useMemo(() => SEMESTER_OPTIONS.find(o => o.id === minSemester) ?? SEMESTER_OPTIONS[0], [minSemester]);
 
   async function pickPdfFile() {
     try {
@@ -149,53 +280,37 @@ export function JobPostScreen({ navigation }: any) {
 
       if (res.canceled || !res.assets || res.assets.length === 0) return;
       const asset = res.assets[0];
-      const size = asset.size ?? 0;
 
-      if (size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        toast({
-          type: 'error',
-          title: t.common.error,
-          message: `PDF exceeds ${MAX_FILE_SIZE_MB}MB limit.`,
-        });
+      if ((asset.size ?? 0) > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast({ type: 'error', title: t.common.error, message: `Circular PDF exceeds ${MAX_FILE_SIZE_MB}MB limit.` });
         return;
       }
 
-      setPickedFile({
-        uri: asset.uri,
-        name: asset.name,
-        size: asset.size,
-      });
+      setPickedFile({ uri: asset.uri, name: asset.name, size: asset.size });
     } catch {
       toast({ type: 'error', title: t.common.error, message: 'Could not select document.' });
     }
   }
 
   async function handleSubmit() {
-    if (!canSubmit || !user || loading) return;
+    if (!canSubmit || !user) return;
 
-    if (deadline.trim()) {
-      if (!isValidDate(deadline)) {
-        toast({ type: 'error', title: t.common.error, message: t.common.invalidDate });
-        return;
-      }
-      if (deadline.trim() < dhakaToday) {
-        toast({ type: 'error', title: t.common.error, message: t.jobs2?.deadlinePast ?? 'Deadline cannot be in the past.' });
-        return;
-      }
+    if (deadline && deadline < dhakaToday) {
+      toast({ type: 'error', title: t.common.error, message: t.jobs2?.deadlinePast ?? 'Deadline cannot be in the past.' });
+      return;
     }
 
     if (applyMethod === 'email') {
-      const emailTrimmed = applyValue.trim();
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(emailTrimmed)) {
+      if (!emailRegex.test(applyValue.trim())) {
         toast({ type: 'error', title: t.common.error, message: 'Please enter a valid email address.' });
         return;
       }
     }
 
     if (applyMethod === 'link') {
-      const linkTrimmed = applyValue.trim();
-      if (!linkTrimmed.includes('.')) {
+      const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
+      if (!urlRegex.test(applyValue.trim())) {
         toast({ type: 'error', title: t.common.error, message: 'Please enter a valid application URL.' });
         return;
       }
@@ -313,7 +428,7 @@ export function JobPostScreen({ navigation }: any) {
             {t.jobs2.company}
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={company}
             onChangeText={setCompany}
             placeholder={t.jobs2.companyPlaceholder}
@@ -325,195 +440,184 @@ export function JobPostScreen({ navigation }: any) {
             {t.jobs2.roleTitle}
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={role}
             onChangeText={setRole}
             placeholder={t.jobs2.roleTitlePlaceholder}
             placeholderTextColor={C.textMuted}
           />
 
-          {/* Job Type Grid */}
+          {/* 1. Job Type Dropdown Bar (Height 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2.type}
           </Text>
-          <View style={styles.typeGrid}>
-            {jobTypes.map(jt => {
-              const on = jobType === jt.id;
-              return (
-                <TouchableOpacity
-                  key={jt.id}
-                  style={[
-                    styles.typeGridChip,
-                    on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                  onPress={() => setJobType(jt.id)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.typeGridTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {jt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <TouchableOpacity
+            style={[styles.dropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setTypePickerOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barIconSlot}>
+              <Feather name={selectedType.icon ?? 'briefcase'} size={20} color={C.text} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedType.label}
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
 
-          {/* Target Department Filter */}
+          {/* 2. Target Department Dropdown Bar (Height 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2?.targetDept ?? 'TARGET DEPARTMENT'}
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 7, paddingVertical: 2 }}>
-            {JOB_DEPARTMENTS.map(dept => {
-              const on = departmentCode === dept.code;
-              return (
-                <TouchableOpacity
-                  key={dept.code}
-                  style={[
-                    styles.deptChip,
-                    on
-                      ? { backgroundColor: C.brand, borderColor: C.brand }
-                      : { backgroundColor: C.surface, borderColor: C.border },
-                  ]}
-                  onPress={() => setDepartmentCode(dept.code)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.deptChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {dept.code === 'ALL' ? (t.jobs2?.allDepts ?? dept.label) : dept.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          <TouchableOpacity
+            style={[styles.dropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setDeptPickerOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barIconSlot}>
+              <Feather name={selectedDept.icon ?? 'layers'} size={20} color={C.text} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedDept.label}
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
 
-          {/* Work Mode */}
+          {/* 3. Work Mode Dropdown Bar (Height 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2.workMode}
           </Text>
-          <SegmentedTabs
-            tabs={modes}
-            activeTab={workMode}
-            onTabChange={setWorkMode}
-            size="sm"
-          />
+          <TouchableOpacity
+            style={[styles.dropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setModePickerOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barIconSlot}>
+              <Feather name={selectedMode.icon ?? 'map-pin'} size={20} color={C.text} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedMode.label}
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
 
-          {/* Compensation Model */}
+          {/* 4. Compensation Model Dropdown Bar (Height 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2?.salaryLabel ?? 'COMPENSATION & SALARY'}
           </Text>
-          <SegmentedTabs
-            tabs={compensationOptions}
-            activeTab={compensationType}
-            onTabChange={setCompensationType}
-            size="sm"
-          />
+          <TouchableOpacity
+            style={[styles.dropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setCompPickerOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barIconSlot}>
+              <Feather name={selectedComp.icon ?? 'dollar-sign'} size={20} color={C.text} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedComp.label}
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
 
           {compensationType === 'paid' && (
             <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
+              style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 8 }]}
               value={salary}
               onChangeText={setSalary}
-              placeholder="e.g. ৳8,000 / month or ৳5,000 / subject"
+              placeholder="e.g. ৳8,000 / month or ৳5,000 / course"
               placeholderTextColor={C.textMuted}
             />
           )}
 
-          {/* Location & Dhaka Area Presets */}
+          {/* 5. Location / Area Dropdown Bar (Height 58dp) */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2.location}
           </Text>
+          <TouchableOpacity
+            style={[styles.dropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setLocationPickerOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barIconSlot}>
+              <Feather name="map-pin" size={20} color={C.text} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {areaName || location || 'Select Area'}
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 8 }]}
             value={location}
             onChangeText={setLocation}
-            placeholder={t.jobs2.locationPlaceholder}
+            placeholder="Specific road, building, or room (optional)"
             placeholderTextColor={C.textMuted}
           />
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 6, paddingTop: 8 }}>
-            {DHAKA_AREAS.slice(0, 8).map(area => {
-              const on = areaName === area;
-              return (
-                <TouchableOpacity
-                  key={area}
-                  style={[
-                    styles.areaPresetChip,
-                    on
-                      ? { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.25)' : '#e0f4f0', borderColor: SectorColors.jobs }
-                      : { backgroundColor: C.surface2, borderColor: 'transparent' },
-                  ]}
-                  onPress={() => {
-                    setAreaName(area);
-                    if (!location || location === 'Dhaka') setLocation(area);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.areaPresetTxt, { color: on ? SectorColors.jobs : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                    {area}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Minimum Semester & Alumni Referral */}
-          <View style={styles.row}>
-            <View style={styles.halfField}>
-              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-                {t.jobs2?.minSemester ?? 'MIN SEMESTER'}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                {[1, 3, 5, 7].map(sem => {
-                  const on = minSemester === sem;
-                  return (
-                    <TouchableOpacity
-                      key={sem}
-                      style={[
-                        styles.semChip,
-                        on
-                          ? { backgroundColor: C.brand, borderColor: C.brand }
-                          : { backgroundColor: C.surface, borderColor: C.border },
-                      ]}
-                      onPress={() => setMinSemester(sem)}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={[styles.semChipTxt, { color: on ? '#fff' : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                        {semesterChipLabel(sem, t.jobs2?.anySemester ?? 'Any')}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+          {/* 6. Minimum Semester Dropdown Bar (Height 58dp) */}
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.jobs2?.minSemester ?? 'MINIMUM SEMESTER REQUIREMENT'}
+          </Text>
+          <TouchableOpacity
+            style={[styles.dropdownBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => setSemPickerOpen(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barIconSlot}>
+              <Feather name={selectedSem.icon ?? 'award'} size={20} color={C.text} />
             </View>
-
-            <View style={styles.halfField}>
-              <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold, marginTop: 0 }]}>
-                {t.jobs2?.alumniReferral ?? 'ALUMNI REFERRAL'}
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {selectedSem.label}
               </Text>
-              <TouchableOpacity
-                style={[
-                  styles.alumniToggle,
-                  isAlumniReferral
-                    ? { backgroundColor: isDark ? 'rgba(234, 179, 8, 0.2)' : '#fef9c3', borderColor: Accent.gold }
-                    : { backgroundColor: C.surface, borderColor: C.border },
-                ]}
-                onPress={() => setIsAlumniReferral(!isAlumniReferral)}
-                activeOpacity={0.75}
-              >
-                <Feather name="award" size={15} color={isAlumniReferral ? Accent.gold : C.textMuted} />
-                <Text style={[styles.alumniToggleTxt, { color: isAlumniReferral ? Accent.gold : C.text2, fontFamily: FontFamily.jakartaBold }]}>
-                  {isAlumniReferral ? (t.jobs2?.alumniReferral ?? 'Alumni Job') : 'Regular'}
-                </Text>
-              </TouchableOpacity>
             </View>
-          </View>
+            <Feather name="chevron-down" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+
+          {/* Alumni Referral Bar (Height 58dp) */}
+          <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+            {t.jobs2?.alumniReferral ?? 'ALUMNI REFERRAL OPPORTUNITY'}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.dropdownBar58,
+              isAlumniReferral
+                ? { backgroundColor: isDark ? 'rgba(234, 179, 8, 0.15)' : '#fef9c3', borderColor: Accent.gold }
+                : { backgroundColor: C.surface, borderColor: C.border },
+            ]}
+            onPress={() => setIsAlumniReferral(!isAlumniReferral)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.barIconSlot}>
+              <Feather name="award" size={20} color={isAlumniReferral ? Accent.gold : C.text} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.barTxt, { color: isAlumniReferral ? Accent.gold : C.text, fontFamily: FontFamily.jakartaBold }]}>
+                {isAlumniReferral ? 'Alumni Referral Priority Active' : 'Regular Opportunity'}
+              </Text>
+            </View>
+            <View style={[styles.alumniCheckPill, { backgroundColor: isAlumniReferral ? Accent.gold : C.surface2 }]}>
+              <Feather name={isAlumniReferral ? 'check' : 'plus'} size={14} color={isAlumniReferral ? '#fff' : C.textMuted} />
+            </View>
+          </TouchableOpacity>
 
           {/* Skills Required */}
           <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
             {t.jobs2?.requiredSkills ?? 'SKILLS / SUBJECTS (COMMA SEPARATED)'}
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={skillsInput}
             onChangeText={setSkillsInput}
             placeholder="e.g. React, Node.js, Git OR Class 9-10 Math, Physics"
@@ -525,7 +629,7 @@ export function JobPostScreen({ navigation }: any) {
             {t.jobs2.deadlineLabel} (YYYY-MM-DD)
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={deadline}
             onChangeText={setDeadline}
             placeholder="YYYY-MM-DD"
@@ -571,7 +675,7 @@ export function JobPostScreen({ navigation }: any) {
             {t.jobs2.requirements}
           </Text>
           <TextInput
-            style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={requirements}
             onChangeText={setRequirements}
             placeholder={t.jobs2.requirementsPlaceholder}
@@ -591,7 +695,7 @@ export function JobPostScreen({ navigation }: any) {
 
           {applyMethod === 'email' && (
             <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
+              style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
               placeholder={t.jobs2.applyEmailPlaceholder}
@@ -603,7 +707,7 @@ export function JobPostScreen({ navigation }: any) {
 
           {applyMethod === 'link' && (
             <TextInput
-              style={[styles.input, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
+              style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
               placeholder={t.jobs2.applyLinkPlaceholder}
@@ -672,6 +776,72 @@ export function JobPostScreen({ navigation }: any) {
           <View style={{ height: 36 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Dropdown Modal Sheets (All with 58dp Option Rows) */}
+      <PickerModalSheet
+        visible={typePickerOpen}
+        title="Select Job Type"
+        options={JOB_TYPE_OPTIONS}
+        selectedId={jobType}
+        onSelect={(id) => setJobType(id as Job['job_type'])}
+        onClose={() => setTypePickerOpen(false)}
+        C={C}
+      />
+
+      <PickerModalSheet
+        visible={deptPickerOpen}
+        title="Select Target Department"
+        options={DEPT_OPTIONS}
+        selectedId={departmentCode}
+        onSelect={(id) => setDepartmentCode(id as string)}
+        onClose={() => setDeptPickerOpen(false)}
+        C={C}
+      />
+
+      <PickerModalSheet
+        visible={modePickerOpen}
+        title="Select Work Mode"
+        options={WORK_MODE_OPTIONS}
+        selectedId={workMode}
+        onSelect={(id) => setWorkMode(id as Job['work_mode'])}
+        onClose={() => setModePickerOpen(false)}
+        C={C}
+      />
+
+      <PickerModalSheet
+        visible={compPickerOpen}
+        title="Select Compensation Model"
+        options={COMPENSATION_OPTIONS}
+        selectedId={compensationType}
+        onSelect={(id) => setCompensationType(id as NonNullable<Job['compensation_type']>)}
+        onClose={() => setCompPickerOpen(false)}
+        C={C}
+      />
+
+      <PickerModalSheet
+        visible={locationPickerOpen}
+        title="Select Location / Area"
+        options={AREA_OPTIONS}
+        selectedId={areaName}
+        onSelect={(id) => {
+          setAreaName(id as string);
+          if (!location || location === 'Mirpur (Near BUBT)' || location === 'Dhaka') {
+            setLocation(id as string);
+          }
+        }}
+        onClose={() => setLocationPickerOpen(false)}
+        C={C}
+      />
+
+      <PickerModalSheet
+        visible={semPickerOpen}
+        title="Select Minimum Semester"
+        options={SEMESTER_OPTIONS}
+        selectedId={minSemester}
+        onSelect={(id) => setMinSemester(id as number)}
+        onClose={() => setSemPickerOpen(false)}
+        C={C}
+      />
     </SafeAreaView>
   );
 }
@@ -684,22 +854,6 @@ const styles = StyleSheet.create({
   postAsChip: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 20, borderWidth: 1 } as ViewStyle,
   postAsChipTxt: { fontSize: 13 } as any,
 
-  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as ViewStyle,
-  typeGridChip: { width: '31%', minWidth: 95, flexGrow: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, borderWidth: 1 } as ViewStyle,
-  typeGridTxt: { fontSize: 12.5 } as any,
-
-  deptChip: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 18, borderWidth: 1 } as ViewStyle,
-  deptChipTxt: { fontSize: 12 } as any,
-
-  areaPresetChip: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 14, borderWidth: 1 } as ViewStyle,
-  areaPresetTxt: { fontSize: 11.5 } as any,
-
-  semChip: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10, borderWidth: 1 } as ViewStyle,
-  semChipTxt: { fontSize: 12 } as any,
-
-  alumniToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 38, marginTop: 4, borderRadius: 10, borderWidth: 1 } as ViewStyle,
-  alumniToggleTxt: { fontSize: 12 } as any,
-
   label: {
     fontSize: 11,
     letterSpacing: 0.7,
@@ -708,21 +862,42 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   } as any,
 
-  input: {
-    height: 48,
-    borderRadius: 12,
+  input54: {
+    height: 54,
+    borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 14,
     fontSize: 14.5,
   } as any,
 
-  row: {
+  dropdownBar58: {
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1,
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 18,
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
   } as ViewStyle,
 
-  halfField: { flex: 1 } as ViewStyle,
+  barIconSlot: {
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+
+  barTxt: {
+    fontSize: 14.5,
+  } as TextStyle,
+
+  alumniCheckPill: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
 
   presetRow: {
     flexDirection: 'row',
@@ -743,7 +918,7 @@ const styles = StyleSheet.create({
 
   textarea: {
     minHeight: 100,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     padding: 13,
     fontSize: 14.5,
@@ -770,7 +945,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
   } as ViewStyle,
 
@@ -790,8 +965,58 @@ const styles = StyleSheet.create({
     gap: 9,
     height: 58,
     borderRadius: 16,
-    marginTop: 22,
+    marginTop: 24,
   } as ViewStyle,
 
   submitText: { fontSize: 15 } as any,
+
+  // Picker Bottom Sheet Modal Styles
+  pickerBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  } as ViewStyle,
+
+  pickerOverlay: {
+    flex: 1,
+  } as ViewStyle,
+
+  pickerSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderWidth: 1,
+  } as ViewStyle,
+
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(150,150,150,0.4)',
+    alignSelf: 'center',
+    marginBottom: 10,
+  } as ViewStyle,
+
+  pickerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginBottom: 14,
+  } as ViewStyle,
+
+  pickerTitle: {
+    fontSize: 16.5,
+  } as TextStyle,
+
+  optionBar58: {
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
+  } as ViewStyle,
 });

@@ -381,27 +381,6 @@ export function ExploreScreen({ navigation }: any) {
                   borderLeftColor: C.brand,
                 },
               ]}
-              onPress={() => navigation.navigate('JobsModerate')}
-              activeOpacity={0.7}
-            >
-              <SectorIcon sector="jobs" size="md" dark={isDark} />
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.jobs?.moderation ?? 'Job Moderation'}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: C.brand,
-                },
-              ]}
               onPress={() => navigation.navigate('ManageAnnouncements')}
               activeOpacity={0.7}
             >

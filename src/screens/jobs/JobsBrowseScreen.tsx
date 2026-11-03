@@ -230,6 +230,7 @@ export function JobsBrowseScreen({ navigation }: any) {
   const isAdmin = profile?.role === 'admin';
 
   const [canPost, setCanPost] = useState(isAdmin);
+  const [reportedCount, setReportedCount] = useState(0);
   const [mainTab, setMainTab] = useState<MainTab>('browse');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
@@ -248,10 +249,17 @@ export function JobsBrowseScreen({ navigation }: any) {
   const [deptModalVisible, setDeptModalVisible] = useState(false);
 
   const load = useCallback(async () => {
-    const [jobsRes, appsRes] = await Promise.all([
+    const [jobsRes, appsRes, reportsRes] = await Promise.all([
       getJobsWithCache(user?.id),
       user?.id ? getStudentApplications(user.id) : Promise.resolve({ applications: [] }),
+      isAdmin
+        ? supabase.from('job_reports').select('id', { count: 'exact', head: true })
+        : Promise.resolve({ count: 0 }),
     ]);
+
+    if (isAdmin && reportsRes.count != null) {
+      setReportedCount(reportsRes.count);
+    }
 
     if (jobsRes.error && jobsRes.jobs.length === 0) {
       setLoadFailed(true);
@@ -442,16 +450,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         onBack={() => navigation.goBack()}
         rightSlot={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {isAdmin && (
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() => navigation.navigate('JobsModerate')}
-                activeOpacity={0.75}
-              >
-                <Feather name="shield" size={22} color={C.text} />
-              </TouchableOpacity>
-            )}
-            {canPost && (
+            {!isAdmin && canPost && (
               <TouchableOpacity
                 style={styles.iconBtn}
                 onPress={() => navigation.navigate('JobPost')}
@@ -465,14 +464,61 @@ export function JobsBrowseScreen({ navigation }: any) {
         }
       />
 
-      {/* 1. Primary Segmented Tabs (Browse | Saved | Applied) - Height 58dp */}
-      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
-        <SegmentedTabs
-          tabs={mainTabs}
-          activeTab={mainTab}
-          onTabChange={setMainTab}
-        />
-      </View>
+      {/* Admin Action Bars (Height 58dp) vs Student Primary Segmented Tabs */}
+      {isAdmin ? (
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, gap: 8 }}>
+          {/* 58dp Bar 1: Post an Opportunity */}
+          <TouchableOpacity
+            style={[styles.adminBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => navigation.navigate('JobPost')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.adminBarIconSlot}>
+              <Feather name="plus-circle" size={20} color={C.brand} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Post an Opportunity
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+
+          {/* 58dp Bar 2: Job Moderation */}
+          <TouchableOpacity
+            style={[styles.adminBar58, { backgroundColor: C.surface, borderColor: C.border }]}
+            onPress={() => navigation.navigate('JobsModerate')}
+            activeOpacity={0.75}
+          >
+            <View style={styles.adminBarIconSlot}>
+              <Feather name="shield" size={20} color={C.text} />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
+              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Job Moderation
+              </Text>
+            </View>
+            {reportedCount > 0 ? (
+              <View style={[styles.reportBadge, { backgroundColor: C.dangerBg }]}>
+                <Feather name="flag" size={11} color={C.danger} />
+                <Text style={[styles.reportBadgeTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                  {reportedCount} reported
+                </Text>
+              </View>
+            ) : null}
+            <Feather name="chevron-right" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        /* 1. Primary Segmented Tabs for Students (Browse | Saved | Applied) - Height 58dp */
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
+          <SegmentedTabs
+            tabs={mainTabs}
+            activeTab={mainTab}
+            onTabChange={setMainTab}
+          />
+        </View>
+      )}
 
       {/* 2. Structured 50/50 Dual Control Bar (Job Type & Department) - Height 58dp */}
       {mainTab !== 'my_applications' && (
@@ -1377,4 +1423,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   } as ViewStyle,
   resetFilterBtnTxt: { fontSize: 13 } as TextStyle,
+
+  adminBar58: {
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 12,
+  } as ViewStyle,
+  adminBarIconSlot: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  adminBarTitle: {
+    fontSize: 14.5,
+  } as TextStyle,
+  reportBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginRight: 2,
+  } as ViewStyle,
+  reportBadgeTxt: {
+    fontSize: 11,
+  } as TextStyle,
 });

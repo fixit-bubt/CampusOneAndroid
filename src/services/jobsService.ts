@@ -212,6 +212,19 @@ export async function adminRestoreJobListing(code: string): Promise<{ success: b
 }
 
 /**
+ * Admin dismisses all filed moderation reports for a listing without removing it.
+ */
+export async function adminDismissJobReports(jobId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.from('job_reports').delete().eq('job_id', jobId);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e?.message ?? 'Failed to dismiss reports' };
+  }
+}
+
+/**
  * User files a moderation report for a listing.
  */
 export async function reportJobListing(
