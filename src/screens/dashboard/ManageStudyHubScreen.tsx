@@ -78,6 +78,20 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
+function getDeptIcon(name: string): keyof typeof Feather.glyphMap {
+  const s = (name ?? '').toLowerCase();
+  if (s.includes('computer') || s.includes('cse') || s.includes('data')) return 'cpu';
+  if (s.includes('electrical') || s.includes('eee') || s.includes('electronic')) return 'zap';
+  if (s.includes('business') || s.includes('bba') || s.includes('accounting') || s.includes('management') || s.includes('marketing') || s.includes('finance')) return 'briefcase';
+  if (s.includes('civil')) return 'tool';
+  if (s.includes('textile')) return 'layers';
+  if (s.includes('english')) return 'book-open';
+  if (s.includes('law') || s.includes('justice')) return 'shield';
+  if (s.includes('economics')) return 'trending-up';
+  if (s.includes('math') || s.includes('statistic')) return 'grid';
+  return 'award';
+}
+
 const shortDept = (name = '') => name.replace(/^Department of\s+/i, '');
 
 export function ManageStudyHubScreen({ navigation }: any) {
@@ -538,7 +552,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
               activeOpacity={0.75}
             >
               <View style={styles.iconSlot32}>
-                <Feather name="layers" size={20} color={C.brand} />
+                <Feather name={getDeptIcon(activeDept?.name ?? '')} size={32} color={C.text} />
               </View>
               <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                 <Text
@@ -1066,7 +1080,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
                     activeOpacity={0.75}
                   >
                     <View style={styles.iconSlot32}>
-                      <Feather name="book-open" size={18} color={isSelected ? C.brand : C.textMuted} />
+                      <Feather name={getDeptIcon(d.name)} size={32} color={isSelected ? C.brand : C.text} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
                       <Text
@@ -1142,12 +1156,12 @@ const styles = StyleSheet.create({
 
   deptPickerItem: {
     height: 58,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 12,
+    paddingHorizontal: 16,
+    gap: 14,
   } as ViewStyle,
   deptPickerItemTxt: {
     fontSize: 14,

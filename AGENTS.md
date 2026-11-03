@@ -3032,3 +3032,27 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 46s.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
   - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
+
+---
+
+### 72. Study Hub Admin Panel Department Icon Standardization & 58dp Picker Items (`ManageStudyHubScreen.tsx`) (/code-review-and-quality, /performance-optimization)
+- **Department-Specific Vector Icon Architecture:**
+  - Implemented `getDeptIcon(name: string)` mapping university departments to their dedicated human-crafted vector icons:
+    - Computer Science & Engineering -> `cpu`
+    - Electrical & Electronic Engineering -> `zap`
+    - Business Administration / Accounting / Finance -> `briefcase`
+    - Civil Engineering -> `tool`
+    - Textile Engineering -> `layers`
+    - English -> `book-open`
+    - Law & Justice -> `shield`
+    - Economics -> `trending-up`
+    - Mathematics & Statistics -> `grid`
+- **Universal 32dp Monochrome Icon Standard:**
+  - Replaced small generic icons (size 18/20) with standard 32dp (`size={32}`) monochrome vector icons across both the 58dp department dropdown bar and the modal picker items.
+- **58dp Department Picker Item Architecture:**
+  - Standardized picker items in the "Select Department" bottom sheet modal to strict 58dp bars (`height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 16`, `gap: 14`).
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 23s.
+  - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+  - Remote Git Sync: Pushed to `https://github.com/fixit-bubt/CampusOneAndroid.git` on `main` with 0 AI footprint.
