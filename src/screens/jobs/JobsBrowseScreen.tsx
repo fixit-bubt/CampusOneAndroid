@@ -473,15 +473,15 @@ export function JobsBrowseScreen({ navigation }: any) {
             onPress={() => navigation.navigate('JobPost')}
             activeOpacity={0.75}
           >
-            <View style={styles.adminBarIconSlot}>
-              <Feather name="plus-circle" size={28} color={C.brand} />
-            </View>
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flex: 1 }}>
+              <Feather name="plus-circle" size={32} color={C.brand} />
+              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 15 }]}>
                 Post an Opportunity
               </Text>
             </View>
-            <Feather name="chevron-right" size={20} color={C.textMuted} />
+            <View style={{ position: 'absolute', right: 16 }}>
+              <Feather name="chevron-right" size={20} color={C.textMuted} />
+            </View>
           </TouchableOpacity>
 
           {/* 58dp Bar 2: Job Moderation */}
@@ -490,23 +490,23 @@ export function JobsBrowseScreen({ navigation }: any) {
             onPress={() => navigation.navigate('JobsModerate')}
             activeOpacity={0.75}
           >
-            <View style={styles.adminBarIconSlot}>
-              <Feather name="shield" size={28} color={C.text} />
-            </View>
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flex: 1 }}>
+              <Feather name="shield" size={32} color={C.text} />
+              <Text style={[styles.adminBarTitle, { color: C.text, fontFamily: FontFamily.jakartaBold, fontSize: 15 }]}>
                 Job Moderation
               </Text>
             </View>
-            {reportedCount > 0 ? (
-              <View style={[styles.reportBadge, { backgroundColor: C.dangerBg }]}>
-                <Feather name="flag" size={12} color={C.danger} />
-                <Text style={[styles.reportBadgeTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                  {reportedCount} reported
-                </Text>
-              </View>
-            ) : null}
-            <Feather name="chevron-right" size={20} color={C.textMuted} />
+            <View style={{ position: 'absolute', right: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {reportedCount > 0 ? (
+                <View style={[styles.reportBadge, { backgroundColor: C.dangerBg }]}>
+                  <Feather name="flag" size={11} color={C.danger} />
+                  <Text style={[styles.reportBadgeTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                    {reportedCount}
+                  </Text>
+                </View>
+              ) : null}
+              <Feather name="chevron-right" size={20} color={C.textMuted} />
+            </View>
           </TouchableOpacity>
         </View>
       ) : (
@@ -618,7 +618,7 @@ export function JobsBrowseScreen({ navigation }: any) {
             <Icon name="search" size={24} color={C.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium } as TextStyle]}
-              placeholder=""
+              placeholder={t.jobs?.searchPlaceholder ?? 'Search opportunities...'}
               placeholderTextColor={C.textMuted}
               value={query}
               onChangeText={setQuery}

@@ -810,7 +810,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 style={[styles.modalInput, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={applicantPhone}
                 onChangeText={setApplicantPhone}
-                placeholder=""
+                placeholder="Contact phone number"
                 placeholderTextColor={C.textMuted}
                 keyboardType="phone-pad"
               />
@@ -857,7 +857,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 style={[styles.modalTextarea, { backgroundColor: C.bg, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
                 value={applicantCoverNote}
                 onChangeText={setApplicantCoverNote}
-                placeholder=""
+                placeholder="Short introduction (optional)"
                 placeholderTextColor={C.textMuted}
                 multiline
                 textAlignVertical="top"

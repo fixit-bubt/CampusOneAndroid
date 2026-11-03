@@ -3707,3 +3707,35 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with local release keystore.
   - Direct ADB Deployment: Streamed install (`adb install -r`) and launched on physical phone `8734b5da`.
+
+
+---
+
+### 100. Jobs Minimal Balanced Placeholders, Centered 58dp Action Bars & Tier 1 32dp Vector Icons (`JobsBrowseScreen.tsx`, `JobPostScreen.tsx`, `JobDetailScreen.tsx`, `JobsModerateScreen.tsx`, `i18n/en.ts`, `i18n/bn.ts`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Dead-Centered Text Alignment on 58dp Action Bars (`JobsBrowseScreen.tsx`):**
+  - Updated "Post an Opportunity" and "Job Moderation" 58dp admin action bars to center the leading vector icon and bold label together in the mathematical middle of the screen (`flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, flex: 1`).
+  - Positioned navigation chevrons and report count pills to the far right edge (`position: 'absolute', right: 16`), delivering symmetrical, modern action bar ergonomics.
+- **Universal Tier 1 32dp Monochrome Vector Icons:**
+  - Upgraded action bar icons in `JobsBrowseScreen.tsx` (`plus-circle`, `shield`) to full **32dp** (`size={32}`).
+  - Upgraded all 7 dropdown trigger bars in `JobPostScreen.tsx` (Job Type, Target Department, Work Mode, Compensation Model, Location & Area, Minimum Semester, Alumni Referral) from 28dp to full **32dp** (`size={32}`) within their 36dp transparent slots, complying strictly with the anti-clutter vector standard.
+- **Minimal, Professional Placeholders (Anti-Void Standard):**
+  - Replaced empty void inputs (`placeholder=""`) with clean, concise 2-3 word descriptive noun hints without tutorial noise or tech-stack bias:
+    - Company: `Company or organization` / `প্রতিষ্ঠান বা সংস্থার নাম`
+    - Role: `Job title or role` / `পদের নাম বা পদবী`
+    - Skills: `Required skills or subjects` / `যোগ্যতা বা শর্তাবলী`
+    - Deadline: `YYYY-MM-DD`
+    - Description: `Job description and duties` / `চাকরির বিবরণ ও দায়িত্ব`
+    - Requirements: `Qualifications or criteria`
+    - Apply Email: `Application email address` / `আবেদনের ইমেইল ঠিকানা`
+    - Apply Link: `Application link (URL)` / `আবেদনের ওয়েব লিঙ্ক (URL)`
+    - Search: `Search opportunities...` / `চাকরি খুঁজুন...`
+    - Location Modal Input: `Building, room, or road (optional)` / `ভবন, রুম বা সড়ক (ঐচ্ছিক)`
+    - Compensation Modal Input: `Amount or pay details` / `বেতন বা ভাতার পরিমাণ`
+    - Application Phone & Note: `Contact phone number`, `Short introduction (optional)`
+    - Moderation Reason: `Reason for removal (optional)` / `কারণ (পোস্টকারীকে দেখানো হবে)`
+- **Bilingual i18n Synchronization (`en.ts`, `bn.ts`):**
+  - Fully synchronized all new minimal placeholder tokens across English and Bengali dictionary tables.
+- **Verification Evidence:**
+  - TypeScript Compilation: 0 errors (`npx tsc --noEmit`).
+  - Local Native Release Build: `assembleRelease` completed successfully (`BUILD SUCCESSFUL in 49s`).
+  - Physical Android Device Deployment: Installed and launched via ADB on USB phone `8734b5da` (`Performing Streamed Install -> Success`).

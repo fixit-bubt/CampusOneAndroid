@@ -208,6 +208,7 @@ function CompensationModalSheet({
   onClose,
   C,
 }: CompensationModalProps) {
+  const t = useT();
   const [draftType, setDraftType] = useState(selectedType);
   const [draftSalary, setDraftSalary] = useState(salary);
 
@@ -296,7 +297,7 @@ function CompensationModalSheet({
                   ]}
                   value={draftSalary}
                   onChangeText={setDraftSalary}
-                  placeholder=""
+                  placeholder={t.jobs2?.salaryPlaceholder ?? 'Amount or pay details'}
                   placeholderTextColor={C.textMuted}
                 />
               </View>
@@ -339,6 +340,7 @@ function LocationModalSheet({
   onClose,
   C,
 }: LocationModalProps) {
+  const t = useT();
   const [draftArea, setDraftArea] = useState(selectedArea);
   const [draftSpecific, setDraftSpecific] = useState(specificLocation);
 
@@ -426,7 +428,7 @@ function LocationModalSheet({
                 ]}
                 value={draftSpecific}
                 onChangeText={setDraftSpecific}
-                placeholder=""
+                placeholder={t.jobs2?.locationPlaceholder ?? 'Building, room, or road (optional)'}
                 placeholderTextColor={C.textMuted}
               />
             </View>
@@ -695,7 +697,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={company}
             onChangeText={setCompany}
-            placeholder=""
+            placeholder={t.jobs2?.companyPlaceholder ?? 'Company or organization'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -707,7 +709,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={role}
             onChangeText={setRole}
-            placeholder=""
+            placeholder={t.jobs2?.roleTitlePlaceholder ?? 'Job title or role'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -721,7 +723,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedType.icon ?? 'briefcase'} size={28} color={C.text} />
+              <Feather name={selectedType.icon ?? 'briefcase'} size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -741,7 +743,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedDept.icon ?? 'layers'} size={28} color={C.text} />
+              <Feather name={selectedDept.icon ?? 'layers'} size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -761,7 +763,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedMode.icon ?? 'map-pin'} size={28} color={C.text} />
+              <Feather name={selectedMode.icon ?? 'map-pin'} size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -781,7 +783,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedComp.icon ?? 'dollar-sign'} size={28} color={C.text} />
+              <Feather name={selectedComp.icon ?? 'dollar-sign'} size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -801,7 +803,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name="map-pin" size={28} color={C.text} />
+              <Feather name="map-pin" size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
@@ -823,7 +825,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name={selectedSem.icon ?? 'award'} size={28} color={C.text} />
+              <Feather name={selectedSem.icon ?? 'award'} size={32} color={C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -848,7 +850,7 @@ export function JobPostScreen({ navigation }: any) {
             activeOpacity={0.75}
           >
             <View style={styles.barIconSlot}>
-              <Feather name="award" size={28} color={isAlumniReferral ? Accent.gold : C.text} />
+              <Feather name="award" size={32} color={isAlumniReferral ? Accent.gold : C.text} />
             </View>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={[styles.barTxt, { color: isAlumniReferral ? Accent.gold : C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -868,7 +870,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={skillsInput}
             onChangeText={setSkillsInput}
-            placeholder=""
+            placeholder={t.jobs2?.requirementsPlaceholder ?? 'Required skills or subjects'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -880,7 +882,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={deadline}
             onChangeText={setDeadline}
-            placeholder=""
+            placeholder={t.jobs2?.deadlinePlaceholder ?? 'YYYY-MM-DD'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -892,7 +894,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.textarea, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={desc}
             onChangeText={setDesc}
-            placeholder=""
+            placeholder={t.jobs2?.descriptionPlaceholder ?? 'Job description and duties'}
             placeholderTextColor={C.textMuted}
             multiline
             textAlignVertical="top"
@@ -906,7 +908,7 @@ export function JobPostScreen({ navigation }: any) {
             style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium }]}
             value={requirements}
             onChangeText={setRequirements}
-            placeholder=""
+            placeholder={t.jobs2?.requirementsPlaceholder ?? 'Qualifications or criteria'}
             placeholderTextColor={C.textMuted}
           />
 
@@ -925,7 +927,7 @@ export function JobPostScreen({ navigation }: any) {
               style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
-              placeholder=""
+              placeholder={t.jobs2?.applyEmailPlaceholder ?? 'Application email address'}
               placeholderTextColor={C.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -937,7 +939,7 @@ export function JobPostScreen({ navigation }: any) {
               style={[styles.input54, { backgroundColor: C.surface, borderColor: C.border, color: C.text, fontFamily: FontFamily.jakartaMedium, marginTop: 10 }]}
               value={applyValue}
               onChangeText={setApplyValue}
-              placeholder=""
+              placeholder={t.jobs2?.applyLinkPlaceholder ?? 'Application link (URL)'}
               placeholderTextColor={C.textMuted}
               autoCapitalize="none"
               keyboardType="url"
