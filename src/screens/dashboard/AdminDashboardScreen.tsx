@@ -91,14 +91,12 @@ interface AdminStats {
 type FilterTab = 'unassigned' | 'active' | 'done';
 
 const StatCard = memo(function StatCard({
-  icon,
   num,
   label,
   isSelected,
   onPress,
   C,
 }: {
-  icon: string;
   num: number;
   label: string;
   isSelected?: boolean;
@@ -119,11 +117,13 @@ const StatCard = memo(function StatCard({
       disabled={!onPress}
       activeOpacity={0.75}
     >
-      <View style={styles.statIcon}>
-        <Icon name={icon} size={32} color={isSelected ? C.brand : C.text} />
-      </View>
       <Text style={[styles.statNum, { color: isSelected ? C.brand : C.text, fontFamily: FontFamily.jakartaExtraBold }]}>{num}</Text>
-      <Text style={[styles.statLabel, { color: isSelected ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+      <Text
+        style={[styles.statLabel, { color: isSelected ? C.brand : C.textMuted, fontFamily: FontFamily.jakartaBold }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -524,7 +524,6 @@ export function AdminDashboardScreen({ navigation }: any) {
             {/* Interactive 3-Stat Counters: Tap to filter */}
             <View style={styles.statRow}>
               <StatCard
-                icon="userPlus"
                 num={stats.unassigned}
                 label={t.dash.statUnassigned}
                 isSelected={filterTab === 'unassigned'}
@@ -532,7 +531,6 @@ export function AdminDashboardScreen({ navigation }: any) {
                 C={C}
               />
               <StatCard
-                icon="pulse"
                 num={stats.active}
                 label={t.dash.statInProgress}
                 isSelected={filterTab === 'active'}
@@ -540,7 +538,6 @@ export function AdminDashboardScreen({ navigation }: any) {
                 C={C}
               />
               <StatCard
-                icon="check"
                 num={stats.resolved}
                 label={t.dash.statResolved}
                 isSelected={filterTab === 'done'}
@@ -731,7 +728,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   } as any,
 
-  // Balanced 3-Stat Counters Row
+  // Balanced 3-Stat Counters Row - Standard 58dp Metric Cards
   statRow: {
     flexDirection: 'row',
     gap: 10,
@@ -739,25 +736,21 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   statCard: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
+    height: 58,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 4,
-  } as ViewStyle,
-  statIcon: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    gap: 2,
   } as ViewStyle,
   statNum: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 18,
+    lineHeight: 22,
   } as any,
   statLabel: {
     fontSize: 11,
+    lineHeight: 14,
     textAlign: 'center',
   } as any,
 

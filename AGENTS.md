@@ -3054,9 +3054,10 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 - **Redesigned 58dp "Add Intake" Modal Architecture:**
   - Replaced cramped 46dp raw text inputs with standard 58dp input bars (`inputBar58`, `height: 58`, `borderRadius: 16`, `borderWidth: 1`, `paddingHorizontal: 14`).
   - Added clean top header with title and circular touch-friendly `X` close button (`sheetCloseBtn`).
-  - Added dedicated 58dp department context pill (`deptContextPill`) displaying the target department name alongside its custom vector icon (`cpu`, `tool`, `briefcase`, etc.).
-  - Added leading vector icons: `#` (`hash` in `C.brand`) for intake number and `calendar` (`C.textMuted`) for academic years.
+  - Added dedicated 58dp department context pill (`deptContextPill`, `height: 58`, `borderRadius: 16`, `gap: 14`, `paddingHorizontal: 16`) displaying the target department name alongside its custom **32dp monochrome** vector icon (`size={32}`, `color={C.text}`).
+  - Added large **28dp monochrome** vector icons: `#` (`hash` in `C.text`) for intake number and `calendar` (`C.text`) for academic years, completely eliminating colored/small icons.
   - Upgraded submit button to a full-width 58dp primary action button (`primaryBtn58`, `height: 58`, `borderRadius: 16`, `backgroundColor: C.brand`, centered `plus` icon and bold typography).
+  - **Android Keyboard Avoidance & Scroll Architecture:** Configured `KeyboardAvoidingView` with `behavior="padding"` and `statusBarTranslucent`, wrapping the form in a `<ScrollView keyboardShouldPersistTaps="handled">` with safe area insets padding, guaranteeing text inputs and buttons remain completely visible and scrollable when the Android soft keyboard appears.
 - **Verification Evidence:**
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Release APK: Locally compiled via Gradle (`assembleRelease`) with release keystore in 23s.

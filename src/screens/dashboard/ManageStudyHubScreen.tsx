@@ -5,7 +5,7 @@ import {
   Platform, type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../hooks/useTheme';
@@ -96,6 +96,7 @@ const shortDept = (name = '') => name.replace(/^Department of\s+/i, '');
 
 export function ManageStudyHubScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -825,10 +826,20 @@ export function ManageStudyHubScreen({ navigation }: any) {
       </ScrollView>
 
       {/* Add Intake Sheet */}
-      <Modal visible={addIntakeOpen} animationType="slide" transparent onRequestClose={() => setAddIntakeOpen(false)}>
-        <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Modal
+        visible={addIntakeOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setAddIntakeOpen(false)}
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior="padding"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setAddIntakeOpen(false)} />
-          <View style={[styles.sheet, { backgroundColor: C.surface }]}>
+          <View style={[styles.sheet, { backgroundColor: C.surface, maxHeight: '85%' }]}>
             <View style={[styles.sheetHandle, { backgroundColor: C.border }]} />
 
             {/* Header with Title and Close Button */}
@@ -841,86 +852,93 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 onPress={() => setAddIntakeOpen(false)}
                 activeOpacity={0.75}
               >
-                <Feather name="x" size={16} color={C.text} />
+                <Feather name="x" size={18} color={C.text} />
               </TouchableOpacity>
             </View>
 
-            {/* Department Context Pill */}
-            {activeDept && (
-              <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                <View style={styles.iconSlot32}>
-                  <Feather name={getDeptIcon(activeDept.name)} size={22} color={C.brand} />
-                </View>
-                <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
-                  <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                    DEPARTMENT
-                  </Text>
-                  <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                    {shortDept(activeDept.name)}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Intake Number Field */}
-            <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t.study2?.intakeNumber ?? 'INTAKE NUMBER'}
-            </Text>
-            <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <View style={styles.iconSlot32}>
-                <Feather name="hash" size={20} color={C.brand} />
-              </View>
-              <TextInput
-                style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                value={intakeNumInput}
-                onChangeText={val => setIntakeNumInput(val.replace(/\D/g, ''))}
-                keyboardType="numeric"
-                placeholder="e.g. 52"
-                placeholderTextColor={C.textMuted}
-              />
-            </View>
-
-            {/* Academic Years Field (Optional) */}
-            <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-              {t.study2?.yearsOptional ?? 'YEARS (OPTIONAL)'}
-            </Text>
-            <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <View style={styles.iconSlot32}>
-                <Feather name="calendar" size={19} color={C.textMuted} />
-              </View>
-              <TextInput
-                style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                value={intakeYearsInput}
-                onChangeText={setIntakeYearsInput}
-                placeholder="e.g. 2023 - 2027"
-                placeholderTextColor={C.textMuted}
-              />
-            </View>
-
-            {/* 58dp Primary Create Button */}
-            <TouchableOpacity
-              style={[
-                styles.primaryBtn58,
-                {
-                  backgroundColor: C.brand,
-                  opacity: intakeNumInput.trim() && !submittingIntake ? 1 : 0.6,
-                },
-              ]}
-              onPress={handleAddIntake}
-              disabled={!intakeNumInput.trim() || submittingIntake}
-              activeOpacity={0.8}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 12, 24) }}
             >
-              {submittingIntake ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Feather name="plus" size={18} color="#fff" />
-                  <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                    {t.study2?.addIntake ?? 'Add Intake'}
-                  </Text>
-                </>
+              {/* Department Context Pill */}
+              {activeDept && (
+                <View style={[styles.deptContextPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                  <View style={styles.iconSlot32}>
+                    <Feather name={getDeptIcon(activeDept.name)} size={32} color={C.text} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
+                    <Text style={[styles.deptContextLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                      DEPARTMENT
+                    </Text>
+                    <Text style={[styles.deptContextName, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {shortDept(activeDept.name)}
+                    </Text>
+                  </View>
+                </View>
               )}
-            </TouchableOpacity>
+
+              {/* Intake Number Field */}
+              <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.study2?.intakeNumber ?? 'INTAKE NUMBER'}
+              </Text>
+              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="hash" size={28} color={C.text} />
+                </View>
+                <TextInput
+                  style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+                  value={intakeNumInput}
+                  onChangeText={val => setIntakeNumInput(val.replace(/\D/g, ''))}
+                  keyboardType="numeric"
+                  placeholder="e.g. 52"
+                  placeholderTextColor={C.textMuted}
+                />
+              </View>
+
+              {/* Academic Years Field (Optional) */}
+              <Text style={[styles.modalFieldLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                {t.study2?.yearsOptional ?? 'YEARS (OPTIONAL)'}
+              </Text>
+              <View style={[styles.inputBar58, { backgroundColor: C.surface2, borderColor: C.border }]}>
+                <View style={styles.iconSlot32}>
+                  <Feather name="calendar" size={28} color={C.text} />
+                </View>
+                <TextInput
+                  style={[styles.inputBarTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+                  value={intakeYearsInput}
+                  onChangeText={setIntakeYearsInput}
+                  placeholder="e.g. 2023 - 2027"
+                  placeholderTextColor={C.textMuted}
+                />
+              </View>
+
+              {/* 58dp Primary Create Button */}
+              <TouchableOpacity
+                style={[
+                  styles.primaryBtn58,
+                  {
+                    backgroundColor: C.brand,
+                    opacity: intakeNumInput.trim() && !submittingIntake ? 1 : 0.6,
+                  },
+                ]}
+                onPress={handleAddIntake}
+                disabled={!intakeNumInput.trim() || submittingIntake}
+                activeOpacity={0.8}
+              >
+                {submittingIntake ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Feather name="plus" size={20} color="#fff" />
+                    <Text style={[styles.primaryBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+                      {t.study2?.addIntake ?? 'Add Intake'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -1456,8 +1474,8 @@ const styles = StyleSheet.create({
   deptContextPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 14,
+    gap: 14,
+    paddingHorizontal: 16,
     height: 58,
     borderRadius: 16,
     borderWidth: 1,
