@@ -1,3 +1,5 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { indexKey, listGap } from '../../components/ui/listHelpers';
 import { useState, useCallback, useMemo, memo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -250,6 +252,7 @@ const ReportCard = memo(function ReportCard({
 });
 
 export function StaffDashboardScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
@@ -396,7 +399,7 @@ export function StaffDashboardScreen({ navigation }: any) {
       />
 
       <FlatList
-        data={displayedReports}
+        data={ready ? displayedReports : []}
         keyExtractor={indexKey}
         ItemSeparatorComponent={listGap(12)}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -480,8 +483,7 @@ export function StaffDashboardScreen({ navigation }: any) {
             </View>
           </View>
         }
-        ListEmptyComponent={
-          loading && reports.length === 0 ? (
+        ListEmptyComponent={ready ? (loading && reports.length === 0 ? (
             <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="small" color={C.brand} />
             </View>
@@ -512,8 +514,7 @@ export function StaffDashboardScreen({ navigation }: any) {
                 {filterTab === 'resolved' ? 'No resolved tickets in this view.' : t.dash.noReportsAssigned}
               </Text>
             </View>
-          )
-        }
+          )) : <SkeletonList rows={5} />}
         ListFooterComponent={<View style={{ height: 24 }} />}
       />
     </View>

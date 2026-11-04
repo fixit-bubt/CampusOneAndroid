@@ -1,3 +1,5 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { indexKey, listGap } from '../../components/ui/listHelpers';
 import { useState, useCallback, useMemo, memo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -275,6 +277,7 @@ const ReportCard = memo(function ReportCard({
 });
 
 export function AdminDashboardScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
@@ -520,7 +523,7 @@ export function AdminDashboardScreen({ navigation }: any) {
       />
 
       <FlatList
-        data={displayedReports}
+        data={ready ? displayedReports : []}
         keyExtractor={indexKey}
         ItemSeparatorComponent={listGap(12)}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -622,8 +625,7 @@ export function AdminDashboardScreen({ navigation }: any) {
             </View>
           </View>
         }
-        ListEmptyComponent={
-          loading && reports.length === 0 ? (
+        ListEmptyComponent={ready ? (loading && reports.length === 0 ? (
             <View style={{ paddingVertical: 36, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="small" color={C.brand} />
             </View>
@@ -639,8 +641,7 @@ export function AdminDashboardScreen({ navigation }: any) {
                   : 'No records found under this filter.'}
               </Text>
             </View>
-          )
-        }
+          )) : <SkeletonList rows={5} />}
         ListFooterComponent={<View style={{ height: 24 }} />}
       />
 

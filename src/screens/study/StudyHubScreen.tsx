@@ -701,6 +701,11 @@ export function StudyHubScreen({ navigation }: any) {
     return () => clearTimeout(timer);
   }, [homeTab]);
   const [manageTab, setManageTab] = useState<ManageTab>('members');
+  const [manageReady, setManageReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setManageReady(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [mySection, setMySection] = useState<SectionRow | null>(null);
   const [sections, setSections] = useState<SectionRow[]>([]);
@@ -2256,8 +2261,7 @@ export function StudyHubScreen({ navigation }: any) {
           style={{ marginBottom: 14 }}
         />
 
-        {manageTab === 'members' ? (
-          <View>
+        <View style={manageTab === 'members' ? undefined : { display: 'none' }}>
             {/* Join Requests */}
             {joinReqs.length > 0 && (
               <>
@@ -2412,8 +2416,8 @@ export function StudyHubScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           </View>
-        ) : (
-          <View>
+        {(manageTab === 'settings' || manageReady) && (
+          <View style={manageTab === 'settings' ? undefined : { display: 'none' }}>
             {/* Join Code */}
             <CodeCard code={mySection.join_code ?? '-'} copied={copied} onCopy={copyCode} C={C} />
 

@@ -595,8 +595,8 @@ export function AnnouncementsScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-        initialNumToRender={8}
-        maxToRenderPerBatch={10}
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
         windowSize={7}
         ListHeaderComponent={
           <View style={{ marginBottom: 6 }}>

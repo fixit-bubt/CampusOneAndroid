@@ -1,3 +1,5 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
@@ -139,6 +141,7 @@ const CandidateCard = React.memo(function CandidateCard({
 });
 
 export function ManageBannerScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const { profile } = useAuth();
   const toast = useToast();
@@ -833,20 +836,18 @@ export function ManageBannerScreen({ navigation }: any) {
       />
 
       <FlatList
-        data={filteredCandidates}
+        data={ready ? filteredCandidates : []}
         renderItem={renderCandidateItem}
         keyExtractor={keyExtractor}
         ListHeaderComponent={ListHeader}
-        ListEmptyComponent={
-          filteredCandidates.length === 0 ? (
+        ListEmptyComponent={ready ? (filteredCandidates.length === 0 ? (
             <View style={[styles.emptyPoolCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Feather name="info" size={20} color={C.textMuted} />
               <Text style={[styles.emptyPoolTxt, { color: C.textMuted }]}>
                 No candidate items found matching your filter.
               </Text>
             </View>
-          ) : null
-        }
+          ) : null) : <SkeletonList rows={5} />}
         ListFooterComponent={<View style={{ height: 40 }} />}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}

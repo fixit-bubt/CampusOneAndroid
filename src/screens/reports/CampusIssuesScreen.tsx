@@ -93,6 +93,12 @@ function timeAgo(iso: string): string {
 
 export function CampusIssuesScreen({ navigation, route }: any) {
   const ready = useAfterInteractions();
+  const [minePaneReady, setMinePaneReady] = useState(false);
+  useEffect(() => {
+    if (!ready) return;
+    const timer = setTimeout(() => setMinePaneReady(true), 700);
+    return () => clearTimeout(timer);
+  }, [ready]);
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -264,15 +270,6 @@ export function CampusIssuesScreen({ navigation, route }: any) {
 
   const listHeader = (
     <View>
-      {/* 58dp Dual Tab Switcher - 0ms Instant Toggle */}
-      <View style={styles.tabContainer}>
-        <SegmentedTabs<TabKey>
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={tab => setActiveTab(tab)}
-        />
-      </View>
-
       {/* 58dp Full-Width Action Bar */}
       <View style={styles.actionContainer}>
         <TouchableOpacity
@@ -530,13 +527,17 @@ export function CampusIssuesScreen({ navigation, route }: any) {
       />
 
       {/* Feed Container with Natural Native Scrolling */}
-      {activeTab === 'Campus' ? (
-        /* CAMPUS BOARD FEED */
+      <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 4 }}>
+        <SegmentedTabs<TabKey> tabs={tabs} activeTab={activeTab} onTabChange={tab => setActiveTab(tab)} />
+      </View>
+
+      {/* Both feeds stay mounted; switching tabs only shows or hides one */}
+      <View style={[styles.feedPane, activeTab === 'Campus' ? null : styles.hidden]}>
         <FlatList
           data={ready ? filteredCampus : []}
           keyExtractor={(_r, index) => String(index)}
-          initialNumToRender={6}
-          maxToRenderPerBatch={8}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={styles.listContent}
@@ -584,13 +585,14 @@ export function CampusIssuesScreen({ navigation, route }: any) {
           renderItem={renderCampusItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
-      ) : (
-        /* MY REPORTS FEED */
+      </View>
+      {(activeTab === 'Mine' || minePaneReady) && (
+        <View style={[styles.feedPane, activeTab === 'Mine' ? null : styles.hidden]}>
         <FlatList
           data={ready ? filteredMine : []}
           keyExtractor={(_r, index) => String(index)}
-          initialNumToRender={6}
-          maxToRenderPerBatch={8}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={styles.listContent}
@@ -638,6 +640,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
           renderItem={renderMyItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
+        </View>
       )}
 
       {/* 58dp Status Dropdown Bottom Sheet Modal */}
@@ -726,6 +729,8 @@ export function CampusIssuesScreen({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
+  feedPane: { flex: 1 } as ViewStyle,
+  hidden: { display: 'none' } as ViewStyle,
   safe: {
     flex: 1,
   } as ViewStyle,

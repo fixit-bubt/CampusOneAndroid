@@ -64,6 +64,11 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const [club, setClub] = useState<Club | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<Tab>('feed');
+  const [membersReady, setMembersReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setMembersReady(true), 700);
+    return () => clearTimeout(timer);
+  }, []);
   const [posts, setPosts] = useState<Post[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [myRole, setMyRole] = useState<string | null>(null);
@@ -332,8 +337,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
         </View>
 
         {/* Tab content */}
-        {tab === 'feed' ? (
-          <View style={styles.feedList}>
+        <View style={[styles.feedList, tab === 'feed' ? null : { display: 'none' }]}>
             {posts.length === 0 ? (
               <View style={styles.empty}>
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -379,8 +383,8 @@ export function ClubDetailScreen({ route, navigation }: any) {
               ))
             )}
           </View>
-        ) : (
-          <View style={[styles.membersCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+        {(tab === 'members' || membersReady) && (
+          <View style={[styles.membersCard, { backgroundColor: C.surface, borderColor: C.border }, tab === 'members' ? null : { display: 'none' }]}>
             {members.map((m, i) => {
               const isLead = m.role === 'president' || m.role === 'vp';
               return (

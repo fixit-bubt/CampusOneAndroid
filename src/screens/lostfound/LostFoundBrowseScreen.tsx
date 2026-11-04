@@ -1,3 +1,4 @@
+import { useProgressiveCount } from '../../hooks/useProgressiveCount';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useCallback, useRef, useMemo } from 'react';
 import {
@@ -259,6 +260,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
       })
       .filter(matchesSearch);
   }, [items, filter, statusFilter, categoryFilter, matchesSearch, user?.id]);
+  const filteredListCount = useProgressiveCount(filteredList.length);
 
   // Count active non-default filters
   const appliedFiltersCount = useMemo(() => {
@@ -470,7 +472,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
             <SkeletonList rows={5} />
           ) : (
           <View style={styles.list}>
-            {filteredList.map((item, idx) => (
+            {filteredList.slice(0, filteredListCount).map((item, idx) => (
               <LFCard key={idx}
                 item={item}
                 C={C}

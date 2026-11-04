@@ -2,6 +2,7 @@
 // study_books. Questions carry an exam tag and a CR-verifiable badge; books can
 // be external links or files. Files open in an in-app browser tab; members can
 // bookmark, search, filter by exam, and sort. CRs verify/delete entries.
+import { useProgressiveCount } from '../../hooks/useProgressiveCount';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
@@ -452,6 +453,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
         : (b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0)
     );
   }, [lists, tab, query, examFilter, batchFilter, sort]);
+  const tabFilesCount = useProgressiveCount(tabFiles.length);
 
   if (!course) {
     return (
@@ -703,7 +705,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
               <Feather name="inbox" size={32} color={C.textMuted} />
               <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{emptyMsg}</Text>
             </View>
-          ) : tabFiles.map((f, idx) => {
+          ) : tabFiles.slice(0, tabFilesCount).map((f, idx) => {
             const isLink = !!f.url && !f.storage_path;
             const sizeStr = f.size_bytes ? formatFileSize(f.size_bytes) : null;
             const tagText = tab === 'materials' ? f.type : tab === 'questions' ? f.exam : tab === 'books' ? f.kind : 'Slide';

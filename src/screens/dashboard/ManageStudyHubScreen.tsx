@@ -114,6 +114,11 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState<'catalogue' | 'pending'>('catalogue');
+  const [reqReady, setReqReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setReqReady(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [activeDeptId, setActiveDeptId] = useState<string>('');
   const [deptPickerVisible, setDeptPickerVisible] = useState(false);
@@ -909,8 +914,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
             onTabChange={setActiveTab}
           />
         </View>
-        {activeTab === 'catalogue' ? (
-          <>
+        <View style={activeTab === 'catalogue' ? undefined : { display: 'none' }}>
             {/* 58dp Department Dropdown Bar */}
             <TouchableOpacity
               style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}
@@ -993,10 +997,9 @@ export function ManageStudyHubScreen({ navigation }: any) {
                 })}
               </View>
             )}
-          </>
-        ) : (
-          /* Pending Requests Tab */
-          <View>
+          </View>
+        {(activeTab !== 'catalogue' || reqReady) && (
+          <View style={activeTab !== 'catalogue' ? undefined : { display: 'none' }}>
             {pendingRequests.length === 0 ? (
               <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border, marginTop: 12 }]}>
                 <Feather name="check-circle" size={32} color={C.textMuted} />

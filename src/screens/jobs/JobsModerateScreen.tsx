@@ -1,6 +1,8 @@
 // Jobs moderation - admin-only.
 // Reported tab: live jobs with reports, most-reported first, with direct
 // dismiss and remove actions. Removed tab: withdrawn/removed jobs with restore.
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { indexKey, listGap } from '../../components/ui/listHelpers';
 import { useState, useCallback, useMemo, memo } from 'react';
 import {
@@ -163,6 +165,7 @@ const JobModerateCard = memo(function JobModerateCard({
 });
 
 export function JobsModerateScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C } = useTheme();
   const { profile } = useAuth();
   const t = useT();
@@ -314,7 +317,7 @@ export function JobsModerateScreen({ navigation }: any) {
       <SubBar title={t.jobs.moderation} onBack={() => navigation.goBack()} />
 
       <FlatList
-        data={list}
+        data={ready ? list : []}
         keyExtractor={indexKey}
         ItemSeparatorComponent={listGap(10)}
         renderItem={renderJobItem}
@@ -336,8 +339,7 @@ export function JobsModerateScreen({ navigation }: any) {
             />
           </View>
         }
-        ListEmptyComponent={
-          loading && jobs.length === 0 ? (
+        ListEmptyComponent={ready ? (loading && jobs.length === 0 ? (
             <ActivityIndicator style={{ marginTop: 50 }} color={C.brand} />
           ) : (
             <View style={styles.empty}>
@@ -346,8 +348,7 @@ export function JobsModerateScreen({ navigation }: any) {
                 {tab === 'reported' ? t.jobs.noReported : t.jobs.noRemoved}
               </Text>
             </View>
-          )
-        }
+          )) : <SkeletonList rows={5} />}
         ListFooterComponent={<View style={{ height: 16 }} />}
       />
 

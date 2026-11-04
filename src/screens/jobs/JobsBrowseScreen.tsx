@@ -1,3 +1,4 @@
+import { useProgressiveCount } from '../../hooks/useProgressiveCount';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -402,6 +403,7 @@ export function JobsBrowseScreen({ navigation }: any) {
     }
     return activeJobs;
   }, [deptFiltered, savedIds, mainTab, includeExpired, typeFilter, activeJobs]);
+  const browseListCount = useProgressiveCount(browseList.length);
 
   const currentTypeConfig = useMemo(() => {
     return JOB_TYPE_CONFIGS.find(o => o.id === typeFilter) ?? JOB_TYPE_CONFIGS[0];
@@ -793,7 +795,7 @@ export function JobsBrowseScreen({ navigation }: any) {
           ) : (
           /* Browse & Saved List View */
           <View style={styles.list}>
-            {browseList.map((j, idx) => {
+            {browseList.slice(0, browseListCount).map((j, idx) => {
               const status = computeJobStatus(j);
               const s = jobStatusTone(C, t, status, isDark);
               const isSaved = savedIds.has(j.id);

@@ -1,3 +1,4 @@
+import { useProgressiveCount } from '../../hooks/useProgressiveCount';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo, useRef } from 'react';
@@ -220,6 +221,7 @@ export function RidesScreen({ navigation }: any) {
 
     return list;
   }, [rides, tab, searchQuery, user?.id, requestedIds]);
+  const filteredRidesCount = useProgressiveCount(filteredRides.length);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -320,7 +322,7 @@ export function RidesScreen({ navigation }: any) {
             <SkeletonList rows={5} />
           ) : (
           <View style={styles.list}>
-            {filteredRides.map((r, idx) => {
+            {filteredRides.slice(0, filteredRidesCount).map((r, idx) => {
               const isOwnRide = r.driver_id === user?.id;
               const isRequested = requestedIds.has(r.id);
               const isPassengerRequest = r.post_type === 'request';

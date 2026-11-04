@@ -1,6 +1,8 @@
 // Staff's full assigned-report list with search and status filters. Status
 // changes happen on the detail screen; this is the searchable overview the
 // dashboard links into.
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { indexKey, listGap } from '../../components/ui/listHelpers';
 import { useState, useCallback, useMemo, memo } from 'react';
 import {
@@ -108,6 +110,7 @@ const AssignedReportCard = memo(function AssignedReportCard({
 });
 
 export function AssignedToMeScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C } = useTheme();
   const { user } = useAuth();
   const t = useT();
@@ -207,7 +210,7 @@ export function AssignedToMeScreen({ navigation }: any) {
       <SubBar title={t.reports.assignedTitle} onBack={() => navigation.goBack()} />
 
       <FlatList
-        data={filtered}
+        data={ready ? filtered : []}
         keyExtractor={indexKey}
         ItemSeparatorComponent={listGap(11)}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -271,8 +274,7 @@ export function AssignedToMeScreen({ navigation }: any) {
             </View>
           </View>
         }
-        ListEmptyComponent={
-          loading && reports.length === 0 ? (
+        ListEmptyComponent={ready ? (loading && reports.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="small" color={C.brand} />
             </View>
@@ -303,8 +305,7 @@ export function AssignedToMeScreen({ navigation }: any) {
                 {t.reports.noReportsBody}
               </Text>
             </View>
-          )
-        }
+          )) : <SkeletonList rows={5} />}
         ListFooterComponent={<View style={{ height: 20 }} />}
       />
     </SafeAreaView>

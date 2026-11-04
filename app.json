@@ -44,6 +44,15 @@
       "@sentry/react-native",
       "expo-asset",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow CampusOne to access your location to select commute and campus points."

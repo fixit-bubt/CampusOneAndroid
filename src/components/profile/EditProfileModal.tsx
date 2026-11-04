@@ -128,6 +128,12 @@ export function EditProfileModal({
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState<EditTab>('academic');
+  const [paneReady, setPaneReady] = useState(false);
+  useEffect(() => {
+    if (!visible) { setPaneReady(false); return; }
+    const timer = setTimeout(() => setPaneReady(true), 600);
+    return () => clearTimeout(timer);
+  }, [visible]);
   const [activePicker, setActivePicker] = useState<PickerType>(null);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -367,8 +373,8 @@ export function EditProfileModal({
             contentContainerStyle={styles.formScroll}
           >
             {/* ═══════════ TAB 1: ACADEMIC ═══════════ */}
-            {activeTab === 'academic' && (
-              <View>
+            {(activeTab === 'academic' || paneReady) && (
+              <View style={activeTab === 'academic' ? undefined : { display: 'none' }}>
                 {/* Photo & Avatar Picker Row */}
                 <View style={[styles.avatarPickCard, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.avatarWrap}>
@@ -607,8 +613,8 @@ export function EditProfileModal({
             )}
 
             {/* ═══════════ TAB 2: CONTACT ═══════════ */}
-            {activeTab === 'contact' && (
-              <View>
+            {(activeTab === 'contact' || paneReady) && (
+              <View style={activeTab === 'contact' ? undefined : { display: 'none' }}>
                 {/* Contact Phone (58dp) */}
                 <Text style={[styles.inputLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                   CONTACT PHONE
@@ -723,8 +729,8 @@ export function EditProfileModal({
             )}
 
             {/* ═══════════ TAB 3: PRIVACY ═══════════ */}
-            {activeTab === 'privacy' && (
-              <View style={{ gap: 10, marginTop: 4 }}>
+            {(activeTab === 'privacy' || paneReady) && (
+              <View style={[{ gap: 10, marginTop: 4 }, activeTab === 'privacy' ? null : { display: 'none' }]}>
                 {/* 1. Student Directory (58dp) */}
                 <View style={[styles.privacyBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.privacyBarLeft}>

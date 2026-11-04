@@ -447,9 +447,9 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
         </View>
       ) : (
         <View style={styles.listCol}>
-          {filtered.slice(0, 6).map((item) => (
+          {filtered.slice(0, 6).map((item, idx) => (
             <TouchableOpacity
-              key={item.id}
+              key={idx}
               activeOpacity={0.75}
               onPress={() => {
                 if (item.category === 'Notice' && item.rawId) {

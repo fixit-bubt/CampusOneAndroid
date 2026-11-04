@@ -1,3 +1,5 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -214,6 +216,7 @@ const StudentAssignCard = React.memo(function StudentAssignCard({
 });
 
 export function ManageClubsScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
@@ -546,12 +549,11 @@ export function ManageClubsScreen({ navigation }: any) {
         </View>
       ) : (
         <FlatList
-          data={filteredClubs}
+          data={ready ? filteredClubs : []}
           renderItem={renderClubItem}
           keyExtractor={clubKeyExtractor}
           ListHeaderComponent={ListHeader}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+          ListEmptyComponent={ready ? (<View style={styles.emptyContainer}>
               <Icon name="clubs" size={32} color={C.textMuted} />
               <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                 {searchQuery ? 'No clubs match your search' : t.clubs.noClubs}
@@ -567,8 +569,7 @@ export function ManageClubsScreen({ navigation }: any) {
                   </Text>
                 </TouchableOpacity>
               ) : null}
-            </View>
-          }
+            </View>) : <SkeletonList rows={5} />}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}

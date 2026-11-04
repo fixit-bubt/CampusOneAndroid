@@ -1,3 +1,4 @@
+import { useProgressiveCount } from '../../hooks/useProgressiveCount';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo, useEffect } from 'react';
@@ -453,6 +454,7 @@ export function MedicalScreen({ navigation }: any) {
       return true;
     });
   }, [doctors, searchQuery, selectedFilter, isAdmin]);
+  const filteredDoctorsCount = useProgressiveCount(filteredDoctors.length);
 
   function openEditModal(d: Doctor) {
     setEditModalDoc(d);
@@ -793,7 +795,7 @@ export function MedicalScreen({ navigation }: any) {
             <SkeletonList rows={5} />
           ) : (
               <View style={styles.doctorList}>
-                {filteredDoctors.map((doc, idx) => {
+                {filteredDoctors.slice(0, filteredDoctorsCount).map((doc, idx) => {
                   const duty = getDoctorDuty(doc, C, t);
                   const iconCfg = getDoctorIconConfig(doc, isDark);
 

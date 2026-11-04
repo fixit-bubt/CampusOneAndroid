@@ -1,3 +1,4 @@
+import { useProgressiveCount } from '../../hooks/useProgressiveCount';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
@@ -594,6 +595,7 @@ export function BloodScreen({ route, navigation }: any) {
       return matchesGroup && matchesArea && matchesQuery;
     });
   }, [requests, groupFilter, areaFilter, searchQuery]);
+  const filteredRequestsCount = useProgressiveCount(filteredRequests.length);
 
   // Memoize filtered donors
   const filteredDonors = useMemo(() => {
@@ -615,6 +617,7 @@ export function BloodScreen({ route, navigation }: any) {
       return matchesGroup && matchesArea && matchesQuery;
     });
   }, [donors, groupFilter, areaFilter, searchQuery]);
+  const filteredDonorsCount = useProgressiveCount(filteredDonors.length);
 
   // Memoize request groups
   const requestGroups = useMemo(() => {
@@ -883,7 +886,7 @@ export function BloodScreen({ route, navigation }: any) {
                 )}
               </View>
             ) : (
-              filteredRequests.map((r, idx) => {
+              filteredRequests.slice(0, filteredRequestsCount).map((r, idx) => {
                 const meta = parseBloodRequestMeta(r.patient, r.hospital, r.units);
                 const pledgeCount = (r as any).pledge_count || 0;
                 const unitsLeft = Math.max(0, meta.unitCount - pledgeCount);
@@ -1266,7 +1269,7 @@ export function BloodScreen({ route, navigation }: any) {
               </View>
             ) : (
               <View style={styles.list}>
-                {filteredDonors.map((d, idx) => (
+                {filteredDonors.slice(0, filteredDonorsCount).map((d, idx) => (
                   <DonorCardItem key={idx}
                     d={d}
                     isMe={d.user_id === user?.id}
