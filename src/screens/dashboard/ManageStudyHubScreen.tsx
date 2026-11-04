@@ -660,6 +660,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
         >
           {/* 1. 58dp Join Code Bar with 1-Tap Copy */}
           <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}>
@@ -797,6 +799,8 @@ export function ManageStudyHubScreen({ navigation }: any) {
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

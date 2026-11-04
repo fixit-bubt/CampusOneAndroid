@@ -537,7 +537,12 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
 
       {/* ──────────────── STEP 1: ROUTINE TYPES (TWO 72-SIZE BARS) ──────────────── */}
       {step === 'types' && (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.heroBlock}>
             <Text style={[styles.heroHeading, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
               Academic Timetables
@@ -692,7 +697,12 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
 
       {/* ──────────────── STEP 3: DEPARTMENT OPTIONS (ALL vs CHOOSE - TWO 72-SIZE BARS) ──────────────── */}
       {step === 'options' && (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Active Department Banner */}
           <View style={[styles.deptHeroCard, { backgroundColor: C.surface, borderColor: C.border }]}>
             <View style={styles.barIconBox}>
@@ -777,7 +787,12 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
 
       {/* ──────────────── STEP 4A: ALL (FULL DEPARTMENT PDF SHOWCASE & DOWNLOADS) ──────────────── */}
       {step === 'all' && (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
           {activePdf ? (
             <View style={[styles.masterHeroDocCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               {/* Header Badge */}
@@ -960,7 +975,12 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
 
       {/* ──────────────── STEP 4B: CHOOSE (INTAKE & SECTION TABS & TIMETABLE) ──────────────── */}
       {step === 'choose' && (
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Two Tabs at the Top: Intake & Section */}
           <View style={[styles.tabBarContainer, { backgroundColor: C.surface, borderColor: C.border }]}>
             <TouchableOpacity

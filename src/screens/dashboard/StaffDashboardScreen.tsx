@@ -411,6 +411,8 @@ export function StaffDashboardScreen({ navigation }: any) {
         keyExtractor={keyExtractor}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
         ItemSeparatorComponent={Separator}
         renderItem={renderItem}

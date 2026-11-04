@@ -456,6 +456,7 @@ export function MessageThread({ route, navigation }: any) {
               keyExtractor={m => m.id}
               contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingVertical: 12 }}
               showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
               renderItem={renderBubbleItem}
               onEndReached={() => { if (!searching && hasMore) loadOlder(); }}
