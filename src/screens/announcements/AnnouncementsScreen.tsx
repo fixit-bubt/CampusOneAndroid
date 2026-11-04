@@ -45,6 +45,8 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d`;
 }
 
+const CardSeparator = () => <View style={{ height: 10 }} />;
+
 const AnnouncementCard = memo(function AnnouncementCard({
   a,
   C,
@@ -567,7 +569,7 @@ export function AnnouncementsScreen({ navigation }: any) {
       {/* Main Announcements Virtualized List with Natural Native Scrolling */}
       <FlatList
         data={displayedItems}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(_item, index) => String(index)}
         renderItem={renderCard}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -577,8 +579,7 @@ export function AnnouncementsScreen({ navigation }: any) {
         initialNumToRender={8}
         maxToRenderPerBatch={10}
         windowSize={7}
-        removeClippedSubviews={Platform.OS === 'android'}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ItemSeparatorComponent={CardSeparator}
         ListHeaderComponent={
           <View style={{ marginBottom: 6 }}>
             <OfflineBanner visible={isOffline} onRetry={load} />

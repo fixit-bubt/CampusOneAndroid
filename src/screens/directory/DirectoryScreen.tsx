@@ -595,7 +595,7 @@ export function DirectoryScreen({ route, navigation }: any) {
       ) : (
         <FlatList
           data={filteredStudents}
-          keyExtractor={s => s.id}
+          keyExtractor={(_s, index) => String(index)}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={7}

@@ -614,7 +614,7 @@ export function MarketScreen({ navigation }: any) {
 
       <FlatList
         data={filteredListings}
-        keyExtractor={item => item.id}
+        keyExtractor={(_item, index) => String(index)}
         renderItem={renderItem}
         numColumns={2}
         initialNumToRender={6}

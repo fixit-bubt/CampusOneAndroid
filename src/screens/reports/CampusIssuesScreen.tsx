@@ -531,7 +531,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
         /* CAMPUS BOARD FEED */
         <FlatList
           data={filteredCampus}
-          keyExtractor={r => r.id}
+          keyExtractor={(_r, index) => String(index)}
           initialNumToRender={8}
           maxToRenderPerBatch={8}
           windowSize={5}
@@ -587,7 +587,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
         /* MY REPORTS FEED */
         <FlatList
           data={filteredMine}
-          keyExtractor={r => r.id}
+          keyExtractor={(_r, index) => String(index)}
           initialNumToRender={8}
           maxToRenderPerBatch={8}
           windowSize={5}
