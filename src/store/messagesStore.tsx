@@ -383,12 +383,17 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
     return res.ok ? res.data : [];
   }, [myId]);
 
-  const value: MessagesValue = {
+  const value: MessagesValue = useMemo(() => ({
     messages, blocked, dmPartners, myClubs, mySections, loading, error,
     unreadByConv, totalUnread, isBlocked, threadMessages,
     send, edit, remove, block, unblock, markRead,
     loadConversation, fetchOlderMessages, search, reload,
-  };
+  }), [
+    messages, blocked, dmPartners, myClubs, mySections, loading, error,
+    unreadByConv, totalUnread, isBlocked, threadMessages,
+    send, edit, remove, block, unblock, markRead,
+    loadConversation, fetchOlderMessages, search, reload,
+  ]);
 
   return <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>;
 }

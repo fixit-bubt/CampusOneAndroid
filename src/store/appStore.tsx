@@ -1,6 +1,6 @@
 // App-wide UI preferences (theme + language), persisted on-device so they
 // survive restarts. Defaults: device color scheme, English.
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 
 export type Lang = 'en' | 'bn';
@@ -54,24 +54,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  function toggleTheme() {
+  const toggleTheme = useCallback(() => {
     setIsDark(d => {
       const next = !d;
       storage.setItem(KEY_THEME, String(next)).catch(() => {});
       return next;
     });
-  }
+  }, []);
 
-  function toggleLang() {
+  const toggleLang = useCallback(() => {
     setLang(l => {
       const next: Lang = l === 'en' ? 'bn' : 'en';
       storage.setItem(KEY_LANG, next).catch(() => {});
       return next;
     });
-  }
+  }, []);
+
+  const value = useMemo(
+    () => ({ isDark, toggleTheme, lang, toggleLang }),
+    [isDark, toggleTheme, lang, toggleLang],
+  );
 
   return (
-    <AppContext.Provider value={{ isDark, toggleTheme, lang, toggleLang }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
