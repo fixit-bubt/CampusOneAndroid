@@ -1,3 +1,5 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
@@ -49,6 +51,7 @@ const CATEGORIES: CategoryMeta[] = [
 ];
 
 export function MarketScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
@@ -613,7 +616,7 @@ export function MarketScreen({ navigation }: any) {
       <SubBar title={t.market2.marketplace} onBack={() => navigation.goBack()} />
 
       <FlatList
-        data={filteredListings}
+        data={ready ? filteredListings : []}
         keyExtractor={(_item, index) => String(index)}
         renderItem={renderItem}
         numColumns={2}
@@ -630,8 +633,7 @@ export function MarketScreen({ navigation }: any) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={MARKET_COLOR} />
         }
         ListHeaderComponent={listHeader}
-        ListEmptyComponent={
-          loading && listings.length === 0 ? (
+        ListEmptyComponent={ready ? (loading && listings.length === 0 ? (
             <View style={[styles.centerBox, { paddingVertical: 48 }]}>
               <ActivityIndicator size="large" color={MARKET_COLOR} />
             </View>
@@ -689,8 +691,7 @@ export function MarketScreen({ navigation }: any) {
                 </>
               )}
             </View>
-          )
-        }
+          )) : <SkeletonList rows={5} />}
       />
 
       {/* 7. Category Bottom Sheet Modal (Exact Match to Directory Screen) */}

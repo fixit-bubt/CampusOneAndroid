@@ -1,3 +1,6 @@
+import { padToPool } from '../../components/ui/pooledList';
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -57,6 +60,7 @@ function formatDepartureLabel(dateStr: string, timeStr: string, t: any): string 
 }
 
 export function RidesScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const t = useT();
   const { user } = useAuth();
@@ -313,9 +317,11 @@ export function RidesScreen({ navigation }: any) {
               </TouchableOpacity>
             )}
           </View>
-        ) : (
+        ) : !ready ? (
+            <SkeletonList rows={5} />
+          ) : (
           <View style={styles.list}>
-            {filteredRides.map((r, idx) => {
+            {padToPool(filteredRides).map((r, idx) => {
               const isOwnRide = r.driver_id === user?.id;
               const isRequested = requestedIds.has(r.id);
               const isPassengerRequest = r.post_type === 'request';
@@ -325,8 +331,8 @@ export function RidesScreen({ navigation }: any) {
               const departureText = formatDepartureLabel(r.date, r.time, t);
 
               return (
+<View key={idx} style={idx >= filteredRides.length ? { display: 'none' } : undefined}>
                 <TouchableOpacity
-                  key={idx}
                   style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
                   onPress={() => navigation.navigate('RideDetail', { rideId: r.id })}
                   activeOpacity={0.85}
@@ -502,7 +508,8 @@ export function RidesScreen({ navigation }: any) {
                     </TouchableOpacity>
                   )}
                 </TouchableOpacity>
-              );
+              </View>
+);
             })}
           </View>
         )}

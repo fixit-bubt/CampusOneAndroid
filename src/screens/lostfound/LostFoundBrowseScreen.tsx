@@ -1,3 +1,5 @@
+import { padToPool } from '../../components/ui/pooledList';
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image,
@@ -113,6 +115,7 @@ function LFCard({
 }
 
 export function LostFoundBrowseScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const insets = useSafeAreaInsets();
@@ -464,18 +467,21 @@ export function LostFoundBrowseScreen({ navigation }: any) {
               </TouchableOpacity>
             ) : null}
           </View>
-        ) : (
+        ) : !ready ? (
+            <SkeletonList rows={5} />
+          ) : (
           <View style={styles.list}>
-            {filteredList.map((item, idx) => (
+            {padToPool(filteredList).map((item, idx) => (
+<View key={idx} style={idx >= filteredList.length ? { display: 'none' } : undefined}>
               <LFCard
-                key={idx}
                 item={item}
                 C={C}
                 isDark={isDark}
                 resolvedLabel={t.lf.statusResolved}
                 onPress={() => navigation.navigate('LostFoundDetail', { itemId: item.id })}
               />
-            ))}
+            </View>
+))}
           </View>
         )}
         <View style={{ height: 24 }} />

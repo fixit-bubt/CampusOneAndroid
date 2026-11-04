@@ -1,3 +1,4 @@
+import { usePdfViewer } from '../../components/pdf/usePdfViewer';
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
@@ -85,6 +86,7 @@ function formatSalary(stipend?: string | null): string {
 const REPORT_REASONS = ['Spam', 'Scam', 'Expired', 'Inappropriate'];
 
 export function JobDetailScreen({ route, navigation }: any) {
+  const pdfViewer = usePdfViewer();
   const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
@@ -645,7 +647,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                 style={[styles.actionBtn, { backgroundColor: C.brand }]}
                 onPress={() => {
                   if (job.apply_method === 'file' && job.apply_file_url) {
-                    openUrl(job.apply_file_url);
+                    pdfViewer.open(job.apply_file_url, job.title, 'Job Circular');
                   } else {
                     setApplicantPhone((profile as any)?.whatsapp || '');
                     setApplyModalOpen(true);
@@ -708,7 +710,7 @@ export function JobDetailScreen({ route, navigation }: any) {
             {job.apply_file_url && job.apply_method !== 'file' && (
               <TouchableOpacity
                 style={[styles.secondaryBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => openUrl(job.apply_file_url)}
+                onPress={() => pdfViewer.open(job.apply_file_url!, job.title, 'Job Circular')}
                 activeOpacity={0.85}
               >
                 <Feather name="file-text" size={20} color={SectorColors.jobs} />
@@ -940,7 +942,7 @@ export function JobDetailScreen({ route, navigation }: any) {
                         {app.resume_url && (
                           <TouchableOpacity
                             style={[styles.candidateActionBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-                            onPress={() => openUrl(app.resume_url!)}
+                            onPress={() => pdfViewer.open(app.resume_url!, 'Applicant Resume', 'Resume')}
                             activeOpacity={0.8}
                           >
                             <Feather name="file-text" size={14} color={SectorColors.jobs} />
@@ -1075,6 +1077,7 @@ export function JobDetailScreen({ route, navigation }: any) {
           </TouchableOpacity>
         </View>
       </Modal>
+          {pdfViewer.viewer}
     </SafeAreaView>
   );
 }

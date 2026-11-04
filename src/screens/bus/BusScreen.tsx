@@ -1,3 +1,4 @@
+import { usePdfViewer } from '../../components/pdf/usePdfViewer';
 import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
@@ -36,6 +37,7 @@ const BUS_COLOR = SectorColors.bus;
 const BUS_BG    = `${SectorColors.bus}1e`;
 
 export function BusScreen({ navigation }: any) {
+  const pdfViewer = usePdfViewer();
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -216,7 +218,7 @@ export function BusScreen({ navigation }: any) {
           busPdfUrl ? (
             <TouchableOpacity
               style={[styles.pdfBtn, { borderColor: C.border }]}
-              onPress={() => openUrl(busPdfUrl)}
+              onPress={() => pdfViewer.open(busPdfUrl, 'Bus Schedule', 'Bus Schedule')}
               accessibilityLabel={isBn ? 'অফিসিয়াল বাস রুট শিডিউল পিডিএফ' : 'Official Bus Schedule PDF'}
               activeOpacity={0.7}
             >
@@ -533,6 +535,7 @@ export function BusScreen({ navigation }: any) {
         currentPdfUrl={busPdfUrl}
         onPdfUrlUpdated={(newPdf) => setBusPdfUrl(newPdf)}
       />
+          {pdfViewer.viewer}
     </SafeAreaView>
   );
 }

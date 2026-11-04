@@ -16,7 +16,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../ui/Toast';
 import { FontFamily } from '../../theme';
 import { openUrl } from '../../utils/link';
-import { normalizePdfUrl, isRemotePdfUrl, buildGoogleDocsViewerUrl } from '../../utils/pdfUrl';
+import { normalizePdfUrl, isRemotePdfUrl } from '../../utils/pdfUrl';
 import {
   prepareViewerEnvironment,
   prepareDocumentForViewer,
@@ -67,12 +67,6 @@ export function CampusPdfViewerModal({
   // Normalized URI: maps relative or legacy Vercel links to live reachable endpoints
   const normalizedUrl = useMemo(() => normalizePdfUrl(fileUrl), [fileUrl]);
   const isRemote = useMemo(() => isRemotePdfUrl(normalizedUrl), [normalizedUrl]);
-
-  // Google Docs Viewer URL for remote web PDFs
-  const googleDocsViewerUrl = useMemo(() => {
-    if (!normalizedUrl || !isRemote) return null;
-    return buildGoogleDocsViewerUrl(normalizedUrl);
-  }, [normalizedUrl, isRemote]);
 
   // Synchronization refs for local pdf.js engine
   const webViewReadyRef = useRef(false);
@@ -126,16 +120,10 @@ export function CampusPdfViewerModal({
 
     } catch (err: any) {
       console.warn('PDF Viewer init error:', err);
-      // Fallback: If downloading to local cache failed and it's a remote URL, allow Google Docs streaming fallback
-      if (isRemote && googleDocsViewerUrl) {
-        setHtmlUri(null);
-        setLoadingMessage('Streaming document…');
-        return;
-      }
       setErrorMsg(err.message || 'Could not load official PDF document.');
       setLoading(false);
     }
-  }, [normalizedUrl, isRemote, googleDocsViewerUrl, fileName, category, isDark, sendDocumentToWebView]);
+  }, [normalizedUrl, fileName, category, isDark, sendDocumentToWebView]);
 
   useEffect(() => {
     if (visible && normalizedUrl) {
@@ -146,15 +134,6 @@ export function CampusPdfViewerModal({
       sentPayloadRef.current = null;
       initViewer();
 
-      let remoteSafetyTimer: any;
-      if (isRemote) {
-        remoteSafetyTimer = setTimeout(() => {
-          setLoading(false);
-        }, 6500);
-      }
-      return () => {
-        if (remoteSafetyTimer) clearTimeout(remoteSafetyTimer);
-      };
     } else {
       webViewReadyRef.current = false;
       docPayloadRef.current = null;
@@ -163,7 +142,7 @@ export function CampusPdfViewerModal({
       setLocalFileUri(null);
       setErrorMsg(null);
     }
-  }, [visible, normalizedUrl, isRemote, initViewer]);
+  }, [visible, normalizedUrl, initViewer]);
 
   // Handle messages from WebView engines (both local and remote)
   const handleMessage = useCallback((event: any) => {
@@ -248,85 +227,6 @@ export function CampusPdfViewerModal({
   const displaySubtitle = subtitle || category || 'BUBT Official Notice';
 
   // CSS injection to streamline Google Docs Viewer into an in-app reader
-  const googleDocsInjectedCss = `
-    (function() {
-      var notified = false;
-      function fitViewer() {
-        try {
-          var outer = document.querySelector('.ndfHFb-c4YZDc-cYSp0e-Oz6c3e, .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf');
-          if (outer) {
-            outer.style.setProperty('padding-left', '10px', 'important');
-            outer.style.setProperty('padding-right', '10px', 'important');
-            outer.style.setProperty('margin-left', 'auto', 'important');
-            outer.style.setProperty('margin-right', 'auto', 'important');
-            outer.style.setProperty('left', '0px', 'important');
-            outer.style.setProperty('width', '100%', 'important');
-            outer.style.setProperty('max-width', '100vw', 'important');
-            outer.style.setProperty('box-sizing', 'border-box', 'important');
-          }
-
-          var media = document.querySelectorAll('img, canvas');
-          var hasContent = false;
-          for (var i = 0; i < media.length; i++) {
-            var el = media[i];
-            if (el.tagName.toLowerCase() === 'img' || el.tagName.toLowerCase() === 'canvas') {
-              if ((el.tagName.toLowerCase() === 'img' && el.complete && el.naturalWidth > 0) ||
-                  (el.tagName.toLowerCase() === 'canvas' && el.width > 0)) {
-                hasContent = true;
-              }
-
-              el.style.setProperty('width', '100%', 'important');
-              el.style.setProperty('max-width', '100%', 'important');
-              el.style.setProperty('min-width', '0px', 'important');
-              el.style.setProperty('height', 'auto', 'important');
-              el.style.setProperty('margin', '8px auto 16px auto', 'important');
-              el.style.setProperty('display', 'block', 'important');
-              el.style.setProperty('box-sizing', 'border-box', 'important');
-
-              var p = el.parentElement;
-              for (var depth = 0; depth < 5 && p && p !== document.body; depth++) {
-                p.style.setProperty('width', '100%', 'important');
-                p.style.setProperty('max-width', '100%', 'important');
-                p.style.setProperty('min-width', '0px', 'important');
-                p.style.setProperty('left', '0px', 'important');
-                p.style.setProperty('right', '0px', 'important');
-                p.style.setProperty('margin-left', 'auto', 'important');
-                p.style.setProperty('margin-right', 'auto', 'important');
-                p.style.setProperty('padding-left', '0px', 'important');
-                p.style.setProperty('padding-right', '0px', 'important');
-                p.style.setProperty('box-sizing', 'border-box', 'important');
-                p = p.parentElement;
-              }
-            }
-          }
-
-          if (hasContent && !notified) {
-            notified = true;
-            renderedCount++;
-            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pdfRendered' }));
-            }
-            if (renderedCount >= 3 && fitTimer) {
-              clearInterval(fitTimer);
-              fitTimer = null;
-            }
-          }
-        } catch (e) {}
-      }
-      fitViewer();
-      var renderedCount = 0;
-      var pollCount = 0;
-      var fitTimer = setInterval(function() {
-        pollCount++;
-        fitViewer();
-        if (pollCount > 30 && fitTimer) {
-          clearInterval(fitTimer);
-          fitTimer = null;
-        }
-      }, 200);
-    })();
-    true;
-  `;
 
   return (
     <Modal
@@ -365,7 +265,7 @@ export function CampusPdfViewerModal({
 
             {/* Right Action Icons */}
             <View style={styles.headerActions}>
-              {!isRemote && totalPages > 1 && (
+              {totalPages > 1 && (
                 <TouchableOpacity
                   onPress={() => setPageSelectorVisible(true)}
                   hitSlop={10}
@@ -413,160 +313,7 @@ export function CampusPdfViewerModal({
             2. BODY: HYBRID STREAMING / NATIVE PDF CANVAS
            ========================================================================= */}
         <View style={styles.viewerWrapper}>
-          {/* Mode A: Remote Web PDF streaming fallback if local engine unavailable */}
-          {!htmlUri && isRemote && googleDocsViewerUrl && !errorMsg && (
-            <View style={StyleSheet.absoluteFill}>
-              <WebView
-                key={`gdocs-${normalizedUrl}`}
-                ref={webRef}
-                source={{ uri: googleDocsViewerUrl }}
-                style={[styles.webView, { backgroundColor: isDark ? '#000000' : '#f1f5f9', opacity: loading ? 0 : 1 }]}
-                originWhitelist={['*']}
-                javaScriptEnabled
-                domStorageEnabled
-                cacheEnabled={true}
-                cacheMode="LOAD_DEFAULT"
-                mixedContentMode="always"
-                setSupportMultipleWindows={false}
-                showsVerticalScrollIndicator={true}
-                showsHorizontalScrollIndicator={false}
-                textZoom={100}
-                onMessage={handleMessage}
-                injectedJavaScriptBeforeContentLoaded={`
-                  (function() {
-                    // 1. Responsive mobile viewport
-                    const meta = document.createElement('meta');
-                    meta.name = 'viewport';
-                    meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes';
-                    (document.head || document.documentElement).appendChild(meta);
-
-                    // 2. Critical anti-flash & layout CSS: Injected before first DOM paint to completely prevent Google toolbar/skin flicker
-                    const style = document.createElement('style');
-                    style.id = 'campusone-pdf-critical-css';
-                    style.innerHTML = \`
-                      *, *::before, *::after {
-                        box-sizing: border-box !important;
-                      }
-                      html, body {
-                        width: 100% !important;
-                        max-width: 100vw !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        overflow-x: hidden !important;
-                      }
-                      /* Eliminate Google Drive toolbar, buttons, pop-outs, and loading skins */
-                      .ndfHFb-c4YZDc-Wrql6b,
-                      .drive-viewer-toolstrip,
-                      div[role="toolbar"],
-                      .goog-inline-block,
-                      a[href*="docs.google.com"],
-                      .ndfHFb-c4YZDc-V67aGc,
-                      .ndfHFb-c4YZDc-cYSp0e-B7I4Od,
-                      .ndfHFb-c4YZDc-cYSp0e-DARUcf-hSRGPd,
-                      .ndfHFb-c4YZDc-EglORb-ge6pde,
-                      .ndfHFb-aZ2wEe,
-                      .ndfHFb-vyDMJf-aZ2wEe,
-                      .ndfHFb-c4YZDc-GSQQnc-LgbsSe,
-                      .ndfHFb-c4YZDc-to915-LgbsSe,
-                      .ndfHFb-c4YZDc-AHmuwe-wcotoc-zTETae {
-                        display: none !important;
-                        visibility: hidden !important;
-                        height: 0 !important;
-                        opacity: 0 !important;
-                        pointer-events: none !important;
-                      }
-                      /* Zero out top offset reserved for Google toolbar */
-                      .ndfHFb-c4YZDc-oKVyEf-s2gQvd,
-                      .ndfHFb-c4YZDc-HiaYvf-s2gQvd {
-                        top: 0 !important;
-                        padding-top: 0 !important;
-                      }
-                      .ndfHFb-c4YZDc-TJEFFc .ndfHFb-c4YZDc-cYSp0e-Oz6c3e {
-                        margin-top: 0 !important;
-                        margin-bottom: 20px !important;
-                      }
-                      /* All Google Docs layout containers: zero out offsets */
-                      .ndfHFb-c4YZDc,
-                      .ndfHFb-c4YZDc-s2gQvd,
-                      .ndfHFb-c4YZDc-cYSp0e,
-                      .ndfHFb-c4YZDc-cYSp0e-s2gQvd,
-                      .ndfHFb-c4YZDc-zTETae,
-                      .ndfHFb-c4YZDc-bC7sje,
-                      .ndfHFb-c4YZDc-c3fl2b,
-                      .ndfHFb-c4YZDc-cYSp0e-tJHJj,
-                      .ndfHFb-c4YZDc-bC7sje-tJHJj,
-                      .ndfHFb-c4YZDc-AWhBae,
-                      div[role="document"] {
-                        background: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        width: 100% !important;
-                        max-width: 100% !important;
-                        min-width: 0 !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        left: 0 !important;
-                        right: 0 !important;
-                        box-shadow: none !important;
-                        box-sizing: border-box !important;
-                      }
-                      /* Centered page list wrapper with safe side gutters */
-                      .ndfHFb-c4YZDc-cYSp0e-Oz6c3e,
-                      .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf {
-                        width: 100% !important;
-                        max-width: 100vw !important;
-                        margin: 0 auto !important;
-                        padding: 0 10px !important;
-                        left: 0 !important;
-                        right: 0 !important;
-                        box-sizing: border-box !important;
-                      }
-                      /* Page images & canvases: centered, natural aspect ratio, elegant card styling */
-                      img,
-                      canvas,
-                      .ndfHFb-c4YZDc-s2gQvd img,
-                      .ndfHFb-c4YZDc-bC7sje img,
-                      .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
-                      .ndfHFb-c4YZDc-c3fl2b img,
-                      .ndfHFb-c4YZDc-AWhBae img,
-                      .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf img {
-                        width: 100% !important;
-                        max-width: 100% !important;
-                        min-width: 0 !important;
-                        height: auto !important;
-                        margin: 8px auto 16px auto !important;
-                        padding: 0 !important;
-                        display: block !important;
-                        box-sizing: border-box !important;
-                        border-radius: 4px !important;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.12) !important;
-                      }
-                    \`;
-                    (document.head || document.documentElement).appendChild(style);
-                  })();
-                  true;
-                `}
-                scalesPageToFit={false}
-                startInLoadingState={true}
-                renderLoading={() => (
-                  <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f8fafc' }]}>
-                    <ActivityIndicator size="large" color={C.brand} />
-                    <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      Loading official PDF…
-                    </Text>
-                  </View>
-                )}
-                injectedJavaScript={googleDocsInjectedCss}
-                onError={() => {
-                  setErrorMsg('Could not stream document.');
-                  setLoading(false);
-                }}
-              />
-            </View>
-          )}
-
-          {/* Mode B: On-device local pdf.js engine (Primary for local & cached remote documents) */}
+          {/* On-device pdf.js engine for local and downloaded remote documents */}
           {htmlUri && !errorMsg && (
             <View style={StyleSheet.absoluteFill}>
               <WebView
@@ -605,13 +352,8 @@ export function CampusPdfViewerModal({
             <View style={[styles.centerOverlay, { backgroundColor: isDark ? '#000000' : '#f8fafc', zIndex: 10 }]}>
               <ActivityIndicator size="large" color={C.brand} />
               <Text style={[styles.loadingTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium, marginTop: 12 }]}>
-                {isRemote ? 'Loading official PDF…' : loadingMessage}
+                {loadingMessage}
               </Text>
-              {isRemote && (
-                <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 4, fontFamily: FontFamily.jakartaRegular, opacity: 0.8 }}>
-                  Preparing preview…
-                </Text>
-              )}
             </View>
           )}
 
@@ -655,7 +397,7 @@ export function CampusPdfViewerModal({
           )}
 
           {/* Page Pill for Local Multi-Page Documents */}
-          {!isRemote && !loading && !errorMsg && totalPages >= 1 && (
+          {!loading && !errorMsg && totalPages >= 1 && (
             <TouchableOpacity
               style={[
                 styles.floatingPagePill,
@@ -673,68 +415,67 @@ export function CampusPdfViewerModal({
         </View>
 
         {/* Quick Page Selector Modal for Local Documents */}
-        {!isRemote && (
-          <Modal
-            visible={pageSelectorVisible}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setPageSelectorVisible(false)}
+        <Modal
+          visible={pageSelectorVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPageSelectorVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.sheetOverlay}
+            activeOpacity={1}
+            onPress={() => setPageSelectorVisible(false)}
           >
-            <TouchableOpacity
-              style={styles.sheetOverlay}
-              activeOpacity={1}
-              onPress={() => setPageSelectorVisible(false)}
-            >
-              <View style={[styles.sheetContent, { backgroundColor: isDark ? '#18181b' : '#ffffff', paddingBottom: Math.max(insets.bottom, 20) }]}>
-                <View style={styles.sheetHeader}>
-                  <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                    Select Page
-                  </Text>
-                  <TouchableOpacity onPress={() => setPageSelectorVisible(false)} hitSlop={10}>
-                    <Feather name="x" size={20} color={C.textMuted} />
-                  </TouchableOpacity>
-                </View>
+            <View style={[styles.sheetContent, { backgroundColor: isDark ? '#18181b' : '#ffffff', paddingBottom: Math.max(insets.bottom, 20) }]}>
+              <View style={styles.sheetHeader}>
+                <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                  Select Page
+                </Text>
+                <TouchableOpacity onPress={() => setPageSelectorVisible(false)} hitSlop={10}>
+                  <Feather name="x" size={20} color={C.textMuted} />
+                </TouchableOpacity>
+              </View>
 
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pageChipsScroll}>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => {
-                    const isCurrent = num === currentPage;
-                    return (
-                      <TouchableOpacity
-                        key={num}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pageChipsScroll}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => {
+                  const isCurrent = num === currentPage;
+                  return (
+                    <TouchableOpacity
+                      key={num}
+                      style={[
+                        styles.pageChip,
+                        {
+                          backgroundColor: isCurrent ? C.brand : (isDark ? '#27272a' : '#f1f5f9'),
+                          borderColor: isCurrent ? C.brand : (isDark ? '#3f3f46' : '#e2e8f0'),
+                        }
+                      ]}
+                      onPress={() => handleJumpToPage(num)}
+                    >
+                      <Feather
+                        name="file-text"
+                        size={14}
+                        color={isCurrent ? '#ffffff' : (isDark ? '#a1a1aa' : '#64748b')}
+                        style={{ marginBottom: 4 }}
+                      />
+                      <Text
                         style={[
-                          styles.pageChip,
+                          styles.pageChipTxt,
                           {
-                            backgroundColor: isCurrent ? C.brand : (isDark ? '#27272a' : '#f1f5f9'),
-                            borderColor: isCurrent ? C.brand : (isDark ? '#3f3f46' : '#e2e8f0'),
+                            color: isCurrent ? '#ffffff' : (isDark ? '#e4e4e7' : '#334155'),
+                            fontFamily: isCurrent ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                           }
                         ]}
-                        onPress={() => handleJumpToPage(num)}
                       >
-                        <Feather
-                          name="file-text"
-                          size={14}
-                          color={isCurrent ? '#ffffff' : (isDark ? '#a1a1aa' : '#64748b')}
-                          style={{ marginBottom: 4 }}
-                        />
-                        <Text
-                          style={[
-                            styles.pageChipTxt,
-                            {
-                              color: isCurrent ? '#ffffff' : (isDark ? '#e4e4e7' : '#334155'),
-                              fontFamily: isCurrent ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
-                            }
-                          ]}
-                        >
-                          Page {num}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            </TouchableOpacity>
-          </Modal>
-        )}
+                        Page {num}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
 
       </View>
     </Modal>

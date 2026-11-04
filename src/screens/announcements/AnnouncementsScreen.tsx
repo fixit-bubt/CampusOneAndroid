@@ -50,7 +50,10 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d`;
 }
 
-const CardSeparator = () => <View style={{ height: 10 }} />;
+const CARD_POOL = 10;
+const EMPTY_NOTICE = {
+  id: '', title: '', priority: 'General', created_at: new Date(0).toISOString(),
+} as Announcement;
 
 const AnnouncementCard = memo(function AnnouncementCard({
   a,
@@ -447,7 +450,10 @@ export function AnnouncementsScreen({ navigation }: any) {
   // Truncation & Pagination (Top 10 by default with 58dp View More bar)
   const isSearchOrFilterActive = query.trim().length > 0 || categoryFilter !== 'all' || deptFilter !== 'ALL';
   const shouldTruncate = !isSearchOrFilterActive && !expanded && filtered.length > 10;
-  const displayedItems = shouldTruncate ? filtered.slice(0, 10) : filtered;
+  const displayedItems = useMemo(
+    () => (shouldTruncate ? filtered.slice(0, 10) : filtered),
+    [shouldTruncate, filtered],
+  );
   const remainingCount = filtered.length - 10;
 
   const handleTabChange = useCallback((newTab: MainTab) => {
@@ -473,20 +479,76 @@ export function AnnouncementsScreen({ navigation }: any) {
     [tabCounts.all, tabCounts.urgent, tabCounts.saved, C.danger]
   );
 
-  const renderCard = useCallback(({ item }: { item: Announcement }) => (
-    <FadeIn>
-    <AnnouncementCard
-      a={item}
-      C={C}
-      isDark={isDark}
-      unread={!readIds.has(item.id)}
-      isSaved={savedIds.has(item.id)}
-      canDelete={isAdmin}
-      onToggleSave={handleToggleSave}
-      onDelete={deleteAnnouncement}
-      onPress={handlePressCard}
-      onOpenPdf={handleOpenPdf}
-    />
+  const showSkeleton = !ready || (loading && items.length === 0);
+  // Fixed pool of card slots stays mounted; unused slots are hidden, so changing
+  // tabs only updates props instead of creating or destroying card views.
+  const pooledItems: (Announcement | null)[] = useMemo(
+    () => (displayedItems.length >= CARD_POOL
+      ? displayedItems
+      : [...displayedItems, ...Array<null>(CARD_POOL - displayedItems.length).fill(null)]),
+    [displayedItems],
+  );
+
+  const emptyView = (
+    <View style={styles.empty}>
+      <Icon name="announce" size={36} color={C.textMuted} />
+      <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+        {mainTab === 'saved' ? t.announce2.noSavedNotices : t.announce2.noNoticesFound}
+      </Text>
+      <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
+        {mainTab === 'saved'
+          ? t.announce2.noSavedNoticesBody
+          : deptFilter !== 'ALL'
+          ? `BUBT has not posted specific circulars for ${activeDeptLabel} in this section. General exam schedules and holiday notices are published campus-wide.`
+          : t.announce2.noNoticesMatching}
+      </Text>
+
+      <View style={styles.emptyActionRow}>
+        {deptFilter !== 'ALL' && (
+          <TouchableOpacity
+            style={[styles.resetBtn, { backgroundColor: C.brand, borderColor: C.brand }]}
+            onPress={() => setDeptFilter('ALL')}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.resetBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
+              Show All Campus Notices
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {(categoryFilter !== 'all' || deptFilter !== 'ALL' || query.length > 0) && (
+          <TouchableOpacity
+            style={[styles.resetBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+            onPress={() => {
+              setCategoryFilter('all');
+              setDeptFilter('ALL');
+              setQuery('');
+            }}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.resetBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {t.announce2.resetFilters}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderCard = useCallback(({ item }: { item: Announcement | null }) => (
+    <FadeIn style={item ? styles.cardWrap : styles.cardHidden}>
+      <AnnouncementCard
+        a={item ?? EMPTY_NOTICE}
+        C={C}
+        isDark={isDark}
+        unread={!!item && !readIds.has(item.id)}
+        isSaved={!!item && savedIds.has(item.id)}
+        canDelete={isAdmin}
+        onToggleSave={handleToggleSave}
+        onDelete={deleteAnnouncement}
+        onPress={handlePressCard}
+        onOpenPdf={handleOpenPdf}
+      />
     </FadeIn>
   ), [C, isDark, readIds, savedIds, isAdmin, handleToggleSave, deleteAnnouncement, handlePressCard, handleOpenPdf]);
 
@@ -534,7 +596,7 @@ export function AnnouncementsScreen({ navigation }: any) {
 
       {/* Main Announcements Virtualized List with Natural Native Scrolling */}
       <FlatList
-        data={ready ? displayedItems : []}
+        data={showSkeleton ? [] : pooledItems}
         keyExtractor={(_item, index) => String(index)}
         renderItem={renderCard}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -545,7 +607,6 @@ export function AnnouncementsScreen({ navigation }: any) {
         initialNumToRender={8}
         maxToRenderPerBatch={10}
         windowSize={7}
-        ItemSeparatorComponent={CardSeparator}
         ListHeaderComponent={
           <View style={{ marginBottom: 6 }}>
             <OfflineBanner visible={isOffline} onRetry={load} />
@@ -656,57 +717,11 @@ export function AnnouncementsScreen({ navigation }: any) {
             </View>
           </View>
         }
-        ListEmptyComponent={
-          !ready || loading ? (
-            <SkeletonList rows={5} />
-          ) : (
-            <View style={styles.empty}>
-              <Icon name="announce" size={36} color={C.textMuted} />
-              <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {mainTab === 'saved' ? t.announce2.noSavedNotices : t.announce2.noNoticesFound}
-              </Text>
-              <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                {mainTab === 'saved'
-                  ? t.announce2.noSavedNoticesBody
-                  : deptFilter !== 'ALL'
-                  ? `BUBT has not posted specific circulars for ${activeDeptLabel} in this section. General exam schedules and holiday notices are published campus-wide.`
-                  : t.announce2.noNoticesMatching}
-              </Text>
-
-              <View style={styles.emptyActionRow}>
-                {deptFilter !== 'ALL' && (
-                  <TouchableOpacity
-                    style={[styles.resetBtn, { backgroundColor: C.brand, borderColor: C.brand }]}
-                    onPress={() => setDeptFilter('ALL')}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.resetBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
-                      Show All Campus Notices
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {(categoryFilter !== 'all' || deptFilter !== 'ALL' || query.length > 0) && (
-                  <TouchableOpacity
-                    style={[styles.resetBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                    onPress={() => {
-                      setCategoryFilter('all');
-                      setDeptFilter('ALL');
-                      setQuery('');
-                    }}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.resetBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                      {t.announce2.resetFilters}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )
-        }
+        ListEmptyComponent={<SkeletonList rows={5} />}
         ListFooterComponent={
-          shouldTruncate ? (
+          !showSkeleton && displayedItems.length === 0 ? (
+            emptyView
+          ) : shouldTruncate ? (
             <View style={{ paddingTop: 6, paddingBottom: 28 }}>
               <TouchableOpacity
                 style={[styles.viewMoreBtn, { backgroundColor: C.surface, borderColor: C.border }]}
@@ -998,6 +1013,8 @@ const styles = StyleSheet.create({
     padding: 3,
   } as ViewStyle,
 
+  cardWrap: { marginBottom: 10 } as ViewStyle,
+  cardHidden: { display: 'none' } as ViewStyle,
   metaLine: {
     fontSize: 12,
     lineHeight: 17,

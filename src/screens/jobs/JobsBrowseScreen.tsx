@@ -1,3 +1,5 @@
+import { padToPool } from '../../components/ui/pooledList';
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
@@ -222,6 +224,7 @@ function getTypeLabel(t: any, type: string): string {
 }
 
 export function JobsBrowseScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
@@ -789,10 +792,12 @@ export function JobsBrowseScreen({ navigation }: any) {
               </View>
             )}
           </View>
-        ) : (
+        ) : !ready ? (
+            <SkeletonList rows={5} />
+          ) : (
           /* Browse & Saved List View */
           <View style={styles.list}>
-            {browseList.map((j, idx) => {
+            {padToPool(browseList).map((j, idx) => {
               const status = computeJobStatus(j);
               const s = jobStatusTone(C, t, status, isDark);
               const isSaved = savedIds.has(j.id);
@@ -805,7 +810,8 @@ export function JobsBrowseScreen({ navigation }: any) {
               });
 
               return (
-                <View key={idx} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+<View key={idx} style={idx >= browseList.length ? { display: 'none' } : undefined}>
+                <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <TouchableOpacity
                     style={styles.cardMain}
                     onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
@@ -898,7 +904,8 @@ export function JobsBrowseScreen({ navigation }: any) {
                     />
                   </TouchableOpacity>
                 </View>
-              );
+              </View>
+);
             })}
           </View>
         )}

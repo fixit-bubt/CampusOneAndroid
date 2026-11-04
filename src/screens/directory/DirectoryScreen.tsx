@@ -3,6 +3,9 @@
 // native spring animation, structured dual control bar (My Section + Department picker),
 // CR badges, blood group indicators, and instant contact reveal via ContactSheet.
 
+import { padToPool, renderPooled } from '../../components/ui/pooledList';
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
@@ -163,6 +166,7 @@ function buildStudentSearch(s: any): string {
 }
 
 export function DirectoryScreen({ route, navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, profile } = useAuth();
@@ -560,6 +564,12 @@ export function DirectoryScreen({ route, navigation }: any) {
     );
   }, [actionBusy, C, navigation, tab, isDark, t, handleCancel, handleConnect, handleAccept, handleDecline, setContactStudent]);
 
+  const pooledStudents = useMemo(() => padToPool(filteredStudents), [filteredStudents]);
+  const pooledStudentItem = useMemo(
+    () => renderPooled(renderStudentItem, filteredStudents.length, { marginBottom: 10 }),
+    [renderStudentItem, filteredStudents.length],
+  );
+
   const hasCohort = !!(profile?.intake && profile?.section);
 
   return (
@@ -594,7 +604,7 @@ export function DirectoryScreen({ route, navigation }: any) {
         </View>
       ) : (
         <FlatList
-          data={filteredStudents}
+          data={ready ? pooledStudents : []}
           keyExtractor={(_s, index) => String(index)}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
@@ -605,7 +615,6 @@ export function DirectoryScreen({ route, navigation }: any) {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
               <OfflineBanner
@@ -736,8 +745,7 @@ export function DirectoryScreen({ route, navigation }: any) {
               </View>
             </View>
           }
-          ListEmptyComponent={
-            loading && students.length === 0 ? (
+          ListEmptyComponent={ready ? (loading && students.length === 0 ? (
               <View style={styles.emptyLoading}>
                 <ActivityIndicator size="small" color={C.brand} />
               </View>
@@ -775,9 +783,8 @@ export function DirectoryScreen({ route, navigation }: any) {
                   </TouchableOpacity>
                 )}
               </View>
-            )
-          }
-          renderItem={renderStudentItem}
+            )) : <SkeletonList rows={5} />}
+          renderItem={pooledStudentItem}
         />
       )}
 

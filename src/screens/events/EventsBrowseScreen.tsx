@@ -1,3 +1,4 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -213,6 +214,7 @@ function EventCard({
 }
 
 export function EventsBrowseScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
@@ -577,7 +579,9 @@ export function EventsBrowseScreen({ navigation }: any) {
                 : 'Stay tuned for upcoming campus seminars, workshops, and sports!'}
             </Text>
           </View>
-        ) : (
+        ) : !ready ? (
+            <SkeletonList rows={5} />
+          ) : (
           <View style={styles.list}>
             {displayList.map(e => (
               <EventCard

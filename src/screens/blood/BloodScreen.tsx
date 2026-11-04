@@ -1,3 +1,4 @@
+import { padToPool } from '../../components/ui/pooledList';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
@@ -877,7 +878,7 @@ export function BloodScreen({ route, navigation }: any) {
                 )}
               </View>
             ) : (
-              filteredRequests.map((r, idx) => {
+              padToPool(filteredRequests).map((r, idx) => {
                 const meta = parseBloodRequestMeta(r.patient, r.hospital, r.units);
                 const pledgeCount = (r as any).pledge_count || 0;
                 const unitsLeft = Math.max(0, meta.unitCount - pledgeCount);
@@ -887,8 +888,8 @@ export function BloodScreen({ route, navigation }: any) {
                 const isTarget = highlightCode !== null && r.code === highlightCode;
 
                 return (
+<View key={idx} style={idx >= filteredRequests.length ? { display: 'none' } : undefined}>
                   <View
-                    key={idx}
                     style={[
                       styles.reqCard,
                       {
@@ -1079,7 +1080,8 @@ export function BloodScreen({ route, navigation }: any) {
                       </TouchableOpacity>
                     )}
                   </View>
-                );
+                </View>
+);
               })
             )}
 
@@ -1261,9 +1263,9 @@ export function BloodScreen({ route, navigation }: any) {
               </View>
             ) : (
               <View style={styles.list}>
-                {filteredDonors.map((d, idx) => (
+                {padToPool(filteredDonors).map((d, idx) => (
+<View key={idx} style={idx >= filteredDonors.length ? { display: 'none' } : undefined}>
                   <DonorCardItem
-                    key={idx}
                     d={d}
                     isMe={d.user_id === user?.id}
                     isDark={isDark}
@@ -1273,7 +1275,8 @@ export function BloodScreen({ route, navigation }: any) {
                     onMarkDonated={markDonatedToday}
                     onRevealContact={revealContact}
                   />
-                ))}
+                </View>
+))}
               </View>
             )}
           </View>

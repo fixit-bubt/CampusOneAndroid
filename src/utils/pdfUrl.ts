@@ -70,10 +70,3 @@ export function isRemotePdfUrl(uri: string | null | undefined): boolean {
   if (!uri) return false;
   return /^https?:\/\//i.test(uri.trim());
 }
-
-/**
- * Builds the high-reliability Google Docs Viewer embed URL for seamless in-app streaming.
- */
-export function buildGoogleDocsViewerUrl(remoteUrl: string): string {
-  return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(remoteUrl.trim())}`;
-}

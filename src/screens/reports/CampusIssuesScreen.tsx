@@ -2,6 +2,8 @@
 // My Reports feeds in a single ultra-responsive view with 0ms in-memory tab
 // switching, 58dp controls, 4.5dp category stripes, 32dp monochrome static icons,
 // and premium squircle badges.
+import { padToPool, renderPooled } from '../../components/ui/pooledList';
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
@@ -91,6 +93,7 @@ function timeAgo(iso: string): string {
 }
 
 export function CampusIssuesScreen({ navigation, route }: any) {
+  const ready = useAfterInteractions();
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -518,6 +521,17 @@ export function CampusIssuesScreen({ navigation, route }: any) {
     );
   }, [C, boardMap, toggleBoard, confirmDelete, navigation, t]);
 
+  const pooledCampus = useMemo(() => padToPool(filteredCampus), [filteredCampus]);
+  const pooledCampusItem = useMemo(
+    () => renderPooled(renderCampusItem, filteredCampus.length),
+    [renderCampusItem, filteredCampus.length],
+  );
+  const pooledMine = useMemo(() => padToPool(filteredMine), [filteredMine]);
+  const pooledMyItem = useMemo(
+    () => renderPooled(renderMyItem, filteredMine.length),
+    [renderMyItem, filteredMine.length],
+  );
+
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {/* Permanent Header - Title never changes on tab switch */}
@@ -530,7 +544,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
       {activeTab === 'Campus' ? (
         /* CAMPUS BOARD FEED */
         <FlatList
-          data={filteredCampus}
+          data={ready ? pooledCampus : []}
           keyExtractor={(_r, index) => String(index)}
           initialNumToRender={8}
           maxToRenderPerBatch={8}
@@ -547,8 +561,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
             />
           }
           ListHeaderComponent={listHeader}
-          ListEmptyComponent={
-            isLoading && campusIssues.length === 0 ? (
+          ListEmptyComponent={ready ? (isLoading && campusIssues.length === 0 ? (
               <View style={styles.loadingContainer}>
                 <SkeletonList rows={4} />
               </View>
@@ -578,15 +591,14 @@ export function CampusIssuesScreen({ navigation, route }: any) {
                   </Text>
                 </TouchableOpacity>
               </View>
-            )
-          }
-          renderItem={renderCampusItem}
+            )) : <SkeletonList rows={5} />}
+          renderItem={pooledCampusItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
       ) : (
         /* MY REPORTS FEED */
         <FlatList
-          data={filteredMine}
+          data={ready ? pooledMine : []}
           keyExtractor={(_r, index) => String(index)}
           initialNumToRender={8}
           maxToRenderPerBatch={8}
@@ -603,8 +615,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
             />
           }
           ListHeaderComponent={listHeader}
-          ListEmptyComponent={
-            isLoading && myReports.length === 0 ? (
+          ListEmptyComponent={ready ? (isLoading && myReports.length === 0 ? (
               <View style={styles.loadingContainer}>
                 <SkeletonList rows={4} />
               </View>
@@ -634,9 +645,8 @@ export function CampusIssuesScreen({ navigation, route }: any) {
                   </Text>
                 </TouchableOpacity>
               </View>
-            )
-          }
-          renderItem={renderMyItem}
+            )) : <SkeletonList rows={5} />}
+          renderItem={pooledMyItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
       )}
