@@ -458,6 +458,10 @@ export function MessageThread({ route, navigation }: any) {
               showsVerticalScrollIndicator={false}
               keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
+              initialNumToRender={15}
+              maxToRenderPerBatch={10}
+              windowSize={7}
+              removeClippedSubviews={Platform.OS === 'android'}
               renderItem={renderBubbleItem}
               onEndReached={() => { if (!searching && hasMore) loadOlder(); }}
               onEndReachedThreshold={0.3}

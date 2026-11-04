@@ -51,6 +51,7 @@ export interface Student {
   email?: string | null;
   whatsapp?: string | null;
   connState: ConnState;
+  _search?: string;
 }
 
 export interface DepartmentItem {
@@ -144,6 +145,23 @@ const STATUS_MAP: Record<string, ConnState> = {
   none: 'none',
 };
 
+function buildStudentSearch(s: any): string {
+  return [
+    s.full_name,
+    s.department,
+    s.intake ? `intake ${s.intake} ${s.intake}` : '',
+    s.section ? `section ${s.section} sec ${s.section}` : '',
+    s.intake && s.section ? `${s.intake}-${s.section} ${s.intake}/${s.section}` : '',
+    s.blood_group,
+    s.student_id,
+    s.program,
+    s.is_cr ? 'cr class representative' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
 export function DirectoryScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -203,7 +221,9 @@ export function DirectoryScreen({ route, navigation }: any) {
 
     // 1. Optimistic cache load
     const cached = await getCache<Student[]>(cacheKey);
-    if (cached && cached.length) setStudents(cached);
+    if (cached && cached.length) {
+      setStudents(cached.map(s => s._search ? s : { ...s, _search: buildStudentSearch(s) }));
+    }
     if (!cached || cached.length === 0) setLoading(true);
 
     // 2. Network sync
@@ -217,6 +237,7 @@ export function DirectoryScreen({ route, navigation }: any) {
       const rows: Student[] = (profiles ?? []).map((p: any) => ({
         ...p,
         connState: STATUS_MAP[p.status as string] ?? 'none',
+        _search: buildStudentSearch(p),
       }));
       setStudents(rows);
       setCache(cacheKey, rows);
@@ -369,22 +390,8 @@ export function DirectoryScreen({ route, navigation }: any) {
     const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (tokens.length > 0) {
       list = list.filter(s => {
-        const haystack = [
-          s.full_name,
-          s.department,
-          s.intake ? `intake ${s.intake} ${s.intake}` : '',
-          s.section ? `section ${s.section} sec ${s.section}` : '',
-          s.intake && s.section ? `${s.intake}-${s.section} ${s.intake}/${s.section}` : '',
-          s.blood_group,
-          s.student_id,
-          s.program,
-          s.is_cr ? 'cr class representative' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-
-        return tokens.every(tok => haystack.includes(tok));
+        const hay = s._search ?? buildStudentSearch(s);
+        return tokens.every(tok => hay.includes(tok));
       });
     }
 

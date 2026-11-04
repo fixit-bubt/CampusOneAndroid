@@ -102,7 +102,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         ? supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff').limit(100)
         : Promise.resolve({ data: null }),
       isAdmin
-        ? supabase.from('reports').select('assigned_staff_id').in('status', ['Open', 'In Progress']).is('deleted_at', null)
+        ? supabase.from('reports').select('assigned_staff_id').in('status', ['Open', 'In Progress']).is('deleted_at', null).limit(200)
         : Promise.resolve({ data: null }),
     ]);
     if (evRes.data) setEvents(evRes.data as ReportEvent[]);

@@ -30,7 +30,7 @@ export async function getBloodFeed(userId: string | undefined): Promise<ServiceR
       .is('fulfilled_at', null)
       .gte('created_at', staleCutoff)
       .order('created_at', { ascending: false }).limit(40),
-    supabase.from('donors').select('*').order('created_at', { ascending: false }),
+    supabase.from('donors').select('*').order('created_at', { ascending: false }).limit(100),
     userId
       ? supabase.from('blood_pledges').select('request_id').eq('donor_id', userId)
       : Promise.resolve({ data: [], error: null }),
@@ -38,7 +38,7 @@ export async function getBloodFeed(userId: string | undefined): Promise<ServiceR
     userId
       ? supabase.from('blood_pledges').select('*', { count: 'exact', head: true }).eq('donor_id', userId).not('fulfilled_at', 'is', null)
       : Promise.resolve({ count: 0, error: null }),
-    supabase.from('blood_pledges').select('request_id'),
+    supabase.from('blood_pledges').select('request_id').gte('created_at', staleCutoff),
   ]);
   if (rRes.error || dRes.error) return { ok: false, error: (rRes.error ?? dRes.error)!.message };
 

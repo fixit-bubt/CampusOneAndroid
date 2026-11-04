@@ -304,6 +304,220 @@ export function CampusIssuesScreen({ navigation, route }: any) {
     </View>
   );
 
+  const renderCampusItem = useCallback(({ item: r }: { item: CampusIssue }) => {
+    const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];
+    const tone = statusTone(C, r.status);
+    const isBusy = busyVoteIds.has(r.id);
+
+    return (
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: C.surface,
+            borderColor: C.border,
+            borderLeftColor: cat.fg,
+          },
+        ]}
+      >
+        <View style={styles.cardTop}>
+          <View style={styles.catIconWrap}>
+            <Icon name={cat.icon} size={32} color={C.text} />
+          </View>
+          <View style={styles.cardMetaCol}>
+            <Text
+              style={[styles.categoryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+              numberOfLines={1}
+            >
+              {r.category}
+            </Text>
+            <View style={styles.locationRow}>
+              <Icon name="pin" size={12} color={C.textMuted} />
+              <Text
+                style={[styles.locationTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                numberOfLines={1}
+              >
+                {r.building}
+                {r.room ? ` · ${r.room}` : ''} · {timeAgo(r.created_at)}
+              </Text>
+            </View>
+          </View>
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: tone.bg,
+                borderColor: tone.border,
+              },
+            ]}
+          >
+            <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
+            <Text
+              style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}
+            >
+              {t.status[r.status] ?? r.status}
+            </Text>
+          </View>
+        </View>
+
+        <Text
+          style={[styles.descriptionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          numberOfLines={3}
+        >
+          {r.description}
+        </Text>
+
+        <View style={[styles.cardFooterRow, { borderTopColor: C.border }]}>
+          <Text
+            style={[styles.affectedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+            numberOfLines={1}
+          >
+            {r.vote_count > 0 ? t.campusIssues.affected(r.vote_count) : t.campusIssues.beFirst}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.voteBtn,
+              r.voted
+                ? { backgroundColor: C.brand, borderColor: C.brand }
+                : { backgroundColor: C.surface2, borderColor: C.border },
+            ]}
+            onPress={() => meToo(r)}
+            disabled={isBusy}
+            activeOpacity={0.8}
+          >
+            <Feather name="thumbs-up" size={13} color={r.voted ? '#ffffff' : C.text2} />
+            <Text
+              style={[
+                styles.voteBtnTxt,
+                { color: r.voted ? '#ffffff' : C.text2, fontFamily: FontFamily.jakartaBold },
+              ]}
+            >
+              {t.campusIssues.meToo}
+            </Text>
+            {r.vote_count > 0 && (
+              <Text
+                style={[
+                  styles.voteBtnCount,
+                  {
+                    color: r.voted ? 'rgba(255,255,255,0.9)' : C.textMuted,
+                    fontFamily: FontFamily.jakartaBold,
+                  },
+                ]}
+              >
+                {r.vote_count}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }, [C, busyVoteIds, meToo, t]);
+
+  const renderMyItem = useCallback(({ item: r }: { item: Report }) => {
+    const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];
+    const tone = statusTone(C, r.status);
+    const isOnBoard = boardMap[r.id] === true;
+
+    return (
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: C.surface,
+            borderColor: C.border,
+            borderLeftColor: cat.fg,
+          },
+        ]}
+      >
+        <View style={styles.cardTop}>
+          <View style={styles.catIconWrap}>
+            <Icon name={cat.icon} size={32} color={C.text} />
+          </View>
+          <View style={styles.cardMetaCol}>
+            <Text
+              style={[styles.categoryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+              numberOfLines={1}
+            >
+              {r.category}
+            </Text>
+            <View style={styles.locationRow}>
+              <Icon name="pin" size={12} color={C.textMuted} />
+              <Text
+                style={[styles.locationTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+                numberOfLines={1}
+              >
+                {r.building}
+                {r.room ? ` · ${r.room}` : ''} · {timeAgo(r.created_at)}
+              </Text>
+            </View>
+          </View>
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: tone.bg,
+                borderColor: tone.border,
+              },
+            ]}
+          >
+            <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
+            <Text
+              style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}
+            >
+              {t.status[r.status] ?? r.status}
+            </Text>
+          </View>
+        </View>
+
+        <Text
+          style={[styles.descriptionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+          numberOfLines={3}
+        >
+          {r.description}
+        </Text>
+
+        <View style={[styles.cardFooterRow, { borderTopColor: C.border }]}>
+          <View style={styles.boardToggleRow}>
+            <Text
+              style={[styles.boardToggleTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}
+            >
+              {t.campusIssues.onBoard ?? 'On Board'}
+            </Text>
+            <LiquidToggle
+              checked={isOnBoard}
+              onCheckedChange={() => toggleBoard(r)}
+              size="sm"
+            />
+          </View>
+
+          <View style={styles.actionsRightRow}>
+            {r.status === 'Open' && (
+              <TouchableOpacity
+                style={styles.deleteIconBtn}
+                onPress={() => confirmDelete(r)}
+                hitSlop={8}
+              >
+                <Feather name="trash-2" size={20} color={C.danger} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.viewDetailsBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
+              activeOpacity={0.75}
+            >
+              <Text
+                style={[styles.viewDetailsTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}
+              >
+                {t.reports.view ?? 'View'}
+              </Text>
+              <Feather name="chevron-right" size={14} color={C.brand} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }, [C, boardMap, toggleBoard, confirmDelete, navigation, t]);
+
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {/* Permanent Header - Title never changes on tab switch */}
@@ -366,118 +580,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
               </View>
             )
           }
-          renderItem={({ item: r }) => {
-            const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];
-            const tone = statusTone(C, r.status);
-            const isBusy = busyVoteIds.has(r.id);
-
-            return (
-              <View
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: C.surface,
-                    borderColor: C.border,
-                    borderLeftColor: cat.fg,
-                  },
-                ]}
-              >
-                {/* Card Top: Category Icon + Title + Premium Squircle Status Badge */}
-                <View style={styles.cardTop}>
-                  <View style={styles.catIconWrap}>
-                    <Icon name={cat.icon} size={32} color={C.text} />
-                  </View>
-                  <View style={styles.cardMetaCol}>
-                    <Text
-                      style={[styles.categoryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                      numberOfLines={1}
-                    >
-                      {r.category}
-                    </Text>
-                    <View style={styles.locationRow}>
-                      <Icon name="pin" size={12} color={C.textMuted} />
-                      <Text
-                        style={[styles.locationTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
-                        numberOfLines={1}
-                      >
-                        {r.building}
-                        {r.room ? ` · ${r.room}` : ''} · {timeAgo(r.created_at)}
-                      </Text>
-                    </View>
-                  </View>
-                  {/* Premium Squircle Status Badge */}
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor: tone.bg,
-                        borderColor: tone.border,
-                      },
-                    ]}
-                  >
-                    <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
-                    <Text
-                      style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}
-                    >
-                      {t.status[r.status] ?? r.status}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Description */}
-                <Text
-                  style={[styles.descriptionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                  numberOfLines={3}
-                >
-                  {r.description}
-                </Text>
-
-                {/* Card Footer: Affected Count + Premium Squircle Me Too Button */}
-                <View style={[styles.cardFooterRow, { borderTopColor: C.border }]}>
-                  <Text
-                    style={[styles.affectedTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
-                    numberOfLines={1}
-                  >
-                    {r.vote_count > 0 ? t.campusIssues.affected(r.vote_count) : t.campusIssues.beFirst}
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.voteBtn,
-                      r.voted
-                        ? { backgroundColor: C.brand, borderColor: C.brand }
-                        : { backgroundColor: C.surface2, borderColor: C.border },
-                    ]}
-                    onPress={() => meToo(r)}
-                    disabled={isBusy}
-                    activeOpacity={0.8}
-                  >
-                    <Feather name="thumbs-up" size={13} color={r.voted ? '#ffffff' : C.text2} />
-                    <Text
-                      style={[
-                        styles.voteBtnTxt,
-                        { color: r.voted ? '#ffffff' : C.text2, fontFamily: FontFamily.jakartaBold },
-                      ]}
-                    >
-                      {t.campusIssues.meToo}
-                    </Text>
-                    {r.vote_count > 0 && (
-                      <Text
-                        style={[
-                          styles.voteBtnCount,
-                          {
-                            color: r.voted ? 'rgba(255,255,255,0.9)' : C.textMuted,
-                            fontFamily: FontFamily.jakartaBold,
-                          },
-                        ]}
-                      >
-                        {r.vote_count}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          }}
+          renderItem={renderCampusItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
       ) : (
@@ -533,115 +636,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
               </View>
             )
           }
-          renderItem={({ item: r }) => {
-            const cat = CATEGORY_MAP[r.category] ?? CATEGORY_MAP['Other'];
-            const tone = statusTone(C, r.status);
-            const isOnBoard = boardMap[r.id] === true;
-
-            return (
-              <View
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: C.surface,
-                    borderColor: C.border,
-                    borderLeftColor: cat.fg,
-                  },
-                ]}
-              >
-                {/* Card Top: Category Icon + Title + Premium Squircle Status Badge */}
-                <View style={styles.cardTop}>
-                  <View style={styles.catIconWrap}>
-                    <Icon name={cat.icon} size={32} color={C.text} />
-                  </View>
-                  <View style={styles.cardMetaCol}>
-                    <Text
-                      style={[styles.categoryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-                      numberOfLines={1}
-                    >
-                      {r.category}
-                    </Text>
-                    <View style={styles.locationRow}>
-                      <Icon name="pin" size={12} color={C.textMuted} />
-                      <Text
-                        style={[styles.locationTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
-                        numberOfLines={1}
-                      >
-                        {r.building}
-                        {r.room ? ` · ${r.room}` : ''} · {timeAgo(r.created_at)}
-                      </Text>
-                    </View>
-                  </View>
-                  {/* Premium Squircle Status Badge */}
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor: tone.bg,
-                        borderColor: tone.border,
-                      },
-                    ]}
-                  >
-                    <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />
-                    <Text
-                      style={[styles.statusTxt, { color: tone.fg, fontFamily: FontFamily.jakartaBold }]}
-                    >
-                      {t.status[r.status] ?? r.status}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Description */}
-                <Text
-                  style={[styles.descriptionTxt, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-                  numberOfLines={3}
-                >
-                  {r.description}
-                </Text>
-
-                {/* Card Footer: Show on Board Toggle + View Details Action */}
-                <View style={[styles.cardFooterRow, { borderTopColor: C.border }]}>
-                  <View style={styles.boardToggleRow}>
-                    <Text
-                      style={[styles.boardToggleTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}
-                    >
-                      {t.campusIssues.onBoard ?? 'On Board'}
-                    </Text>
-                    <LiquidToggle
-                      checked={isOnBoard}
-                      onCheckedChange={() => toggleBoard(r)}
-                      size="sm"
-                    />
-                  </View>
-
-                  <View style={styles.actionsRightRow}>
-                    {r.status === 'Open' && (
-                      <TouchableOpacity
-                        style={styles.deleteIconBtn}
-                        onPress={() => confirmDelete(r)}
-                        hitSlop={8}
-                      >
-                        <Feather name="trash-2" size={20} color={C.danger} />
-                      </TouchableOpacity>
-                    )}
-                    {/* Premium Squircle View Details Button */}
-                    <TouchableOpacity
-                      style={[styles.viewDetailsBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                      onPress={() => navigation.navigate('ReportDetail', { reportId: r.id })}
-                      activeOpacity={0.75}
-                    >
-                      <Text
-                        style={[styles.viewDetailsTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}
-                      >
-                        {t.reports.view ?? 'View'}
-                      </Text>
-                      <Feather name="chevron-right" size={14} color={C.brand} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            );
-          }}
+          renderItem={renderMyItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
       )}

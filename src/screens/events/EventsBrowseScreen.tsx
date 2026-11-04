@@ -353,27 +353,25 @@ export function EventsBrowseScreen({ navigation }: any) {
 
   const todayStr = localToday();
 
-  // Categorize events by live status
-  const filteredByCat = category === 'All' ? events : events.filter(e => e.category === category);
-  const searchedEvents = search.trim()
-    ? filteredByCat.filter(e => {
-        const q = search.trim().toLowerCase();
-        return (
+  // Categorize events by live status (memoized to eliminate unneeded passes on renders)
+  const { upcomingList, pastList, savedList, displayList } = useMemo(() => {
+    const filteredByCat = category === 'All' ? events : events.filter(e => e.category === category);
+    const q = search.trim().toLowerCase();
+    const searched = q
+      ? filteredByCat.filter(e => (
           e.title.toLowerCase().includes(q) ||
           e.organizer.toLowerCase().includes(q) ||
           e.venue.toLowerCase().includes(q) ||
           e.category.toLowerCase().includes(q)
-        );
-      })
-    : filteredByCat;
+        ))
+      : filteredByCat;
 
-  const upcomingList = searchedEvents.filter(e => e.date >= todayStr);
-  const pastList = searchedEvents.filter(e => e.date < todayStr).reverse();
-  const savedList = searchedEvents.filter(e => savedIds.has(e.id));
-
-  let displayList = upcomingList;
-  if (tab === 'past') displayList = pastList;
-  else if (tab === 'saved') displayList = savedList;
+    const upcoming = searched.filter(e => e.date >= todayStr);
+    const past = searched.filter(e => e.date < todayStr).slice().reverse();
+    const saved = searched.filter(e => savedIds.has(e.id));
+    const display = tab === 'past' ? past : tab === 'saved' ? saved : upcoming;
+    return { upcomingList: upcoming, pastList: past, savedList: saved, displayList: display };
+  }, [events, category, search, todayStr, savedIds, tab]);
 
   const EVENT_TABS: TabItem<EventTab>[] = useMemo(() => [
     { id: 'upcoming', label: 'Upcoming', count: upcomingList.length > 0 ? upcomingList.length : undefined, color: C.brand },

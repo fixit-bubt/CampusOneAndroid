@@ -105,7 +105,8 @@ export async function fetchEventsList(): Promise<Event[]> {
     .select('*')
     .is('deleted_at', null)
     .gte('date', fourMonthsAgoDate)
-    .order('date', { ascending: true });
+    .order('date', { ascending: true })
+    .limit(120);
 
   if (error) {
     console.error('fetchEventsList error:', error.message);

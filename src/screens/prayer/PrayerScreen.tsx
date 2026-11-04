@@ -194,6 +194,7 @@ export function PrayerScreen({ navigation }: any) {
   }
 
   const next = computeNext(prayers);
+  const dailyPrayers = useMemo(() => prayers.filter(p => p.key !== 'jummah'), [prayers]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -274,7 +275,7 @@ export function PrayerScreen({ navigation }: any) {
           <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
             <View style={[styles.monthRow, { paddingVertical: 10 }]}>
               <Text style={[styles.monthDayCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>{t.prayer2.dayCol}</Text>
-              {prayers.filter(p => p.key !== 'jummah').map(p => (
+              {dailyPrayers.map(p => (
                 <Text key={p.key} style={[styles.monthCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>
                   {p.en.slice(0, 3).toUpperCase()}
                 </Text>
@@ -296,7 +297,7 @@ export function PrayerScreen({ navigation }: any) {
                       }]}>
                         {d}
                       </Text>
-                      {prayers.filter(p => p.key !== 'jummah').map(p => (
+                      {dailyPrayers.map(p => (
                         <Text key={p.key} style={[styles.monthCol, {
                           color: isToday ? C.text : C.text2,
                           fontFamily: FontFamily.jakartaMedium,

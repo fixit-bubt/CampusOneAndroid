@@ -1721,6 +1721,11 @@ export function StudyHubScreen({ navigation }: any) {
     return courses.filter(c => !archivedIds.has(c.id));
   }, [viewingArchivedSem, archivedSemesters, courses]);
 
+  const sortedArchivedSemesters = useMemo(
+    () => [...archivedSemesters].sort((a, b) => b.semester - a.semester),
+    [archivedSemesters]
+  );
+
   const homeTabs: TabItem<HomeTab>[] = useMemo(() => [
     { id: 'courses', label: 'Courses', icon: 'book-open', count: currentSemesterCourses.length },
     { id: 'archive', label: '12 Semesters', icon: 'layers' },
@@ -1981,7 +1986,7 @@ export function StudyHubScreen({ navigation }: any) {
                     {`Sem ${activeSemester} (Active)`}
                   </Text>
                 </TouchableOpacity>
-                {[...archivedSemesters].sort((a, b) => b.semester - a.semester).map(arch => (
+                {sortedArchivedSemesters.map(arch => (
                   <TouchableOpacity
                     key={arch.semester}
                     style={[

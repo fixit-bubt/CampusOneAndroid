@@ -152,7 +152,9 @@ export function ClubsScreen({ navigation }: any) {
     return result;
   }, [clubs, categoryFilter, searchQuery]);
 
-  function renderClubCard(c: Club) {
+  const otherClubs = useMemo(() => filteredClubs.filter(c => !c.user_role), [filteredClubs]);
+
+  const renderClubCard = useCallback((c: Club) => {
     const role = c.user_role;
     const isMyClub = !!role;
     return (
@@ -211,7 +213,7 @@ export function ClubsScreen({ navigation }: any) {
         <Icon name="chevR" size={18} color={C.textMuted} />
       </TouchableOpacity>
     );
-  }
+  }, [isDark, C, navigation, t]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -317,7 +319,7 @@ export function ClubsScreen({ navigation }: any) {
               ALL CAMPUS CLUBS
             </Text>
             <View style={{ gap: 10 }}>
-              {filteredClubs.filter(c => !c.user_role).map(renderClubCard)}
+              {otherClubs.map(renderClubCard)}
             </View>
           </View>
         ) : (

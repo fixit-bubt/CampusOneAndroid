@@ -8,7 +8,7 @@ import {
   StyleSheet,
   type ViewStyle,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -537,13 +537,16 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
     }
   }, [refreshTrigger, loadData]);
 
-  // Local 15-second tick loop to recalculate countdowns and progress bars
+  const isFocused = useIsFocused();
+
+  // Local 15-second tick loop to recalculate countdowns and progress bars (pauses when offscreen)
   useEffect(() => {
+    if (!isFocused) return;
     const timer = setInterval(() => {
       setTick((t) => t + 1);
     }, 15000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isFocused]);
 
   // Reports calculations
   const reportCounts = useMemo(() => {

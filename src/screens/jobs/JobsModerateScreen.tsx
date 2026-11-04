@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   } as ViewStyle,
   modalOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   } as ViewStyle,
   sheet: {
     borderTopLeftRadius: 20,

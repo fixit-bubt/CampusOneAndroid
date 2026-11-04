@@ -1363,7 +1363,7 @@ export const bn: Dict = {
     termsOfServiceSub: "ক্যাম্পাস নীতিমালা ও আচরণবিধি",
     supportSection: "সাহায্য ও সহায়তা",
     contactSupport: "সহায়তায় যোগাযোগ",
-    contactSupportSub: "campusone.bubt@gmail.com",
+    contactSupportSub: "campusone2026@gmail.com",
     appVersion: "অ্যাপ সংস্করণ",
     showInDirectory: "স্টুডেন্ট ডিরেক্টরিতে দেখান",
     showWhatsapp: "শিক্ষার্থীদের কাছে হোয়াটসঅ্যাপ দেখান",

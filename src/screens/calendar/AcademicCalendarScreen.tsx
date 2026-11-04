@@ -10,6 +10,7 @@ import {
   Image,
   RefreshControl,
   Share,
+  Platform,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
@@ -178,6 +179,10 @@ export function AcademicCalendarScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: insets.bottom + 32 },

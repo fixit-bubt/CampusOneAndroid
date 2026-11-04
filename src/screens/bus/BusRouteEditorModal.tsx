@@ -27,6 +27,7 @@ import { supabase } from '../../lib/supabase';
 import { setCache, getCache, CacheKeys } from '../../services/cacheService';
 import { formatTime12, toMinutes } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
+import { openUrl, callPhone } from '../../utils/link';
 
 const DAY_OPTIONS = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as const;
 
@@ -592,7 +593,7 @@ export function BusRouteEditorModal({
               {helperPhone.trim().length > 0 && (
                 <TouchableOpacity
                   style={[styles.innerActionBtn, { borderColor: C.border }]}
-                  onPress={() => Linking.openURL(`tel:${helperPhone.trim()}`)}
+                  onPress={() => callPhone(helperPhone.trim())}
                   activeOpacity={0.7}
                   hitSlop={6}
                 >
@@ -1159,7 +1160,7 @@ export function BusRouteEditorModal({
               {pdfUrl.trim().length > 0 && (
                 <TouchableOpacity
                   style={[styles.innerActionBtn, { borderColor: C.border }]}
-                  onPress={() => Linking.openURL(pdfUrl.trim())}
+                  onPress={() => openUrl(pdfUrl.trim())}
                   activeOpacity={0.7}
                   hitSlop={6}
                 >

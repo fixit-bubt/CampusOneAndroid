@@ -3,7 +3,7 @@
 // trash to delete a chat outright (cascades its messages via FK).
 import { useState, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, type ViewStyle, type TextStyle,
+  View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,6 +54,36 @@ export function ChatbotHistoryScreen({ navigation }: any) {
     ]);
   }
 
+  const renderItem = useCallback(({ item: c }: { item: Conversation }) => (
+    <TouchableOpacity
+      style={styles.row}
+      onPress={() => navigation.replace('Chatbot', { conversationId: c.id })}
+      activeOpacity={0.7}
+    >
+      <View style={styles.rowIcon}>
+        <Feather name="message-circle" size={32} color={C.text} />
+      </View>
+      <View style={styles.rowBody}>
+        <Text style={[styles.rowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+          {c.title}
+        </Text>
+        <Text style={[styles.rowTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          {timeAgo(c.updatedAt)}
+        </Text>
+      </View>
+      <TouchableOpacity
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        onPress={() => confirmDelete(c)}
+      >
+        <Feather name="trash-2" size={17} color={C.textMuted} />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  ), [C, navigation, confirmDelete]);
+
+  const renderSeparator = useCallback(() => (
+    <View style={[styles.divider, { backgroundColor: C.border }]} />
+  ), [C.border]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -72,9 +102,13 @@ export function ChatbotHistoryScreen({ navigation }: any) {
       <FlatList
         data={conversations}
         keyExtractor={(c) => c.id}
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: C.border }]} />}
+        ItemSeparatorComponent={renderSeparator}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.empty}>
@@ -88,31 +122,7 @@ export function ChatbotHistoryScreen({ navigation }: any) {
             </View>
           ) : null
         }
-        renderItem={({ item: c }) => (
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => navigation.replace('Chatbot', { conversationId: c.id })}
-            activeOpacity={0.7}
-          >
-            <View style={styles.rowIcon}>
-              <Feather name="message-circle" size={32} color={C.text} />
-            </View>
-            <View style={styles.rowBody}>
-              <Text style={[styles.rowTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {c.title}
-              </Text>
-              <Text style={[styles.rowTime, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                {timeAgo(c.updatedAt)}
-              </Text>
-            </View>
-            <TouchableOpacity
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              onPress={() => confirmDelete(c)}
-            >
-              <Feather name="trash-2" size={17} color={C.textMuted} />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        )}
+        renderItem={renderItem}
       />
     </SafeAreaView>
   );

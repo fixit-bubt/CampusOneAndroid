@@ -81,6 +81,14 @@ export async function loadPeople(force = false): Promise<Record<string, Person>>
 export async function fetchPeople(ids: string[]): Promise<Record<string, Person>> {
   const wanted = Array.from(new Set(ids.filter(Boolean)));
   if (wanted.length === 0) return {};
+  if (cache) {
+    const missing = wanted.some(id => !cache![id]);
+    if (!missing) {
+      const out: Record<string, Person> = {};
+      for (const id of wanted) if (cache[id]) out[id] = cache[id];
+      return out;
+    }
+  }
   const all = await loadPeople();
   const out: Record<string, Person> = {};
   for (const id of wanted) if (all[id]) out[id] = all[id];
@@ -90,6 +98,7 @@ export async function fetchPeople(ids: string[]): Promise<Record<string, Person>
 // One name, for the odd single lookup.
 export async function personName(id: string | null | undefined): Promise<string | null> {
   if (!id) return null;
+  if (cache && cache[id]) return cache[id].full_name ?? null;
   const all = await loadPeople();
   return all[id]?.full_name ?? null;
 }

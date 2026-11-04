@@ -27,6 +27,7 @@ import {
   nextDeparture,
 } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
+import { callPhone, openWhatsApp } from '../../utils/link';
 
 function cleanWhatsAppPhone(phone?: string | null): string {
   if (!phone) return '';
@@ -326,7 +327,7 @@ export function BusDetailScreen({ route, navigation }: any) {
               <View style={styles.helperActions}>
                 <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                  onPress={() => Linking.openURL(`tel:${busRoute.helper_phone}`)}
+                  onPress={() => callPhone(busRoute.helper_phone)}
                   activeOpacity={0.75}
                 >
                   <Feather name="phone" size={16} color={C.text} />
@@ -338,7 +339,7 @@ export function BusDetailScreen({ route, navigation }: any) {
                 {cleanPhone ? (
                   <TouchableOpacity
                     style={[styles.actionBtn, { backgroundColor: '#25D366', borderColor: '#25D366' }]}
-                    onPress={() => Linking.openURL(`https://wa.me/${cleanPhone}`)}
+                    onPress={() => openWhatsApp(cleanPhone)}
                     activeOpacity={0.75}
                   >
                     <Feather name="message-circle" size={16} color="#fff" />

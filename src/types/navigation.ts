@@ -28,10 +28,10 @@ export type AppStackParams = {
 
   // Reports
   ReportDetail: { reportId: string };
-  ReportForm:   { editReportId?: string };
+  ReportForm?:  { editReportId?: string } | undefined;
   MyReports:    undefined;
   AssignedToMe: undefined;
-  CampusIssues: undefined;
+  CampusIssues?: { initialTab?: 'Campus' | 'My' } | undefined;
 
   // Lost & Found
   LostFoundBrowse: undefined;
@@ -68,16 +68,16 @@ export type AppStackParams = {
   // Market
   Market:       undefined;
   MarketDetail: { listingId: string };
-  MarketPost:   { listing?: import('./database').Listing };
+  MarketPost?:  { listing?: import('./database').Listing } | undefined;
 
   // Bus
   Bus:       undefined;
-  BusDetail: { id: string };
+  BusDetail: { id?: string; routeId?: string; initialDirection?: 'to' | 'from' };
 
   // Study Hub
   StudyHub:     undefined;
   CourseDetail: { courseId: string };
-  StudyUpload:  { courseId: string; courseCode: string; courseTitle: string };
+  StudyUpload:  { courseId: string; courseCode: string; courseTitle: string; initialTab?: string };
 
   // Medical (directory + doctor availability only - no booking)
   Medical:         undefined;
@@ -98,18 +98,18 @@ export type AppStackParams = {
 
   // Rides
   Rides:      undefined;
-  RidePost:   undefined;
+  RidePost?:  { postType?: 'offer' | 'request' } | undefined;
   RideDetail: { rideId: string };
 
   // Blood
-  Blood:              undefined;
+  Blood?:             { requestCode?: string } | undefined;
   BloodRequest:       undefined;
   BloodRequestDetail: { requestId: string };
   DonorRegister:      undefined;
 
   // Directory
-  Directory: undefined;
-  StudentProfile: { student?: import('../screens/directory/StudentProfileScreen').DirectoryStudent; studentId?: string; id?: string };
+  Directory?:      { tab?: 'search' | 'requests' | 'connections'; initialTab?: 'search' | 'requests' | 'connections' } | undefined;
+  StudentProfile: { student?: import('../screens/directory/StudentProfileScreen').DirectoryStudent; studentId?: string; id?: string; userId?: string };
 
   // Prayer
   Prayer: undefined;
@@ -159,48 +159,4 @@ export type AppStackParams = {
   // Legal & Policy
   PrivacyPolicy:  undefined;
   TermsOfService: undefined;
-};
-
-export type AnnouncementsStackParams = {
-  AnnouncementsList: undefined;
-  AnnouncementDetail: { announcementId: string };
-  AnnouncementPost: undefined;
-};
-
-export type BloodStackParams = {
-  BloodMain: undefined;
-  BloodRequest: undefined;
-  DonorRegister: undefined;
-};
-
-export type BusStackParams = {
-  BusList: undefined;
-  BusDetail: { routeId: string };
-};
-
-export type JobsStackParams = {
-  JobsBrowse: undefined;
-  JobDetail: { jobId: string };
-  JobPost: undefined;
-};
-
-export type MedicalStackParams = {
-  DoctorList: undefined;
-  DoctorDetail: { doctorId: string };
-};
-
-export type ClubsStackParams = {
-  ClubsList: undefined;
-  ClubDetail: { clubId: string };
-  ClubManage: { clubId: string };
-  ClubPost: { clubId: string; clubName: string };
-};
-
-export type FacultyStackParams = {
-  FacultyBrowse: undefined;
-  FacultyProfile: { facultyId: string };
-};
-
-export type DirectoryStackParams = {
-  DirectorySearch: undefined;
 };

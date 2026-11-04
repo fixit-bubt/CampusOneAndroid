@@ -13,6 +13,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../../components/ui/Icon';
 import { LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout } from '../../theme';
+import { openUrl } from '../../utils/link';
 
 const ANNEX_URL = 'https://annex.bubt.edu.bd/';
 
@@ -99,7 +100,7 @@ export function AnnexPortalScreen({ navigation }: any) {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => Linking.openURL(ANNEX_URL)}
+          onPress={() => openUrl(ANNEX_URL)}
           style={styles.iconBtn}
           activeOpacity={0.75}
         >

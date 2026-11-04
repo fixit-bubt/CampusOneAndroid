@@ -450,21 +450,27 @@ export function CourseDetailScreen({ route, navigation }: any) {
   }
   const tintBg = isDark ? `${STUDY_COLOR}2e` : STUDY_BG;
 
-  // Exam options for the questions filter
-  const examOptions = ['All', ...Array.from(new Set(questions.map(q => q.exam).filter(Boolean) as string[]))];
+  // Exam options for the questions filter (memoized)
+  const examOptions = useMemo(
+    () => ['All', ...Array.from(new Set(questions.map(q => q.exam).filter(Boolean) as string[]))],
+    [questions]
+  );
 
-  // Derived list: search + exam filter + batch filter + sort
-  let tabFiles = lists[tab];
-  const q = query.trim().toLowerCase();
-  if (q) tabFiles = tabFiles.filter(f => f.title.toLowerCase().includes(q));
-  if (tab === 'questions' && examFilter !== 'All') tabFiles = tabFiles.filter(f => f.exam === examFilter);
-  if (batchFilter !== 'All') tabFiles = tabFiles.filter(f => f.batch_label === batchFilter);
-  tabFiles = [...tabFiles].sort((a, b) =>
-    sort === 'name'
-      ? a.title.localeCompare(b.title)
-      : new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  // Derived list: search + exam filter + batch filter + sort (memoized, zero-alloc date comparison)
+  const tabFiles = useMemo(() => {
+    let files = lists[tab] || [];
+    const qStr = query.trim().toLowerCase();
+    if (qStr) files = files.filter(f => f.title.toLowerCase().includes(qStr));
+    if (tab === 'questions' && examFilter !== 'All') files = files.filter(f => f.exam === examFilter);
+    if (batchFilter !== 'All') files = files.filter(f => f.batch_label === batchFilter);
+    return [...files].sort((a, b) =>
+      sort === 'name'
+        ? a.title.localeCompare(b.title)
+        : (b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0)
+    );
+  }, [lists, tab, query, examFilter, batchFilter, sort]);
 
-  const emptyMsg = q
+  const emptyMsg = query.trim()
     ? t.study2.noMatches
     : tab === 'materials' ? 'No notes uploaded yet'
       : tab === 'questions' ? t.study2.noQuestions

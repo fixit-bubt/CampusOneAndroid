@@ -140,7 +140,8 @@ export function AssignedToMeScreen({ navigation }: any) {
         .select('*')
         .eq('assigned_staff_id', user.id)
         .is('deleted_at', null)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (err) {
         if (!cached || cached.length === 0) setError(true);

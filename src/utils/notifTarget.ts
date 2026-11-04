@@ -28,7 +28,7 @@ export const SECTOR_FALLBACK: Record<string, string> = {
   calendar:   'AcademicCalendar',
   routines:   'RoutinesBrowse',
   coverpage:  'CoverPageForm',
-  messages:   'MessagesHome',
+  messages:   'Messages',
 };
 
 const DIRECT: Record<string, { screen: string; key: string }> = {

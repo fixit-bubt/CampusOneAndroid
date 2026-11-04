@@ -255,7 +255,6 @@ export function AnnouncementsScreen({ navigation }: any) {
 
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
-    load();
     const sub = DeviceEventEmitter.addListener('announcement_read', ({ id }) => {
       if (id) {
         setReadIds(prev => {

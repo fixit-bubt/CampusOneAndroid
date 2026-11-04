@@ -27,6 +27,7 @@ import {
   formatBytes,
   openSystemAppSettings,
 } from '../../services/storageService';
+import { openUrl } from '../../utils/link';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 
@@ -459,7 +460,7 @@ export function SettingsScreen({ navigation }: any) {
           iconColor={C.text}
           label={t.mainx.contactSupport}
           C={C}
-          onPress={() => Linking.openURL('mailto:campusone.bubt@gmail.com?subject=CampusOne%20Support')}
+          onPress={() => openUrl('mailto:campusone2026@gmail.com?subject=CampusOne%20Support')}
         />
 
         {/* Section: ACCOUNT */}

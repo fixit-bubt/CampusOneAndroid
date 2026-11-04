@@ -8,7 +8,7 @@ import {
   type GestureResponderEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { FontFamily } from '../../theme';
 import { useTheme } from '../../hooks/useTheme';
 import { getCacheSync, CacheKeys } from '../../services/cacheService';
@@ -31,6 +31,7 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
     () => getCacheSync<BannerSlide[]>(CacheKeys.HOME_BANNER) ?? FALLBACK_SLIDES
   );
   const [currentIndex, setCurrentIndex] = useState(0);
+  const isFocused = useIsFocused();
   const touchStartX = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -39,14 +40,12 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
       const data = await fetchCuratedBannerSlides(force);
       if (data && data.length > 0) {
         setSlides(data);
-        if (currentIndex >= data.length) {
-          setCurrentIndex(0);
-        }
+        setCurrentIndex((prev) => (prev >= data.length ? 0 : prev));
       }
     } catch {
       setSlides(FALLBACK_SLIDES);
     }
-  }, [currentIndex]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -62,11 +61,11 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
 
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    if (slides.length <= 1) return;
+    if (!isFocused || slides.length <= 1) return;
     timerRef.current = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % slides.length);
     }, 4200);
-  }, [slides.length]);
+  }, [isFocused, slides.length]);
 
   useEffect(() => {
     startTimer();

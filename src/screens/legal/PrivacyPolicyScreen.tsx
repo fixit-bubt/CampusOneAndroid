@@ -6,7 +6,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout, FontSize } from '../../theme';
 
-const WEB_PRIVACY_URL = 'https://fixit-bubt.github.io/privacy-policy';
+const WEB_PRIVACY_URL = 'https://campusonebubt.vercel.app/privacy-policy';
 
 interface PolicySectionProps {
   icon: keyof typeof Feather.glyphMap;

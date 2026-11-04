@@ -28,7 +28,7 @@ interface AvatarProps {
   style?: ViewStyle;
 }
 
-export function Avatar({ uri, name, size = 'md', style }: AvatarProps) {
+export const Avatar = React.memo(function Avatar({ uri, name, size = 'md', style }: AvatarProps) {
   const { C } = useTheme();
   const dim = SIZE_MAP[size];
 
@@ -63,4 +63,4 @@ export function Avatar({ uri, name, size = 'md', style }: AvatarProps) {
       )}
     </View>
   );
-}
+});

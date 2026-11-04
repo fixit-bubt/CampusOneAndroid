@@ -77,7 +77,6 @@ export function ClubDetailScreen({ route, navigation }: any) {
 
   useEffect(() => {
     const unsub = navigation.addListener('focus', load);
-    load();
     return unsub;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
