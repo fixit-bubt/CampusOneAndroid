@@ -215,7 +215,7 @@ export function ManageMarketScreen({ navigation }: any) {
           ListHeaderComponent={
             <View>
               {/* 2. Strict 58dp Search Bar */}
-              <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 8 }}>
+              <View style={{ paddingTop: 6, paddingBottom: 8 }}>
                 <View style={[styles.searchBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <View style={styles.iconSlot32}>
                     <Feather name="search" size={20} color={C.text} />
@@ -239,7 +239,7 @@ export function ManageMarketScreen({ navigation }: any) {
               </View>
 
               {/* 3. Strict 58dp Dropdown Category Bar */}
-              <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 10 }}>
+              <View style={{ paddingBottom: 10 }}>
                 <TouchableOpacity
                   style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
                   onPress={() => setCategoryModalOpen(true)}
@@ -258,7 +258,7 @@ export function ManageMarketScreen({ navigation }: any) {
               </View>
 
               {/* 4. Strict 58dp Filter Tabs Row */}
-              <View style={{ paddingHorizontal: Layout.screenPadding, paddingBottom: 12 }}>
+              <View style={{ paddingBottom: 12 }}>
                 <View style={[styles.tabsRow58, { backgroundColor: C.surface, borderColor: C.border }]}>
                   {(['all', 'Available', 'Sold'] as const).map((s) => {
                     const active = statusFilter === s;
@@ -608,7 +608,6 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   countRow: {
-    paddingHorizontal: Layout.screenPadding,
     paddingBottom: 8,
   } as ViewStyle,
 

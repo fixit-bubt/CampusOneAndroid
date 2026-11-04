@@ -737,13 +737,11 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   tabContainer: {
-    paddingHorizontal: Layout.screenPadding,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingTop: 8,
+    paddingBottom: 4,
   } as ViewStyle,
 
   actionContainer: {
-    paddingHorizontal: Layout.screenPadding,
     paddingVertical: 5,
   } as ViewStyle,
 
@@ -762,7 +760,6 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   filterContainer: {
-    paddingHorizontal: Layout.screenPadding,
     paddingTop: 5,
     paddingBottom: 10,
   } as ViewStyle,
@@ -789,13 +786,11 @@ const styles = StyleSheet.create({
 
   loadingContainer: {
     flex: 1,
-    paddingHorizontal: Layout.screenPadding,
     paddingTop: 10,
   } as ViewStyle,
 
   errorContainer: {
     flex: 1,
-    paddingHorizontal: Layout.screenPadding,
     paddingTop: 20,
   } as ViewStyle,
 
