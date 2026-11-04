@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   StyleSheet,
   ActivityIndicator,
   Image,
@@ -26,9 +26,117 @@ import {
   saveBannerOrder,
   updateAnnouncementBannerStatus,
   updateClubBannerStatus,
+  updateEventBannerStatus,
   type BannerSlide,
 } from '../../services/announcementService';
 import { BANNERS_MAP, resolveBannerSource } from '../../utils/bannerUrl';
+
+interface CandidateItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  type: 'Notice' | 'Event' | 'Club';
+  priority?: string;
+  image?: string | null;
+  raw: any;
+}
+
+const CandidateCard = React.memo(function CandidateCard({
+  item,
+  isFull,
+  isBusy,
+  onAdd,
+  onOpen,
+  C,
+}: {
+  item: CandidateItem;
+  isFull: boolean;
+  isBusy: boolean;
+  onAdd: (item: CandidateItem) => void;
+  onOpen: (item: CandidateItem) => void;
+  C: any;
+}) {
+  const src = resolveBannerSource(item.image) || (
+    item.type === 'Event'
+      ? BANNERS_MAP['hackathon-2026.jpg']
+      : item.type === 'Club'
+        ? BANNERS_MAP['blood-drive.jpg']
+        : null
+  );
+
+  return (
+    <View style={[styles.candidateCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+      <TouchableOpacity
+        style={styles.candidateThumbWrap}
+        onPress={() => onOpen(item)}
+        activeOpacity={0.8}
+      >
+        {src ? (
+          <Image source={src} style={styles.candidateThumb} resizeMode="cover" />
+        ) : (
+          <View style={[styles.candidateThumb, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
+            <Feather
+              name={item.type === 'Notice' ? 'file-text' : item.type === 'Event' ? 'calendar' : 'users'}
+              size={18}
+              color={C.textMuted}
+            />
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.candidateInfo}
+        onPress={() => onOpen(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.badgeRowTiny}>
+          <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
+            <Text style={[styles.typePillTxtTiny, { color: C.text2 }]}>{item.type}</Text>
+          </View>
+          {item.priority ? (
+            <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
+              <Text style={[styles.typePillTxtTiny, { color: C.textMuted }]}>{item.priority}</Text>
+            </View>
+          ) : null}
+          <View style={styles.openHintRow}>
+            <Feather name="external-link" size={10} color={C.textMuted} />
+            <Text style={[styles.openHintTxt, { color: C.textMuted }]}>Open to verify</Text>
+          </View>
+        </View>
+        <Text style={[styles.candidateTitle, { color: C.text }]} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <Text style={[styles.candidateSub, { color: C.textMuted }]} numberOfLines={1}>
+          {item.subtitle}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.addBtn,
+          {
+            backgroundColor: isFull ? C.surface2 : C.surface3,
+            borderColor: isFull ? C.border : C.border2,
+            borderWidth: 1,
+            opacity: isFull || isBusy ? 0.6 : 1,
+          },
+        ]}
+        onPress={() => onAdd(item)}
+        disabled={isFull || isBusy}
+        activeOpacity={0.8}
+      >
+        {isBusy ? (
+          <ActivityIndicator size="small" color={C.text} />
+        ) : (
+          <>
+            <Feather name="plus" size={13} color={C.text} />
+            <Text style={[styles.addBtnTxt, { color: C.text }]}>Add</Text>
+          </>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+});
 
 export function ManageBannerScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
@@ -42,9 +150,17 @@ export function ManageBannerScreen({ navigation }: any) {
   const [availableClubs, setAvailableClubs] = useState<any[]>([]);
   const [previewIdx, setPreviewIdx] = useState(0);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [candidateTab, setCandidateTab] = useState<'all' | 'announcements' | 'events' | 'clubs'>('all');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 180);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -73,7 +189,7 @@ export function ManageBannerScreen({ navigation }: any) {
     return new Set(activeSlides.map((s) => s.sourceId));
   }, [activeSlides]);
 
-  const handleOpenDetail = (item: {
+  const handleOpenDetail = useCallback((item: {
     type: 'Notice' | 'Event' | 'Club';
     id: string;
     sourceId?: string;
@@ -91,9 +207,9 @@ export function ManageBannerScreen({ navigation }: any) {
     } else if (item.route) {
       navigation.navigate(item.route, item.params);
     }
-  };
+  }, [navigation]);
 
-  const handleMove = async (index: number, direction: -1 | 1) => {
+  const handleMove = useCallback(async (index: number, direction: -1 | 1) => {
     const targetIdx = index + direction;
     if (targetIdx < 0 || targetIdx >= activeSlides.length) return;
 
@@ -123,9 +239,9 @@ export function ManageBannerScreen({ navigation }: any) {
     } else {
       toast({ type: 'success', title: 'Banner Order Updated', message: `Moved to slot #${targetIdx + 1}` });
     }
-  };
+  }, [activeSlides, loadData, toast]);
 
-  const handleRemove = async (slide: BannerSlide) => {
+  const handleRemove = useCallback(async (slide: BannerSlide) => {
     setSavingId(slide.id);
     const nextSlides = activeSlides.filter((s) => s.id !== slide.id);
     setActiveSlides(nextSlides);
@@ -139,6 +255,9 @@ export function ManageBannerScreen({ navigation }: any) {
         if (!res.success) throw new Error(res.error);
       } else if (slide.type === 'Club') {
         const res = await updateClubBannerStatus(slide.sourceId, false);
+        if (!res.success) throw new Error(res.error);
+      } else if (slide.type === 'Event') {
+        const res = await updateEventBannerStatus(slide.sourceId, false);
         if (!res.success) throw new Error(res.error);
       } else {
         const payload = nextSlides.map((item, idx) => ({
@@ -161,16 +280,9 @@ export function ManageBannerScreen({ navigation }: any) {
     } finally {
       setSavingId(null);
     }
-  };
+  }, [activeSlides, previewIdx, loadData, toast]);
 
-  const handleAddCandidate = async (candidate: {
-    id: string;
-    title: string;
-    subtitle: string;
-    type: 'Notice' | 'Event' | 'Club';
-    image?: string | null;
-    raw: any;
-  }) => {
+  const handleAddCandidate = useCallback(async (candidate: CandidateItem) => {
     if (activeSlides.length >= 6) {
       Alert.alert(
         'Banner Limit Reached',
@@ -236,6 +348,9 @@ export function ManageBannerScreen({ navigation }: any) {
       } else if (candidate.type === 'Club') {
         const res = await updateClubBannerStatus(candidate.id, true, nextOrder);
         if (!res.success) throw new Error(res.error);
+      } else if (candidate.type === 'Event') {
+        const res = await updateEventBannerStatus(candidate.id, true, nextOrder);
+        if (!res.success) throw new Error(res.error);
       } else {
         const payload = nextSlides.map((s, idx) => ({
           id: s.sourceId,
@@ -257,7 +372,7 @@ export function ManageBannerScreen({ navigation }: any) {
     } finally {
       setSavingId(null);
     }
-  };
+  }, [activeSlides, loadData, toast]);
 
   const candidateCounts = useMemo(() => {
     const annCount = availableAnnouncements.filter((a) => !activeSourceIds.has(a.id)).length;
@@ -272,16 +387,8 @@ export function ManageBannerScreen({ navigation }: any) {
   }, [availableAnnouncements, availableEvents, availableClubs, activeSourceIds]);
 
   const filteredCandidates = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const result: Array<{
-      id: string;
-      title: string;
-      subtitle: string;
-      type: 'Notice' | 'Event' | 'Club';
-      priority?: string;
-      image?: string | null;
-      raw: any;
-    }> = [];
+    const q = debouncedSearch.trim().toLowerCase();
+    const result: CandidateItem[] = [];
 
     if (candidateTab === 'all' || candidateTab === 'announcements') {
       availableAnnouncements.forEach((a) => {
@@ -351,7 +458,7 @@ export function ManageBannerScreen({ navigation }: any) {
     }
 
     return result;
-  }, [availableAnnouncements, availableEvents, availableClubs, activeSourceIds, search, candidateTab]);
+  }, [availableAnnouncements, availableEvents, availableClubs, activeSourceIds, debouncedSearch, candidateTab]);
 
   const activePreview = activeSlides[previewIdx] || activeSlides[0] || null;
   const resolvedPreviewSource = activePreview ? resolveBannerSource(activePreview.imageUri, activePreview.localImage) : null;
@@ -363,6 +470,19 @@ export function ManageBannerScreen({ navigation }: any) {
         : BANNERS_MAP['convocation-2026.jpg'])
     : BANNERS_MAP['convocation-2026.jpg'];
   const previewSource = resolvedPreviewSource || fallbackPreviewSource;
+
+  const renderCandidateItem = useCallback(({ item }: { item: CandidateItem }) => (
+    <CandidateCard
+      item={item}
+      isFull={activeSlides.length >= 6}
+      isBusy={savingId === item.id}
+      onAdd={handleAddCandidate}
+      onOpen={handleOpenDetail}
+      C={C}
+    />
+  ), [activeSlides.length, savingId, handleAddCandidate, handleOpenDetail, C]);
+
+  const keyExtractor = useCallback((item: CandidateItem) => `${item.type}-${item.id}`, []);
 
   if (profile?.role !== 'admin') {
     return (
@@ -397,6 +517,301 @@ export function ManageBannerScreen({ navigation }: any) {
       ? 'calendar'
       : 'users';
 
+  const ListHeader = (
+    <View>
+      {/* Visual Live Carousel Preview */}
+      <View style={[styles.previewWrapper, { borderColor: C.border, backgroundColor: C.surface }]}>
+        <View style={styles.previewHeaderRow}>
+          <View style={styles.previewTagPill}>
+            <Feather name="eye" size={14} color={C.textMuted} />
+            <Text style={[styles.previewTagTxt, { color: C.text }]}>Student Home Preview</Text>
+          </View>
+          <Text style={[styles.previewCountTxt, { color: C.textMuted }]}>
+            {activeSlides.length}/6 Active Slides
+          </Text>
+        </View>
+
+        {activePreview ? (
+          <TouchableOpacity
+            activeOpacity={0.92}
+            onPress={() => handleOpenDetail(activePreview)}
+            style={[styles.previewCard, { backgroundColor: C.surface2 }]}
+          >
+            <Image
+              source={fallbackPreviewSource}
+              style={styles.previewBgFallback}
+              resizeMode="cover"
+            />
+
+            {resolvedPreviewSource && (
+              <Image
+                source={resolvedPreviewSource}
+                style={styles.previewImage}
+                resizeMode="cover"
+              />
+            )}
+
+            <LinearGradient
+              colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']}
+              locations={[0, 0.40, 1]}
+              style={styles.previewGradient}
+            >
+              <View style={styles.previewTopRow}>
+                <View style={[styles.typeBadge, { backgroundColor: isDark ? 'rgba(39,39,42,0.85)' : 'rgba(24,24,27,0.85)', borderColor: isDark ? C.border2 : C.border }]}>
+                  <Text style={styles.typeBadgeTxt}>Slot #{previewIdx + 1} · {activePreview.type}</Text>
+                </View>
+                <View style={styles.tapToViewPill}>
+                  <Feather name="external-link" size={11} color="rgba(255,255,255,0.85)" />
+                  <Text style={styles.tapToViewTxt}>Tap to View</Text>
+                </View>
+              </View>
+
+              <View style={styles.previewBottomContent}>
+                <Text style={styles.previewTitle} numberOfLines={2}>
+                  {activePreview.title}
+                </Text>
+                <Text style={styles.previewSub} numberOfLines={1}>
+                  {activePreview.subtitle}
+                </Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.emptyPreviewCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
+            <Feather name="alert-circle" size={24} color={C.textMuted} />
+            <Text style={[styles.emptyPreviewTxt, { color: C.textMuted }]}>
+              No slides currently active. Default varsity banners will display.
+            </Text>
+          </View>
+        )}
+
+        {/* Pagination Line Indicators */}
+        {activeSlides.length > 1 && (
+          <View style={styles.indicatorRow}>
+            {activeSlides.map((_, idx) => {
+              const isActive = previewIdx === idx;
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  onPress={() => setPreviewIdx(idx)}
+                  hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+                  style={[
+                    styles.indicatorBar,
+                    isActive
+                      ? [styles.indicatorActive, { backgroundColor: isDark ? '#ffffff' : '#18181b' }]
+                      : [
+                        styles.indicatorInactive,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255, 255, 255, 0.35)'
+                            : 'rgba(15, 26, 46, 0.22)',
+                        },
+                      ],
+                  ]}
+                />
+              );
+            })}
+          </View>
+        )}
+
+        {/* Quick Slot Selector */}
+        {activeSlides.length > 0 && (
+          <View style={styles.slotRow}>
+            {activeSlides.map((_, idx) => (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => setPreviewIdx(idx)}
+                style={[
+                  styles.slotPill,
+                  {
+                    backgroundColor: previewIdx === idx ? C.surface2 : C.surface,
+                    borderColor: previewIdx === idx ? C.border2 : C.border,
+                  },
+                ]}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              >
+                <Text
+                  style={[
+                    styles.slotPillTxt,
+                    { color: previewIdx === idx ? C.text : C.textMuted },
+                  ]}
+                >
+                  #{idx + 1}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Section 1: Active Slides Management */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionTitle, { color: C.text }]}>Active Banner Slides ({activeSlides.length}/6)</Text>
+        <Text style={[styles.sectionHint, { color: C.textMuted }]}>Max 6</Text>
+      </View>
+
+      {activeSlides.length === 0 ? (
+        <View style={[styles.emptyStateCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Feather name="layers" size={28} color={C.textMuted} />
+          <Text style={[styles.emptyTitle, { color: C.text }]}>No Curated Slides</Text>
+          <Text style={[styles.emptySub, { color: C.textMuted }]}>
+            Add announcements, events, or clubs from below to feature them on the student home banner.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.activeListContainer}>
+          {activeSlides.map((slide, index) => {
+            const src = resolveBannerSource(slide.imageUri, slide.localImage) || (
+              slide.type === 'Event'
+                ? BANNERS_MAP['hackathon-2026.jpg']
+                : slide.type === 'Club'
+                  ? BANNERS_MAP['blood-drive.jpg']
+                  : BANNERS_MAP['convocation-2026.jpg']
+            );
+            const isFirst = index === 0;
+            const isLast = index === activeSlides.length - 1;
+            const isBusy = savingId === slide.id;
+
+            return (
+              <View
+                key={slide.id}
+                style={[
+                  styles.activeSlideCard,
+                  {
+                    backgroundColor: C.surface,
+                    borderColor: previewIdx === index ? C.border2 : C.border,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.activeSlideThumbWrap}
+                  onPress={() => setPreviewIdx(index)}
+                  activeOpacity={0.8}
+                >
+                  {src ? (
+                    <Image source={src} style={styles.activeSlideThumb} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.activeSlideThumb, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
+                      <Feather name="image" size={16} color={C.textMuted} />
+                    </View>
+                  )}
+                  <View style={[styles.orderIndexTag, { backgroundColor: C.surface2, borderColor: C.border2 }]}>
+                    <Text style={[styles.orderIndexTxt, { color: C.text }]}>#{index + 1}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.activeSlideInfo}
+                  onPress={() => {
+                    setPreviewIdx(index);
+                    handleOpenDetail(slide);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.badgeRowTiny}>
+                    <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
+                      <Text style={[styles.typePillTxtTiny, { color: C.text2 }]}>{slide.type}</Text>
+                    </View>
+                    <View style={styles.openHintRow}>
+                      <Feather name="external-link" size={10} color={C.textMuted} />
+                      <Text style={[styles.openHintTxt, { color: C.textMuted }]}>Open</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.activeSlideTitle, { color: C.text }]} numberOfLines={1}>
+                    {slide.title}
+                  </Text>
+                  <Text style={[styles.activeSlideSub, { color: C.textMuted }]} numberOfLines={1}>
+                    {slide.subtitle}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Actions: Move Up, Move Down, Delete */}
+                <View style={styles.activeSlideActions}>
+                  <TouchableOpacity
+                    onPress={() => handleMove(index, -1)}
+                    disabled={isFirst || isBusy}
+                    style={[styles.arrowBtn, { opacity: isFirst ? 0.3 : 1 }]}
+                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                  >
+                    <Feather name="arrow-up" size={16} color={C.text} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleMove(index, 1)}
+                    disabled={isLast || isBusy}
+                    style={[styles.arrowBtn, { opacity: isLast ? 0.3 : 1 }]}
+                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                  >
+                    <Feather name="arrow-down" size={16} color={C.text} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleRemove(slide)}
+                    disabled={isBusy}
+                    style={styles.trashBtn}
+                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                  >
+                    {isBusy ? (
+                      <ActivityIndicator size="small" color={C.textMuted} />
+                    ) : (
+                      <Feather name="trash-2" size={16} color={C.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Section 2: Candidate Pool Header */}
+      <View style={styles.candidateSection}>
+        <Text style={[styles.sectionTitle, { color: C.text }]}>Add Announcements, Events & Clubs</Text>
+        <Text style={[styles.sectionHint, { color: C.textMuted }]}>
+          Select items to display on the student home banner
+        </Text>
+
+        {/* Search Bar */}
+        <View style={[styles.searchBox58, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Feather name="search" size={18} color={C.textMuted} />
+          <TextInput
+            style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search notices..."
+            placeholderTextColor={C.textMuted}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+              <Feather name="x" size={18} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Universal 58dp Category Dropdown Bar */}
+        <TouchableOpacity
+          style={[
+            styles.dropdownBar58,
+            {
+              backgroundColor: C.surface,
+              borderColor: C.border,
+            },
+          ]}
+          onPress={() => setFilterSheetVisible(true)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.barLeft}>
+            <Feather name={categoryIcon as any} size={20} color={C.text} />
+            <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {categoryLabel}
+            </Text>
+          </View>
+          <Feather name="chevron-down" size={18} color={C.textMuted} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -418,406 +833,31 @@ export function ManageBannerScreen({ navigation }: any) {
         }
       />
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Visual Live Carousel Preview */}
-        <View style={[styles.previewWrapper, { borderColor: C.border, backgroundColor: C.surface }]}>
-          <View style={styles.previewHeaderRow}>
-            <View style={styles.previewTagPill}>
-              <Feather name="eye" size={14} color={C.textMuted} />
-              <Text style={[styles.previewTagTxt, { color: C.text }]}>Student Home Preview</Text>
-            </View>
-            <Text style={[styles.previewCountTxt, { color: C.textMuted }]}>
-              {activeSlides.length}/6 Active Slides
-            </Text>
-          </View>
-
-          {activePreview ? (
-            <TouchableOpacity
-              activeOpacity={0.92}
-              onPress={() => handleOpenDetail(activePreview)}
-              style={styles.previewCard}
-            >
-              {/* Unconditional local varsity fallback */}
-              <Image
-                source={fallbackPreviewSource}
-                style={styles.previewBgFallback}
-                resizeMode="cover"
-              />
-
-              {/* Custom Image Overlay */}
-              {resolvedPreviewSource && (
-                <Image
-                  source={resolvedPreviewSource}
-                  style={styles.previewImage}
-                  resizeMode="cover"
-                />
-              )}
-
-              {/* Scrim Gradient with Nested Content on Top */}
-              <LinearGradient
-                colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.50)', 'rgba(0,0,0,0.92)']}
-                locations={[0, 0.40, 1]}
-                style={styles.previewGradient}
-              >
-                <View style={styles.previewTopRow}>
-                  <View style={[styles.typeBadge, { backgroundColor: isDark ? 'rgba(39,39,42,0.85)' : 'rgba(24,24,27,0.85)', borderColor: isDark ? '#3f3f46' : '#27272a' }]}>
-                    <Text style={styles.typeBadgeTxt}>Slot #{previewIdx + 1} · {activePreview.type}</Text>
-                  </View>
-                  <View style={styles.tapToViewPill}>
-                    <Feather name="external-link" size={11} color="rgba(255,255,255,0.85)" />
-                    <Text style={styles.tapToViewTxt}>Tap to View</Text>
-                  </View>
-                </View>
-
-                <View style={styles.previewBottomContent}>
-                  <Text style={styles.previewTitle} numberOfLines={2}>
-                    {activePreview.title}
-                  </Text>
-                  <Text style={styles.previewSub} numberOfLines={1}>
-                    {activePreview.subtitle}
-                  </Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          ) : (
-            <View style={[styles.emptyPreviewCard, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Feather name="alert-circle" size={24} color={C.textMuted} />
-              <Text style={[styles.emptyPreviewTxt, { color: C.textMuted }]}>
-                No slides currently active. Default varsity banners will display.
-              </Text>
-            </View>
-          )}
-
-          {/* Pagination Line Indicators matching HomeHeroBanner */}
-          {activeSlides.length > 1 && (
-            <View style={styles.indicatorRow}>
-              {activeSlides.map((_, idx) => {
-                const isActive = previewIdx === idx;
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    onPress={() => setPreviewIdx(idx)}
-                    hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-                    style={[
-                      styles.indicatorBar,
-                      isActive
-                        ? [styles.indicatorActive, { backgroundColor: isDark ? '#ffffff' : '#18181b' }]
-                        : [
-                          styles.indicatorInactive,
-                          {
-                            backgroundColor: isDark
-                              ? 'rgba(255, 255, 255, 0.35)'
-                              : 'rgba(15, 26, 46, 0.22)',
-                          },
-                        ],
-                    ]}
-                  />
-                );
-              })}
-            </View>
-          )}
-
-          {/* Quick Slot Selector */}
-          {activeSlides.length > 0 && (
-            <View style={styles.slotRow}>
-              {activeSlides.map((_, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => setPreviewIdx(idx)}
-                  style={[
-                    styles.slotPill,
-                    {
-                      backgroundColor: previewIdx === idx ? (isDark ? '#27272a' : '#18181b') : C.surface2,
-                      borderColor: previewIdx === idx ? (isDark ? '#3f3f46' : '#27272a') : C.border,
-                    },
-                  ]}
-                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                >
-                  <Text
-                    style={[
-                      styles.slotPillTxt,
-                      { color: previewIdx === idx ? '#ffffff' : C.textMuted },
-                    ]}
-                  >
-                    #{idx + 1}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Section 1: Active Slides Management */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: C.text }]}>Active Banner Slides ({activeSlides.length}/6)</Text>
-          <Text style={[styles.sectionHint, { color: C.textMuted }]}>Max 6</Text>
-        </View>
-
-        {activeSlides.length === 0 ? (
-          <View style={[styles.emptyStateCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Feather name="layers" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTitle, { color: C.text }]}>No Curated Slides</Text>
-            <Text style={[styles.emptySub, { color: C.textMuted }]}>
-              Add announcements, events, or clubs from below to feature them on the student home banner.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.activeListContainer}>
-            {activeSlides.map((slide, index) => {
-              const src = resolveBannerSource(slide.imageUri, slide.localImage) || (
-                slide.type === 'Event'
-                  ? BANNERS_MAP['hackathon-2026.jpg']
-                  : slide.type === 'Club'
-                    ? BANNERS_MAP['blood-drive.jpg']
-                    : BANNERS_MAP['convocation-2026.jpg']
-              );
-              const isFirst = index === 0;
-              const isLast = index === activeSlides.length - 1;
-              const isBusy = savingId === slide.id;
-
-              return (
-                <View
-                  key={slide.id}
-                  style={[
-                    styles.activeSlideCard,
-                    {
-                      backgroundColor: C.surface,
-                      borderColor: previewIdx === index ? (isDark ? '#52525b' : '#a1a1aa') : C.border,
-                    },
-                  ]}
-                >
-                  <TouchableOpacity
-                    style={styles.activeSlideThumbWrap}
-                    onPress={() => setPreviewIdx(index)}
-                    activeOpacity={0.8}
-                  >
-                    {src ? (
-                      <Image source={src} style={styles.activeSlideThumb} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.activeSlideThumb, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
-                        <Feather name="image" size={16} color={C.textMuted} />
-                      </View>
-                    )}
-                    <View style={[styles.orderIndexTag, { backgroundColor: isDark ? '#27272a' : '#18181b', borderColor: isDark ? '#3f3f46' : '#27272a' }]}>
-                      <Text style={styles.orderIndexTxt}>#{index + 1}</Text>
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.activeSlideInfo}
-                    onPress={() => {
-                      setPreviewIdx(index);
-                      handleOpenDetail(slide);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.badgeRowTiny}>
-                      <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
-                        <Text style={[styles.typePillTxtTiny, { color: C.text2 }]}>{slide.type}</Text>
-                      </View>
-                      <View style={styles.openHintRow}>
-                        <Feather name="external-link" size={10} color={C.textMuted} />
-                        <Text style={[styles.openHintTxt, { color: C.textMuted }]}>Open</Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.activeSlideTitle, { color: C.text }]} numberOfLines={1}>
-                      {slide.title}
-                    </Text>
-                    <Text style={[styles.activeSlideSub, { color: C.textMuted }]} numberOfLines={1}>
-                      {slide.subtitle}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Actions: Move Up, Move Down, Delete */}
-                  <View style={styles.activeSlideActions}>
-                    <TouchableOpacity
-                      onPress={() => handleMove(index, -1)}
-                      disabled={isFirst || isBusy}
-                      style={[styles.arrowBtn, { opacity: isFirst ? 0.3 : 1 }]}
-                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                    >
-                      <Feather name="arrow-up" size={16} color={C.text} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => handleMove(index, 1)}
-                      disabled={isLast || isBusy}
-                      style={[styles.arrowBtn, { opacity: isLast ? 0.3 : 1 }]}
-                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                    >
-                      <Feather name="arrow-down" size={16} color={C.text} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => handleRemove(slide)}
-                      disabled={isBusy}
-                      style={styles.trashBtn}
-                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                    >
-                      {isBusy ? (
-                        <ActivityIndicator size="small" color={C.textMuted} />
-                      ) : (
-                        <Feather name="trash-2" size={16} color={C.textMuted} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Section 2: Candidate Pool */}
-        <View style={styles.candidateSection}>
-          <Text style={[styles.sectionTitle, { color: C.text }]}>Add Announcements, Events & Clubs</Text>
-          <Text style={[styles.sectionHint, { color: C.textMuted }]}>
-            Select items to display on the student home banner
-          </Text>
-
-          {/* Search Bar */}
-          <View style={[styles.searchBox58, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <Feather name="search" size={18} color={C.textMuted} />
-            <TextInput
-              style={[styles.searchInput, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search notices..."
-              placeholderTextColor={C.textMuted}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
-                <Feather name="x" size={18} color={C.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Universal 58dp Category Dropdown Bar */}
-          <TouchableOpacity
-            style={[
-              styles.dropdownBar58,
-              {
-                backgroundColor: C.surface,
-                borderColor: C.border,
-              },
-            ]}
-            onPress={() => setFilterSheetVisible(true)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.barLeft}>
-              <Feather name={categoryIcon as any} size={20} color={C.text} />
-              <Text style={[styles.barTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {categoryLabel}
-              </Text>
-            </View>
-            <Feather name="chevron-down" size={18} color={C.textMuted} />
-          </TouchableOpacity>
-
-          {/* Candidates List */}
-          {filteredCandidates.length === 0 ? (
+      <FlatList
+        data={filteredCandidates}
+        renderItem={renderCandidateItem}
+        keyExtractor={keyExtractor}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
+          filteredCandidates.length === 0 ? (
             <View style={[styles.emptyPoolCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <Feather name="info" size={20} color={C.textMuted} />
               <Text style={[styles.emptyPoolTxt, { color: C.textMuted }]}>
                 No candidate items found matching your filter.
               </Text>
             </View>
-          ) : (
-            filteredCandidates.map((item) => {
-              const isFull = activeSlides.length >= 6;
-              const isBusy = savingId === item.id;
-              const src = resolveBannerSource(item.image) || (
-                item.type === 'Event'
-                  ? BANNERS_MAP['hackathon-2026.jpg']
-                  : item.type === 'Club'
-                    ? BANNERS_MAP['blood-drive.jpg']
-                    : null
-              );
-
-              return (
-                <View
-                  key={`${item.type}-${item.id}`}
-                  style={[styles.candidateCard, { backgroundColor: C.surface, borderColor: C.border }]}
-                >
-                  <TouchableOpacity
-                    style={styles.candidateThumbWrap}
-                    onPress={() => handleOpenDetail(item)}
-                    activeOpacity={0.8}
-                  >
-                    {src ? (
-                      <Image source={src} style={styles.candidateThumb} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.candidateThumb, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
-                        <Feather
-                          name={item.type === 'Notice' ? 'file-text' : item.type === 'Event' ? 'calendar' : 'users'}
-                          size={18}
-                          color={C.textMuted}
-                        />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.candidateInfo}
-                    onPress={() => handleOpenDetail(item)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.badgeRowTiny}>
-                      <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
-                        <Text style={[styles.typePillTxtTiny, { color: C.text2 }]}>{item.type}</Text>
-                      </View>
-                      {item.priority && (
-                        <View style={[styles.typePillTiny, { backgroundColor: C.surface2 }]}>
-                          <Text style={[styles.typePillTxtTiny, { color: C.textMuted }]}>{item.priority}</Text>
-                        </View>
-                      )}
-                      <View style={styles.openHintRow}>
-                        <Feather name="external-link" size={10} color={C.textMuted} />
-                        <Text style={[styles.openHintTxt, { color: C.textMuted }]}>Open to verify</Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.candidateTitle, { color: C.text }]} numberOfLines={2}>
-                      {item.title}
-                    </Text>
-                    <Text style={[styles.candidateSub, { color: C.textMuted }]} numberOfLines={1}>
-                      {item.subtitle}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.addBtn,
-                      {
-                        backgroundColor: isFull ? C.surface2 : (isDark ? '#27272a' : '#18181b'),
-                        borderColor: isFull ? C.border : (isDark ? '#3f3f46' : '#27272a'),
-                        borderWidth: 1,
-                        opacity: isFull || isBusy ? 0.6 : 1,
-                      },
-                    ]}
-                    onPress={() => handleAddCandidate(item)}
-                    disabled={isFull || isBusy}
-                    activeOpacity={0.8}
-                  >
-                    {isBusy ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
-                    ) : (
-                      <>
-                        <Feather name="plus" size={13} color="#ffffff" />
-                        <Text style={styles.addBtnTxt}>Add</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              );
-            })
-          )}
-        </View>
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          ) : null
+        }
+        ListFooterComponent={<View style={{ height: 40 }} />}
+        contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={true}
+      />
 
       {/* 58dp Dropdown Category Filter Bottom Sheet */}
       <Modal
@@ -838,7 +878,7 @@ export function ManageBannerScreen({ navigation }: any) {
             ]}
             onStartShouldSetResponder={() => true}
           >
-            <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#3f3f46' : '#d4d4d8' }]} />
+            <View style={[styles.sheetHandle, { backgroundColor: C.border2 }]} />
             <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
               Candidate Category Filter
             </Text>
@@ -860,8 +900,8 @@ export function ManageBannerScreen({ navigation }: any) {
                     style={[
                       styles.sheetOptionBar58,
                       {
-                        backgroundColor: isSelected ? (isDark ? '#27272a' : '#f4f4f5') : C.surface,
-                        borderColor: isSelected ? (isDark ? '#3f3f46' : '#27272a') : C.border,
+                        backgroundColor: isSelected ? C.surface2 : C.surface,
+                        borderColor: isSelected ? C.border2 : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -953,7 +993,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#18181b',
   },
   previewBgFallback: {
     ...StyleSheet.absoluteFill as any,
@@ -1110,7 +1149,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   orderIndexTxt: {
-    color: '#ffffff',
     fontFamily: FontFamily.jakartaBold,
     fontSize: 9,
   },
@@ -1277,7 +1315,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   addBtnTxt: {
-    color: '#ffffff',
     fontFamily: FontFamily.jakartaBold,
     fontSize: 11.5,
   },

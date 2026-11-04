@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -100,7 +100,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
   const [tradeModalVisible, setTradeModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const roleTabs: TabItem<CreatableRole>[] = [
+  const roleTabs = useMemo<TabItem<CreatableRole>[]>(() => [
     {
       id: 'staff',
       label: 'Staff Account',
@@ -111,7 +111,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
       label: 'Admin Account',
       icon: 'shield',
     },
-  ];
+  ], []);
 
   const selectedTradeOption = useMemo(
     () => TRADE_OPTIONS.find((t) => t.id === trade) ?? TRADE_OPTIONS[TRADE_OPTIONS.length - 1],
@@ -123,7 +123,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
   const isValidName = name.trim().length >= 2;
   const isFormValid = isValidName && isValidEmail && isValidPassword;
 
-  async function handleCreate() {
+  const handleCreate = useCallback(async () => {
     if (!isFormValid || submitting) return;
 
     setSubmitting(true);
@@ -182,7 +182,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [isFormValid, submitting, name, email, password, role, trade, showToast, navigation]);
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -334,7 +334,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
             style={[
               styles.submitBtn58,
               {
-                backgroundColor: isFormValid ? C.brand : (isDark ? '#262626' : '#e4e4e7'),
+                backgroundColor: isFormValid ? C.brand : C.surface2,
                 opacity: isFormValid && !submitting ? 1 : 0.6,
               },
             ]}
@@ -343,15 +343,15 @@ export function CreateStaffAdminScreen({ navigation }: any) {
             activeOpacity={0.8}
           >
             {submitting ? (
-              <ActivityIndicator color="#ffffff" size="small" />
+              <ActivityIndicator color={C.white} size="small" />
             ) : (
               <>
-                <Feather name="user-plus" size={20} color={isFormValid ? '#ffffff' : C.textMuted} />
+                <Feather name="user-plus" size={20} color={isFormValid ? C.white : C.textMuted} />
                 <Text
                   style={[
                     styles.submitBtnTxt,
                     {
-                      color: isFormValid ? '#ffffff' : C.textMuted,
+                      color: isFormValid ? C.white : C.textMuted,
                       fontFamily: FontFamily.jakartaBold,
                     },
                   ]}
@@ -385,7 +385,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
             },
           ]}
         >
-          <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#383838' : '#d4d4d8' }]} />
+          <View style={[styles.sheetHandle, { backgroundColor: C.border2 }]} />
 
           <View style={styles.sheetHeaderRow}>
             <View>
@@ -397,7 +397,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.sheetCloseBtn, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}
+              style={[styles.sheetCloseBtn, { backgroundColor: C.surface2 }]}
               onPress={() => setTradeModalVisible(false)}
             >
               <Feather name="x" size={18} color={C.text} />
@@ -417,7 +417,7 @@ export function CreateStaffAdminScreen({ navigation }: any) {
                   style={[
                     styles.tradeModalRow58,
                     {
-                      backgroundColor: isSelected ? (isDark ? '#262626' : '#f4f4f5') : 'transparent',
+                      backgroundColor: isSelected ? C.surface2 : 'transparent',
                       borderColor: isSelected ? C.brand : C.border,
                     },
                   ]}

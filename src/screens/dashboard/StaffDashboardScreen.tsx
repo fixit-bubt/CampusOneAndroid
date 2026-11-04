@@ -9,7 +9,6 @@ import { useTheme } from '../../hooks/useTheme';
 import { TopBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { useT } from '../../i18n';
@@ -369,12 +368,6 @@ export function StaffDashboardScreen({ navigation }: any) {
     return reports;
   }, [reports, filterTab, activeReports, resolvedReports]);
 
-  const filterTabs: TabItem<FilterTab>[] = useMemo(() => [
-    { id: 'all', label: 'All', count: reports.length },
-    { id: 'active', label: 'Active', count: activeReports.length },
-    { id: 'resolved', label: 'Done', count: resolvedReports.length },
-  ], [reports.length, activeReports.length, resolvedReports.length]);
-
   const renderItem = useCallback(({ item: r }: { item: Report }) => {
     return (
       <ReportCard
@@ -619,11 +612,6 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     textAlign: 'center',
   } as any,
-
-  // Filter Tabs
-  tabWrap: {
-    marginBottom: 12,
-  } as ViewStyle,
 
   // Section Header
   sectionRow: {

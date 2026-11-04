@@ -299,17 +299,17 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
   };
 
   // Open Document
-  const handleOpenDoc = (doc: AcademicCalendarDoc) => {
+  const handleOpenDoc = useCallback((doc: AcademicCalendarDoc) => {
     if (doc.file_type === 'image') {
       setViewingDoc(doc);
       setPhotoViewerVisible(true);
     } else {
       setViewingDoc(doc);
     }
-  };
+  }, []);
 
   // Delete Calendar
-  const handleDeleteDoc = (doc: AcademicCalendarDoc) => {
+  const handleDeleteDoc = useCallback((doc: AcademicCalendarDoc) => {
     Alert.alert(
       'Delete Academic Calendar',
       `Are you sure you want to remove "${doc.title}"? This action cannot be undone.`,
@@ -330,7 +330,7 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
         },
       ]
     );
-  };
+  }, [loadData, toast]);
 
   const handleShareDoc = async (doc: AcademicCalendarDoc) => {
     try {
@@ -343,6 +343,20 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
       // Ignored
     }
   };
+
+  const renderCalendarItem = useCallback(
+    ({ item }: { item: AcademicCalendarDoc }) => (
+      <CalendarBar72
+        item={item}
+        onOpen={handleOpenDoc}
+        onDelete={handleDeleteDoc}
+        C={C}
+      />
+    ),
+    [handleOpenDoc, handleDeleteDoc, C]
+  );
+
+  const calendarKeyExtractor = useCallback((item: AcademicCalendarDoc) => item.id, []);
 
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
@@ -358,7 +372,12 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
       >
         <FlatList
           data={calendars}
-          keyExtractor={(item) => item.id}
+          keyExtractor={calendarKeyExtractor}
+          renderItem={renderCalendarItem}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[
@@ -593,14 +612,6 @@ export function ManageAcademicCalendarScreen({ navigation }: any) {
               </View>
             </View>
           }
-          renderItem={({ item }) => (
-            <CalendarBar72
-              item={item}
-              onOpen={handleOpenDoc}
-              onDelete={handleDeleteDoc}
-              C={C}
-            />
-          )}
           ListEmptyComponent={
             loading ? (
               <View style={styles.loadingBox}>

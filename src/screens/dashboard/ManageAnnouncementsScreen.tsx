@@ -70,18 +70,25 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
   const [syncing, setSyncing] = useState(false);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [filterPickerVisible, setFilterPickerVisible] = useState(false);
   const [lastSyncLog, setLastSyncLog] = useState<SyncLog | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(search), 180);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const loadData = useCallback(async () => {
     try {
       const [res, logRes] = await Promise.all([
         fetchAnnouncementsFeed(),
         supabase
-          .from('notice_sync_logs')
+          .from('crawler_audit_logs' as any)
           .select('*')
+          .eq('feature', 'notices')
           .order('created_at', { ascending: false })
           .limit(1),
       ]);
@@ -90,6 +97,15 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
       }
       if (logRes.data && logRes.data[0]) {
         setLastSyncLog(logRes.data[0] as unknown as SyncLog);
+      } else {
+        const { data: legacyLog } = await supabase
+          .from('notice_sync_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (legacyLog && legacyLog[0]) {
+          setLastSyncLog(legacyLog[0] as unknown as SyncLog);
+        }
       }
     } finally {
       setLoading(false);
@@ -217,7 +233,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
   };
 
   const filteredItems = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     return announcements.filter((a) => {
       if (activeFilter === 'manual' && a.source !== 'manual') return false;
       if (activeFilter === 'scraped' && a.source === 'manual') return false;
@@ -231,7 +247,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
       }
       return true;
     });
-  }, [announcements, activeFilter, search]);
+  }, [announcements, activeFilter, debouncedSearch]);
 
   const currentFilterOption = useMemo(() => {
     return FILTER_OPTIONS.find((opt) => opt.id === activeFilter) || FILTER_OPTIONS[0];
@@ -253,7 +269,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
     <View style={{ paddingTop: 8 }}>
       {/* 1. Post Announcement 58dp Action Bar */}
       <TouchableOpacity
-        style={[styles.postBar58, { backgroundColor: SectorColors.announce }]}
+        style={[styles.postBar58, { backgroundColor: C.brand }]}
         onPress={() => navigation.navigate('AnnouncePost')}
         activeOpacity={0.85}
       >
@@ -282,7 +298,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
         </View>
 
         <TouchableOpacity
-          style={[styles.syncActionBtn, { backgroundColor: SectorColors.announce }]}
+          style={[styles.syncActionBtn, { backgroundColor: C.brand }]}
           onPress={handleSyncCrawler}
           disabled={syncing}
           activeOpacity={0.85}
@@ -419,12 +435,8 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   style={[
                     styles.actionBtn,
                     {
-                      backgroundColor: item.in_banner
-                        ? (isDark ? '#27272a' : '#e4e4e7')
-                        : C.surface2,
-                      borderColor: item.in_banner
-                        ? (isDark ? '#52525b' : '#a1a1aa')
-                        : C.border,
+                      backgroundColor: item.in_banner ? C.surface2 : C.surface,
+                      borderColor: item.in_banner ? C.border2 : C.border,
                     },
                   ]}
                   onPress={(e) => {
@@ -454,12 +466,8 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                   style={[
                     styles.actionBtn,
                     {
-                      backgroundColor: item.pinned
-                        ? (isDark ? '#27272a' : '#e4e4e7')
-                        : C.surface2,
-                      borderColor: item.pinned
-                        ? (isDark ? '#52525b' : '#a1a1aa')
-                        : C.border,
+                      backgroundColor: item.pinned ? C.surface2 : C.surface,
+                      borderColor: item.pinned ? C.border2 : C.border,
                     },
                   ]}
                   onPress={(e) => {
@@ -567,7 +575,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                           ? 'rgba(62, 125, 224, 0.16)'
                           : 'rgba(62, 125, 224, 0.08)'
                         : C.surface2,
-                      borderColor: active ? SectorColors.announce : C.border,
+                      borderColor: active ? C.brand : C.border,
                     },
                   ]}
                   onPress={() => {
@@ -580,7 +588,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                     <AnimatedIcon
                       name={opt.icon}
                       size={28}
-                      color={active ? SectorColors.announce : C.text}
+                      color={active ? C.brand : C.text}
                     />
                   </View>
                   <View style={{ flex: 1, minWidth: 0, justifyContent: 'center' }}>
@@ -588,7 +596,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                       style={[
                         styles.pickerBarText,
                         {
-                          color: active ? SectorColors.announce : C.text,
+                          color: active ? C.brand : C.text,
                           fontFamily: FontFamily.jakartaBold,
                         },
                       ]}
@@ -597,7 +605,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
                     </Text>
                   </View>
                   {active ? (
-                    <View style={[styles.checkCircle, { backgroundColor: SectorColors.announce }]}>
+                    <View style={[styles.checkCircle, { backgroundColor: C.brand }]}>
                       <Feather name="check" size={13} color="#fff" />
                     </View>
                   ) : (

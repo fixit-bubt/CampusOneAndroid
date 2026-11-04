@@ -109,7 +109,7 @@ export type AppStackParams = {
 
   // Directory
   Directory: undefined;
-  StudentProfile: { student: import('../screens/directory/StudentProfileScreen').DirectoryStudent };
+  StudentProfile: { student?: import('../screens/directory/StudentProfileScreen').DirectoryStudent; studentId?: string; id?: string };
 
   // Prayer
   Prayer: undefined;
@@ -203,17 +203,4 @@ export type FacultyStackParams = {
 
 export type DirectoryStackParams = {
   DirectorySearch: undefined;
-};
-
-export type AdminStackParams = {
-  AdminDashboard: undefined;
-  AdminAllReports: undefined;
-  AdminManageUsers: undefined;
-  AdminManageFaculty: undefined;
-  AdminManageStudyHub: undefined;
-  AdminManageClubs: undefined;
-};
-
-export type StaffStackParams = {
-  StaffAssigned: undefined;
 };

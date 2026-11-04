@@ -308,9 +308,7 @@ export function ExploreScreen({ navigation }: any) {
               onPress={() => navigation.navigate('ManageBanner')}
               activeOpacity={0.7}
             >
-              <View style={styles.toolIcon}>
-                <AnimatedIcon family="feather" name="image" size={32} color={C.text} />
-              </View>
+              <Icon name="image" size={32} color={C.text} />
               <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   Dashboard Banner Slides

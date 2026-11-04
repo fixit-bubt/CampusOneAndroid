@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Modal,
   Image,
   RefreshControl,
+  Platform,
   type ViewStyle,
   type TextStyle,
   type ImageStyle,
@@ -21,7 +22,7 @@ import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { ModerationReasonModal } from '../../components/market/ModerationReasonModal';
-import { FontFamily, Radius, Layout } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { formatRelativeTime } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople, type Person } from '../../services/peopleService';
@@ -41,13 +42,159 @@ const CATEGORY_OPTIONS = [
 
 type StatusFilter = 'all' | 'Available' | 'Sold';
 
+const MarketAdminCard = memo(function MarketAdminCard({
+  item,
+  seller,
+  onView,
+  onModerate,
+  C,
+  isDark,
+  takeDownLabel,
+}: {
+  item: Listing;
+  seller?: Person;
+  onView: (id: string) => void;
+  onModerate: (item: Listing) => void;
+  C: any;
+  isDark: boolean;
+  takeDownLabel: string;
+}) {
+  const isSold = item.status === 'Sold';
+  const handleView = useCallback(() => onView(item.id), [onView, item.id]);
+  const handleModerate = useCallback(() => onModerate(item), [onModerate, item]);
+
+  return (
+    <View style={[styles.listingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+      {/* Card Top: Code Pill, Price, Status */}
+      <View style={styles.cardTopRow}>
+        <View style={styles.cardTopLeft}>
+          <View style={[styles.codePill, { backgroundColor: C.surface2, borderColor: C.border }]}>
+            <Text style={[styles.codePillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+              {item.code}
+            </Text>
+          </View>
+          <View style={[styles.categoryPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+            <Text style={[styles.categoryPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+              {item.category}
+            </Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={[styles.priceTxt, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
+            ৳ {item.price}
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: isSold
+                  ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')
+                  : (isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.1)'),
+                borderColor: isSold ? C.border : (C.success + '40'),
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: isSold ? C.textMuted : C.success },
+              ]}
+            />
+            <Text
+              style={[
+                styles.statusBadgeTxt,
+                { color: isSold ? C.textMuted : C.success, fontFamily: FontFamily.jakartaBold },
+              ]}
+            >
+              {item.status}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Card Body: Title & Photo thumbnail */}
+      <View style={styles.cardBodyRow}>
+        {item.photo_url ? (
+          <Image source={{ uri: item.photo_url }} style={styles.thumbnail} resizeMode="cover" />
+        ) : (
+          <View style={[styles.thumbnailPlaceholder, { backgroundColor: C.surface2, borderColor: C.border }]}>
+            <Feather name="tag" size={22} color={C.textMuted} />
+          </View>
+        )}
+        <View style={styles.cardBodyTextCol}>
+          <Text style={[styles.listingTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
+            {item.title}
+          </Text>
+          <Text style={[styles.listingDescTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={2}>
+            {item.description}
+          </Text>
+        </View>
+      </View>
+
+      {/* Seller Identity Row */}
+      <View style={[styles.sellerInfoRow, { borderTopColor: C.border }]}>
+        <View style={styles.sellerLeft}>
+          <View style={styles.sellerIconSlot}>
+            <Feather name="user" size={15} color={C.textMuted} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.sellerNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+              {seller?.full_name || 'BUBT Student'}
+            </Text>
+            <Text style={[styles.sellerMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
+              {[seller?.department, seller?.role].filter(Boolean).join(' · ') || 'Verified Member'}
+            </Text>
+          </View>
+        </View>
+        <Text style={[styles.timeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+          {formatRelativeTime(item.created_at)}
+        </Text>
+      </View>
+
+      {/* Handover Meetup Spot (if any) */}
+      {item.meetup_spot ? (
+        <View style={styles.meetupRow}>
+          <Feather name="map-pin" size={13} color={C.textMuted} style={{ marginRight: 4 }} />
+          <Text style={[styles.meetupTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            {item.meetup_spot}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Action Strip: View vs Take Down */}
+      <View style={[styles.cardActionsRow, { borderTopColor: C.border }]}>
+        <TouchableOpacity
+          style={[styles.actionBtnSecondary, { backgroundColor: C.surface2, borderColor: C.border }]}
+          onPress={handleView}
+          activeOpacity={0.75}
+        >
+          <Feather name="eye" size={15} color={C.text} />
+          <Text style={[styles.actionBtnSecondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+            View Details
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionBtnDanger, { backgroundColor: C.dangerBg, borderColor: C.danger + '35' }]}
+          onPress={handleModerate}
+          activeOpacity={0.75}
+        >
+          <Feather name="shield-off" size={15} color={C.danger} />
+          <Text style={[styles.actionBtnDangerTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+            {takeDownLabel}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
 export function ManageMarketScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
   const toast = useToast();
   const { profile } = useAuth();
-  const isAdmin = profile?.role === 'admin';
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [peopleMap, setPeopleMap] = useState<Record<string, Person>>({});
@@ -56,6 +203,7 @@ export function ManageMarketScreen({ navigation }: any) {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -64,14 +212,22 @@ export function ManageMarketScreen({ navigation }: any) {
   const [targetListing, setTargetListing] = useState<Listing | null>(null);
   const [moderating, setModerating] = useState(false);
 
-  // Fetch all campus listings
+  // 180ms Debounce search input to maintain 120 FPS typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch campus listings (bounded to 150)
   const loadListings = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(150);
 
       if (error) throw error;
       const list = (data || []) as Listing[];
@@ -106,19 +262,16 @@ export function ManageMarketScreen({ navigation }: any) {
 
   // Filtered dataset
   const filteredListings = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     return listings.filter((item) => {
-      // 1. Status filter
       if (statusFilter !== 'all' && item.status !== statusFilter) {
         return false;
       }
-      // 2. Category filter
       if (selectedCategory !== 'all') {
         if (item.category?.toLowerCase() !== selectedCategory.toLowerCase()) {
           return false;
         }
       }
-      // 3. Search query
       if (q) {
         const seller = peopleMap[item.seller_id];
         const haystack = [
@@ -138,7 +291,7 @@ export function ManageMarketScreen({ navigation }: any) {
       }
       return true;
     });
-  }, [listings, statusFilter, selectedCategory, searchQuery, peopleMap]);
+  }, [listings, statusFilter, selectedCategory, debouncedQuery, peopleMap]);
 
   // Take down moderation action
   const handleConfirmModeration = async (reason: string) => {
@@ -153,57 +306,77 @@ export function ManageMarketScreen({ navigation }: any) {
         targetListing.code
       );
       if (!res.success) {
-        toast({
-          type: 'error',
-          title: t.common.error,
-          message: res.error || 'Failed to remove listing',
-        });
+        toast({ type: 'error', title: t.common.error, message: res.error });
         return;
       }
-
-      // Remove from active state
-      setListings((prev) => prev.filter((l) => l.id !== targetListing.id));
-      setTargetListing(null);
       toast({
         type: 'success',
-        title: t.common.done,
-        message: t.market2.removedToast ?? 'Listing removed and seller notified',
+        title: 'Listing Removed',
+        message: `Listing ${targetListing.code} taken down for: ${reason}`,
       });
+      setListings((prev) => prev.filter((l) => l.id !== targetListing.id));
+      setTargetListing(null);
     } finally {
       setModerating(false);
     }
   };
 
-  const selectedCategoryLabel =
-    CATEGORY_OPTIONS.find((c) => c.id === selectedCategory)?.label ?? 'All Categories';
+  const selectedCategoryLabel = useMemo(() => {
+    return CATEGORY_OPTIONS.find((c) => c.id === selectedCategory)?.label ?? 'All Categories';
+  }, [selectedCategory]);
+
+  const handleViewDetail = useCallback((listingId: string) => {
+    navigation.navigate('MarketDetail', { listingId });
+  }, [navigation]);
+
+  const handleOpenModeration = useCallback((item: Listing) => {
+    setTargetListing(item);
+  }, []);
+
+  const keyExtractorListing = useCallback((item: Listing) => item.id, []);
+
+  const renderListingItem = useCallback(({ item }: { item: Listing }) => (
+    <MarketAdminCard
+      item={item}
+      seller={peopleMap[item.seller_id]}
+      onView={handleViewDetail}
+      onModerate={handleOpenModeration}
+      C={C}
+      isDark={isDark}
+      takeDownLabel={t.market2.takeDownListing ?? 'Take Down'}
+    />
+  ), [peopleMap, handleViewDetail, handleOpenModeration, C, isDark, t.market2.takeDownListing]);
+
+  if (profile && profile.role !== 'admin') {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
+        <SubBar title="Marketplace" onBack={() => navigation.goBack()} />
+        <View style={styles.centerBox}>
+          <Text style={{ color: C.text, fontFamily: FontFamily.jakartaExtraBold, fontSize: 18 }}>
+            {t.manage?.accessDenied ?? 'Access Denied'}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-      {/* 1. Header */}
-      <SubBar
-        title={t.market2.manageMarket ?? 'Marketplace Moderation'}
-        onBack={() => navigation.goBack()}
-        rightSlot={
-          <TouchableOpacity
-            style={styles.headerBtn}
-            onPress={onRefresh}
-            hitSlop={8}
-            activeOpacity={0.75}
-            accessibilityLabel="Refresh listings"
-          >
-            <Feather name="refresh-cw" size={18} color={C.text} />
-          </TouchableOpacity>
-        }
-      />
+      <SubBar title="Marketplace" onBack={() => navigation.goBack()} />
 
       <View style={styles.body}>
         <FlatList
           data={filteredListings}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractorListing}
+          renderItem={renderListingItem}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -283,7 +456,6 @@ export function ManageMarketScreen({ navigation }: any) {
                               fontFamily: active ? FontFamily.jakartaBold : FontFamily.jakartaMedium,
                             },
                           ]}
-                          numberOfLines={1}
                         >
                           {label}
                         </Text>
@@ -293,164 +465,34 @@ export function ManageMarketScreen({ navigation }: any) {
                 </View>
               </View>
 
-              {/* 5. Count Label */}
+              {/* 5. Count Indicator */}
               <View style={styles.countRow}>
-                <Text style={[styles.countTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                  {filteredListings.length} {filteredListings.length === 1 ? 'listing' : 'listings'} found
+                <Text style={[styles.countTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+                  LISTINGS ({filteredListings.length})
                 </Text>
               </View>
             </View>
           }
           ListEmptyComponent={
-            loading && listings.length === 0 ? (
-              <View style={[styles.centerBox, { paddingVertical: 48 }]}>
-                <ActivityIndicator size="small" color={C.brand} />
+            loading ? (
+              <View style={styles.centerBox}>
+                <ActivityIndicator size="small" color={C.textMuted} />
               </View>
             ) : (
               <View style={[styles.emptyBox, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <View style={styles.iconSlot32}>
-                  <Feather name="inbox" size={32} color={C.textMuted} />
-                </View>
+                <Feather name="package" size={32} color={C.textMuted} />
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  No listings found
+                  No Listings Found
                 </Text>
-                <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {searchQuery.length > 0
-                    ? 'No marketplace items match your search query.'
+                <Text style={[styles.emptySub, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                  {searchQuery || selectedCategory !== 'all'
+                    ? 'Try adjusting your search query or category filter.'
                     : 'No campus items currently match this status filter.'}
                 </Text>
               </View>
             )
           }
-            renderItem={({ item }) => {
-              const seller = peopleMap[item.seller_id];
-              const isSold = item.status === 'Sold';
-              return (
-                <View style={[styles.listingCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-                  {/* Card Top: Code Pill, Price, Status */}
-                  <View style={styles.cardTopRow}>
-                    <View style={styles.cardTopLeft}>
-                      <View style={[styles.codePill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                        <Text style={[styles.codePillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                          {item.code}
-                        </Text>
-                      </View>
-                      <View style={[styles.categoryPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                        <Text style={[styles.categoryPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                          {item.category}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={[styles.priceTxt, { color: C.text, fontFamily: FontFamily.jakartaExtraBold }]}>
-                        ৳ {item.price}
-                      </Text>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor: isSold
-                              ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)')
-                              : (isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'),
-                            borderColor: isSold ? C.border : 'rgba(34, 197, 94, 0.4)',
-                          },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.statusDot,
-                            { backgroundColor: isSold ? C.textMuted : '#22c55e' },
-                          ]}
-                        />
-                        <Text
-                          style={[
-                            styles.statusBadgeTxt,
-                            { color: isSold ? C.textMuted : '#22c55e', fontFamily: FontFamily.jakartaBold },
-                          ]}
-                        >
-                          {item.status}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Card Body: Title & Photo thumbnail */}
-                  <View style={styles.cardBodyRow}>
-                    {item.photo_url ? (
-                      <Image source={{ uri: item.photo_url }} style={styles.thumbnail} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.thumbnailPlaceholder, { backgroundColor: C.surface2, borderColor: C.border }]}>
-                        <Feather name="tag" size={22} color={C.textMuted} />
-                      </View>
-                    )}
-                    <View style={styles.cardBodyTextCol}>
-                      <Text style={[styles.listingTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={2}>
-                        {item.title}
-                      </Text>
-                      <Text style={[styles.listingDescTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={2}>
-                        {item.description}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Seller Identity Row */}
-                  <View style={[styles.sellerInfoRow, { borderTopColor: C.border }]}>
-                    <View style={styles.sellerLeft}>
-                      <View style={styles.sellerIconSlot}>
-                        <Feather name="user" size={15} color={C.textMuted} />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[styles.sellerNameTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                          {seller?.full_name || 'BUBT Student'}
-                        </Text>
-                        <Text style={[styles.sellerMetaTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                          {[seller?.department, seller?.role].filter(Boolean).join(' · ') || 'Verified Member'}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.timeTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {formatRelativeTime(item.created_at)}
-                    </Text>
-                  </View>
-
-                  {/* Handover Meetup Spot (if any) */}
-                  {item.meetup_spot ? (
-                    <View style={styles.meetupRow}>
-                      <Feather name="map-pin" size={13} color={C.textMuted} style={{ marginRight: 4 }} />
-                      <Text style={[styles.meetupTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        {item.meetup_spot}
-                      </Text>
-                    </View>
-                  ) : null}
-
-                  {/* Action Strip: View vs Take Down */}
-                  <View style={[styles.cardActionsRow, { borderTopColor: C.border }]}>
-                    <TouchableOpacity
-                      style={[styles.actionBtnSecondary, { backgroundColor: C.surface2, borderColor: C.border }]}
-                      onPress={() => navigation.navigate('MarketDetail', { id: item.id })}
-                      activeOpacity={0.75}
-                    >
-                      <Feather name="eye" size={15} color={C.text} />
-                      <Text style={[styles.actionBtnSecondaryTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        View Details
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.actionBtnDanger, { backgroundColor: C.dangerBg, borderColor: C.danger + '35' }]}
-                      onPress={() => setTargetListing(item)}
-                      activeOpacity={0.75}
-                    >
-                      <Feather name="shield-off" size={15} color={C.danger} />
-                      <Text style={[styles.actionBtnDangerTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.market2.takeDownListing ?? 'Take Down'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            }}
-          />
+        />
       </View>
 
       {/* 7. Category Dropdown Modal (Strict 58dp Bars) */}

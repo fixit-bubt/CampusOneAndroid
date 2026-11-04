@@ -198,21 +198,23 @@ export function ManageEventsScreen({ navigation }: any) {
 
   // Filters: 58dp search, 58dp category bar
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(searchQuery), 180);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   const loadData = useCallback(async () => {
     try {
-      const [eventsRes, rsvpsRes] = await Promise.all([
-        supabase
-          .from('events')
-          .select('*')
-          .is('deleted_at', null)
-          .order('date', { ascending: false }),
-        supabase
-          .from('event_rsvps')
-          .select('event_id'),
-      ]);
+      const eventsRes = await supabase
+        .from('events')
+        .select('*')
+        .is('deleted_at', null)
+        .order('date', { ascending: false })
+        .limit(100);
 
       if (eventsRes.error) {
         console.error('ManageEvents load error:', eventsRes.error.message);
@@ -220,13 +222,24 @@ export function ManageEventsScreen({ navigation }: any) {
         return;
       }
 
-      setEvents((eventsRes.data || []) as Event[]);
+      const loadedEvents = (eventsRes.data || []) as Event[];
+      setEvents(loadedEvents);
 
-      const counts: Record<string, number> = {};
-      (rsvpsRes.data || []).forEach((r: any) => {
-        counts[r.event_id] = (counts[r.event_id] || 0) + 1;
-      });
-      setRsvpCounts(counts);
+      if (loadedEvents.length > 0) {
+        const eventIds = loadedEvents.map((e) => e.id);
+        const rsvpsRes = await supabase
+          .from('event_rsvps')
+          .select('event_id')
+          .in('event_id', eventIds);
+
+        const counts: Record<string, number> = {};
+        (rsvpsRes.data || []).forEach((r: any) => {
+          counts[r.event_id] = (counts[r.event_id] || 0) + 1;
+        });
+        setRsvpCounts(counts);
+      } else {
+        setRsvpCounts({});
+      }
     } catch (err: any) {
       console.error('ManageEvents error:', err);
     } finally {
@@ -302,7 +315,7 @@ export function ManageEventsScreen({ navigation }: any) {
 
   // Filtered dataset
   const filteredEvents = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     return events.filter((ev) => {
       // 1. Category filter
       if (selectedCategory !== 'All') {
@@ -329,7 +342,7 @@ export function ManageEventsScreen({ navigation }: any) {
 
       return true;
     });
-  }, [events, selectedCategory, searchQuery]);
+  }, [events, selectedCategory, debouncedSearch]);
 
   const selectedCategoryLabel =
     CATEGORY_OPTIONS.find((c) => c.id === selectedCategory)?.label ?? 'All Categories';

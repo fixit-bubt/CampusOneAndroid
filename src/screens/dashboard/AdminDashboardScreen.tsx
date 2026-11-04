@@ -313,8 +313,8 @@ export function AdminDashboardScreen({ navigation }: any) {
         setStats(cachedStats);
       }
 
-      // 2. Parallel network fetch: live reports, staff directory, and exact SQL counts
-      const [reportsRes, staffRes, unassignedCountRes, activeCountRes, resolvedCountRes, unreadRes] = await Promise.all([
+      // 2. Parallel network fetch: live reports, staff directory, consolidated stats RPC
+      const [reportsRes, staffRes, statsRpcRes, unreadRes] = await Promise.all([
         supabase
           .from('reports')
           .select('*, profiles!reporter_id(full_name), assignee:profiles!assigned_staff_id(full_name)')
@@ -326,23 +326,7 @@ export function AdminDashboardScreen({ navigation }: any) {
           .select('id, full_name, department, expertise')
           .eq('role', 'staff')
           .limit(100),
-        supabase
-          .from('reports')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'Open')
-          .is('assigned_staff_id', null)
-          .is('deleted_at', null),
-        supabase
-          .from('reports')
-          .select('id', { count: 'exact', head: true })
-          .not('assigned_staff_id', 'is', null)
-          .in('status', ['Open', 'In Progress'])
-          .is('deleted_at', null),
-        supabase
-          .from('reports')
-          .select('id', { count: 'exact', head: true })
-          .in('status', ['Resolved', 'Closed'])
-          .is('deleted_at', null),
+        supabase.rpc('admin_report_stats' as any),
         getUnreadNotificationCount(user?.id),
       ]);
 
@@ -362,11 +346,26 @@ export function AdminDashboardScreen({ navigation }: any) {
         setStaffList(staffRes.data as StaffMember[]);
       }
 
-      const newStats: AdminStats = {
-        unassigned: unassignedCountRes.count ?? 0,
-        active: activeCountRes.count ?? 0,
-        resolved: resolvedCountRes.count ?? 0,
-      };
+      let newStats: AdminStats;
+      if (statsRpcRes.data && !statsRpcRes.error) {
+        const d = statsRpcRes.data as any;
+        newStats = {
+          unassigned: d.unassigned ?? 0,
+          active: d.active ?? 0,
+          resolved: d.resolved ?? 0,
+        };
+      } else {
+        const [uRes, aRes, rRes] = await Promise.all([
+          supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'Open').is('assigned_staff_id', null).is('deleted_at', null),
+          supabase.from('reports').select('id', { count: 'exact', head: true }).not('assigned_staff_id', 'is', null).in('status', ['Open', 'In Progress']).is('deleted_at', null),
+          supabase.from('reports').select('id', { count: 'exact', head: true }).in('status', ['Resolved', 'Closed']).is('deleted_at', null),
+        ]);
+        newStats = {
+          unassigned: uRes.count ?? 0,
+          active: aRes.count ?? 0,
+          resolved: rRes.count ?? 0,
+        };
+      }
       setStats(newStats);
       setCache(cacheStatsKey, newStats);
 

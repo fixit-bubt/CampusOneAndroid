@@ -173,3 +173,10 @@ export type Notification = Tables<'notifications'>;
 export type RoutineSlot = Tables<'routine_slots'>;
 export type ExamSlot = Tables<'exam_slots'>;
 export type UserCustomRoutineSlot = Tables<'user_custom_routine_slots'>;
+
+export type AcademicCalendar = Tables<'academic_calendar'> & {
+  file_url?: string | null;
+  file_type?: 'pdf' | 'image';
+  semester?: string | null;
+  is_active?: boolean;
+};

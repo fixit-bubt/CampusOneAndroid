@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, TextInput, ScrollView, FlatList, StyleSheet,
   Modal, Alert, RefreshControl, ActivityIndicator, KeyboardAvoidingView,
   Platform, BackHandler, type ViewStyle,
 } from 'react-native';
@@ -721,7 +721,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
             ))
           )}
 
-          {/* 3. Add CR Bar (58dp — opens Page 4 Full Page) */}
+          {/* 3. Add CR Bar (58dp - opens Page 4 Full Page) */}
           <TouchableOpacity
             style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 8 }]}
             onPress={() => {
@@ -1420,7 +1420,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
   }
 
   // ---------------------------------------------------------------------------
-  // HELPER MODAL: DEDICATED FULL-PAGE ASSIGN CR (PAGE 4 — Strict 58dp Standard)
+  // HELPER MODAL: DEDICATED FULL-PAGE ASSIGN CR (PAGE 4 - Strict 58dp Standard)
   // ---------------------------------------------------------------------------
   function renderAssignCrModal() {
     return (
@@ -1472,37 +1472,38 @@ export function ManageStudyHubScreen({ navigation }: any) {
               </Text>
             </View>
           ) : (
-            <ScrollView
+            <FlatList
+              data={studentResults}
+              keyExtractor={(st) => st.id}
               contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-            >
-              <View style={{ gap: 8 }}>
-                {studentResults.map(st => (
-                  <View
-                    key={st.id}
-                    style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}
-                  >
-                    <Avatar uri={st.avatar_url} name={st.full_name} size="sm" />
-                    <View style={{ flex: 1, minWidth: 0, justifyContent: 'center', marginLeft: 10 }}>
-                      <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                        {st.full_name}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                      onPress={() => handleAssignCr(st)}
-                      activeOpacity={0.8}
-                    >
-                      <Feather name="check" size={14} color={C.text} />
-                      <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                        Assign
-                      </Text>
-                    </TouchableOpacity>
+              initialNumToRender={10}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews={Platform.OS === 'android'}
+              ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+              renderItem={({ item: st }) => (
+                <View style={[styles.bar58, { backgroundColor: C.surface, borderColor: C.border }]}>
+                  <Avatar uri={st.avatar_url} name={st.full_name} size="sm" />
+                  <View style={{ flex: 1, minWidth: 0, justifyContent: 'center', marginLeft: 10 }}>
+                    <Text style={[styles.barTitleTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+                      {st.full_name}
+                    </Text>
                   </View>
-                ))}
-              </View>
-            </ScrollView>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                    onPress={() => handleAssignCr(st)}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="check" size={14} color={C.text} />
+                    <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                      Assign
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
           )}
         </SafeAreaView>
       </Modal>

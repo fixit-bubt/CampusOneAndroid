@@ -1,11 +1,11 @@
 // Jobs moderation - admin-only.
 // Reported tab: live jobs with reports, most-reported first, with direct
 // dismiss and remove actions. Removed tab: withdrawn/removed jobs with restore.
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
+  View, Text, TouchableOpacity, FlatList, StyleSheet,
   RefreshControl, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView,
-  Alert, type ViewStyle, type TextStyle,
+  Alert, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,6 +43,128 @@ const REMOVE_PRESETS = [
   'Policy Violation',
 ];
 
+const JobModerateCard = memo(function JobModerateCard({
+  j,
+  tab,
+  onNavigate,
+  onRestore,
+  onDismiss,
+  onRemove,
+  C,
+  t,
+}: {
+  j: JobRow;
+  tab: 'reported' | 'removed';
+  onNavigate: (id: string) => void;
+  onRestore: (j: JobRow) => void;
+  onDismiss: (j: JobRow) => void;
+  onRemove: (j: JobRow) => void;
+  C: any;
+  t: any;
+}) {
+  const handleNavigate = useCallback(() => onNavigate(j.id), [onNavigate, j.id]);
+  const handleRestore = useCallback(() => onRestore(j), [onRestore, j]);
+  const handleDismiss = useCallback(() => onDismiss(j), [onDismiss, j]);
+  const handleRemove = useCallback(() => onRemove(j), [onRemove, j]);
+
+  return (
+    <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+      <TouchableOpacity
+        style={styles.cardTop}
+        onPress={handleNavigate}
+        activeOpacity={0.75}
+      >
+        <View style={styles.thumb}>
+          <Icon name="jobs" size={32} color={C.text} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            {j.title}
+          </Text>
+          <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+            {j.company} · {j.code}
+          </Text>
+        </View>
+        {tab === 'reported' ? (
+          <View style={[styles.flagPill, { backgroundColor: C.dangerBg }]}>
+            <Feather name="flag" size={11} color={C.danger} />
+            <Text style={[styles.flagTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+              {t.jobs.reportsCount(j.reports.length)}
+            </Text>
+          </View>
+        ) : (
+          <View style={[styles.removedPill, { backgroundColor: C.surface2 }]}>
+            <Text style={[styles.removedPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
+              Removed
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {tab === 'reported' && j.reports.length > 0 && (
+        <View style={[styles.reasons, { borderTopColor: C.border }]}>
+          {j.reports.slice(0, 4).map((r, i) => (
+            <Text key={i} style={[styles.reasonTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
+              • {r.reason}{r.note ? ` - "${r.note}"` : ''}
+            </Text>
+          ))}
+        </View>
+      )}
+
+      {tab === 'removed' && j.removed_reason ? (
+        <View style={[styles.reasons, { borderTopColor: C.border }]}>
+          <Text style={[styles.reasonTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+            • Reason: {j.removed_reason}
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={[styles.cardActions, { borderTopColor: C.border }]}>
+        {tab === 'reported' ? (
+          <>
+            <TouchableOpacity
+              style={[styles.dismissBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+              onPress={handleDismiss}
+              activeOpacity={0.75}
+            >
+              <Feather name="check" size={13} color={C.text} />
+              <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                Dismiss
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.removeBtn, { backgroundColor: C.dangerBg, borderColor: C.dangerBg }]}
+              onPress={handleRemove}
+              activeOpacity={0.75}
+            >
+              <Feather name="slash" size={13} color={C.danger} />
+              <Text style={[styles.actionBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                Remove
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            style={[styles.restoreFullBtn, { backgroundColor: C.successBg, borderColor: C.successBg }]}
+            onPress={handleRestore}
+            activeOpacity={0.75}
+          >
+            <Feather name="rotate-ccw" size={13} color={C.success} />
+            <Text style={[styles.actionBtnTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
+              Restore Listing
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+});
+
+const Separator = memo(function Separator() {
+  return <View style={{ height: 10 }} />;
+});
+
 export function JobsModerateScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile } = useAuth();
@@ -59,37 +181,46 @@ export function JobsModerateScreen({ navigation }: any) {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    // job_reports is admin-readable per RLS; join report rows onto each job.
-    const [jobsRes, reportsRes] = await Promise.all([
-      supabase.from('jobs').select('id, code, title, company, deleted_at, removed_reason').order('created_at', { ascending: false }),
-      supabase.from('job_reports').select('job_id, reason, note'),
-    ]);
-    if (jobsRes.data) {
-      const reports = (reportsRes.data ?? []) as any[];
-      setJobs((jobsRes.data as any[]).map(j => ({
-        ...j,
-        reports: reports.filter(r => r.job_id === j.id),
-      })));
+    try {
+      const [jobsRes, reportsRes] = await Promise.all([
+        supabase
+          .from('jobs')
+          .select('id, code, title, company, deleted_at, removed_reason')
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase
+          .from('job_reports')
+          .select('job_id, reason, note')
+          .limit(300),
+      ]);
+      if (jobsRes.data) {
+        const reports = (reportsRes.data ?? []) as any[];
+        setJobs((jobsRes.data as any[]).map(j => ({
+          ...j,
+          reports: reports.filter(r => r.job_id === j.id),
+        })));
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  async function onRefresh() {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-  }
+  }, [load]);
 
-  async function restore(j: JobRow) {
+  const restore = useCallback(async (j: JobRow) => {
     const res = await adminRestoreJobListing(j.code);
     if (!res.success) { toast({ type: 'error', title: t.common.error, message: res.error }); return; }
     toast({ type: 'success', title: 'Listing Restored' });
     load();
-  }
+  }, [toast, t.common.error, load]);
 
-  function confirmDismissReports(j: JobRow) {
+  const confirmDismissReports = useCallback((j: JobRow) => {
     Alert.alert(
       'Dismiss Reports',
       `Clear all ${j.reports.length} report${j.reports.length === 1 ? '' : 's'} for "${j.title}"? This listing will remain active on the campus board.`,
@@ -110,7 +241,16 @@ export function JobsModerateScreen({ navigation }: any) {
         },
       ]
     );
-  }
+  }, [t.common.cancel, t.common.error, toast, load]);
+
+  const handleOpenRemoveModal = useCallback((j: JobRow) => {
+    setRemoveTarget(j);
+    setRemoveReason('');
+  }, []);
+
+  const handleNavigateDetail = useCallback((id: string) => {
+    navigation.navigate('JobDetail', { jobId: id });
+  }, [navigation]);
 
   async function handleConfirmRemove() {
     if (!removeTarget || !removeReason.trim() || busy) return;
@@ -130,6 +270,38 @@ export function JobsModerateScreen({ navigation }: any) {
     }
   }
 
+  const reported = useMemo(() => {
+    return jobs
+      .filter(j => !j.deleted_at && j.reports.length > 0)
+      .sort((a, b) => b.reports.length - a.reports.length);
+  }, [jobs]);
+
+  const removed = useMemo(() => {
+    return jobs.filter(j => !!j.deleted_at);
+  }, [jobs]);
+
+  const list = useMemo(() => (tab === 'reported' ? reported : removed), [tab, reported, removed]);
+
+  const moderateTabs: TabItem<'reported' | 'removed'>[] = useMemo(() => [
+    { id: 'reported', label: t.jobs.reported, count: reported.length, color: C.danger },
+    { id: 'removed', label: t.jobs.removed, count: removed.length, color: Accent.slate },
+  ], [t.jobs, reported.length, removed.length, C.danger]);
+
+  const keyExtractorJob = useCallback((j: JobRow) => j.id, []);
+
+  const renderJobItem = useCallback(({ item: j }: { item: JobRow }) => (
+    <JobModerateCard
+      j={j}
+      tab={tab}
+      onNavigate={handleNavigateDetail}
+      onRestore={restore}
+      onDismiss={confirmDismissReports}
+      onRemove={handleOpenRemoveModal}
+      C={C}
+      t={t}
+    />
+  ), [tab, handleNavigateDetail, restore, confirmDismissReports, handleOpenRemoveModal, C, t]);
+
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -141,147 +313,47 @@ export function JobsModerateScreen({ navigation }: any) {
     );
   }
 
-  const reported = jobs
-    .filter(j => !j.deleted_at && j.reports.length > 0)
-    .sort((a, b) => b.reports.length - a.reports.length);
-  const removed = jobs.filter(j => !!j.deleted_at);
-  const list = tab === 'reported' ? reported : removed;
-
-  const moderateTabs: TabItem<'reported' | 'removed'>[] = useMemo(() => [
-    { id: 'reported', label: t.jobs.reported, count: reported.length, color: C.danger },
-    { id: 'removed', label: t.jobs.removed, count: removed.length, color: Accent.slate },
-  ], [t.jobs, reported.length, removed.length, C.danger]);
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title={t.jobs.moderation} onBack={() => navigation.goBack()} />
 
-      <ScrollView
+      <FlatList
+        data={list}
+        keyExtractor={keyExtractorJob}
+        renderItem={renderJobItem}
+        ItemSeparatorComponent={Separator}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
-        {/* Tabs */}
-        <View style={{ paddingTop: 4, marginBottom: 10 }}>
-          <SegmentedTabs
-            tabs={moderateTabs}
-            activeTab={tab}
-            onTabChange={setTab}
-          />
-        </View>
-        {loading && jobs.length === 0 ? (
-          <ActivityIndicator style={{ marginTop: 50 }} color={C.brand} />
-        ) : list.length === 0 ? (
-          <View style={styles.empty}>
-            <Icon name="jobs" size={28} color={C.textMuted} />
-            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {tab === 'reported' ? t.jobs.noReported : t.jobs.noRemoved}
-            </Text>
+        ListHeaderComponent={
+          <View style={{ paddingTop: 4, marginBottom: 10 }}>
+            <SegmentedTabs
+              tabs={moderateTabs}
+              activeTab={tab}
+              onTabChange={setTab}
+            />
           </View>
-        ) : (
-          <View style={{ gap: 10 }}>
-            {list.map(j => (
-              <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
-                <TouchableOpacity
-                  style={styles.cardTop}
-                  onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.thumb}>
-                    <Icon name="jobs" size={32} color={C.text} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={[styles.title, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                      {j.title}
-                    </Text>
-                    <Text style={[styles.meta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                      {j.company} · {j.code}
-                    </Text>
-                  </View>
-                  {tab === 'reported' ? (
-                    <View style={[styles.flagPill, { backgroundColor: C.dangerBg }]}>
-                      <Feather name="flag" size={11} color={C.danger} />
-                      <Text style={[styles.flagTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                        {t.jobs.reportsCount(j.reports.length)}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.removedPill, { backgroundColor: C.surface2 }]}>
-                      <Text style={[styles.removedPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                        Removed
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                {tab === 'reported' && j.reports.length > 0 && (
-                  <View style={[styles.reasons, { borderTopColor: C.border }]}>
-                    {j.reports.slice(0, 4).map((r, i) => (
-                      <Text key={i} style={[styles.reasonTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]} numberOfLines={1}>
-                        • {r.reason}{r.note ? ` - "${r.note}"` : ''}
-                      </Text>
-                    ))}
-                  </View>
-                )}
-
-                {tab === 'removed' && j.removed_reason ? (
-                  <View style={[styles.reasons, { borderTopColor: C.border }]}>
-                    <Text style={[styles.reasonTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                      • Reason: {j.removed_reason}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {/* Direct Action Controls */}
-                <View style={[styles.cardActions, { borderTopColor: C.border }]}>
-                  {tab === 'reported' ? (
-                    <>
-                      <TouchableOpacity
-                        style={[styles.dismissBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
-                        onPress={() => confirmDismissReports(j)}
-                        activeOpacity={0.75}
-                      >
-                        <Feather name="check" size={13} color={C.text} />
-                        <Text style={[styles.actionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                          Dismiss
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[styles.removeBtn, { backgroundColor: C.dangerBg, borderColor: C.dangerBg }]}
-                        onPress={() => {
-                          setRemoveTarget(j);
-                          setRemoveReason('');
-                        }}
-                        activeOpacity={0.75}
-                      >
-                        <Feather name="slash" size={13} color={C.danger} />
-                        <Text style={[styles.actionBtnTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                          Remove
-                        </Text>
-                      </TouchableOpacity>
-                    </>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.restoreFullBtn, { backgroundColor: C.successBg, borderColor: C.successBg }]}
-                      onPress={() => restore(j)}
-                      activeOpacity={0.75}
-                    >
-                      <Feather name="rotate-ccw" size={13} color={C.success} />
-                      <Text style={[styles.actionBtnTxt, { color: C.success, fontFamily: FontFamily.jakartaBold }]}>
-                        Restore Listing
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-        <View style={{ height: 16 }} />
-      </ScrollView>
+        }
+        ListEmptyComponent={
+          loading && jobs.length === 0 ? (
+            <ActivityIndicator style={{ marginTop: 50 }} color={C.brand} />
+          ) : (
+            <View style={styles.empty}>
+              <Icon name="jobs" size={28} color={C.textMuted} />
+              <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
+                {tab === 'reported' ? t.jobs.noReported : t.jobs.noRemoved}
+              </Text>
+            </View>
+          )
+        }
+        ListFooterComponent={<View style={{ height: 16 }} />}
+      />
 
       {/* Remove Listing Bottom Sheet Modal */}
       <Modal
@@ -358,36 +430,24 @@ export function JobsModerateScreen({ navigation }: any) {
 
             <View style={styles.modalBtnRow}>
               <TouchableOpacity
-                style={[styles.modalCancelBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
+                style={[styles.modalCancelBtn, { borderColor: C.border }]}
                 onPress={() => { setRemoveTarget(null); setRemoveReason(''); }}
-                activeOpacity={0.8}
               >
-                <Text style={[styles.modalBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                <Text style={[styles.modalCancelTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {t.common.cancel}
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[
-                  styles.modalConfirmBtn,
-                  {
-                    backgroundColor: C.danger,
-                    opacity: !removeReason.trim() || busy ? 0.5 : 1,
-                  },
-                ]}
+                style={[styles.modalConfirmBtn, { backgroundColor: C.dangerBg, borderColor: C.danger + '35' }]}
                 onPress={handleConfirmRemove}
-                disabled={!removeReason.trim() || busy}
-                activeOpacity={0.85}
+                disabled={busy}
               >
                 {busy ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator color={C.danger} size="small" />
                 ) : (
-                  <>
-                    <Feather name="slash" size={14} color="#ffffff" />
-                    <Text style={[styles.modalBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
-                      Remove
-                    </Text>
-                  </>
+                  <Text style={[styles.modalConfirmTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                    Confirm Removal
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -400,32 +460,70 @@ export function JobsModerateScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
+  scroll: { paddingTop: 4, paddingBottom: 24 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
 
-  card: { borderRadius: 16, borderWidth: 1, padding: 14 } as ViewStyle,
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 11 } as ViewStyle,
-  thumb: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  title: { fontSize: 14.5 } as TextStyle,
+  empty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 8,
+  } as ViewStyle,
+  emptyTxt: { fontSize: 13 } as TextStyle,
+
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  } as ViewStyle,
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  } as ViewStyle,
+  thumb: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  title: { fontSize: 14, lineHeight: 18 } as TextStyle,
   meta: { fontSize: 11.5, marginTop: 2 } as TextStyle,
-  flagPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 } as ViewStyle,
-  flagTxt: { fontSize: 11 } as TextStyle,
-  removedPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 } as ViewStyle,
-  removedPillTxt: { fontSize: 11 } as TextStyle,
 
-  reasons: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 10, paddingTop: 9, gap: 4 } as ViewStyle,
-  reasonTxt: { fontSize: 12 } as TextStyle,
+  flagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  } as ViewStyle,
+  flagTxt: { fontSize: 10.5 } as TextStyle,
+
+  removedPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  } as ViewStyle,
+  removedPillTxt: { fontSize: 10.5 } as TextStyle,
+
+  reasons: {
+    borderTopWidth: 1,
+    paddingTop: 8,
+    gap: 4,
+  } as ViewStyle,
+  reasonTxt: { fontSize: 11.5 } as TextStyle,
 
   cardActions: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    marginTop: 10,
+    borderTopWidth: 1,
     paddingTop: 10,
     flexDirection: 'row',
     gap: 8,
   } as ViewStyle,
   dismissBtn: {
     flex: 1,
-    height: 40,
+    height: 36,
     borderRadius: 10,
     borderWidth: 1,
     flexDirection: 'row',
@@ -435,7 +533,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   removeBtn: {
     flex: 1,
-    height: 40,
+    height: 36,
     borderRadius: 10,
     borderWidth: 1,
     flexDirection: 'row',
@@ -445,7 +543,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   restoreFullBtn: {
     flex: 1,
-    height: 40,
+    height: 36,
     borderRadius: 10,
     borderWidth: 1,
     flexDirection: 'row',
@@ -455,25 +553,72 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   actionBtnTxt: { fontSize: 12.5 } as TextStyle,
 
-  empty: { alignItems: 'center', paddingTop: 50, gap: 8 } as ViewStyle,
-  emptyTxt: { fontSize: 13.5 } as TextStyle,
+  // Modal styles
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  } as ViewStyle,
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  } as ViewStyle,
+  sheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    gap: 12,
+  } as ViewStyle,
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(128,128,128,0.4)',
+    alignSelf: 'center',
+  } as ViewStyle,
+  sheetTitle: { fontSize: 16 } as TextStyle,
+  sheetSub: { fontSize: 12 } as TextStyle,
 
-  // Modal Styles
-  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' } as ViewStyle,
-  modalOverlay: { flex: 1 } as ViewStyle,
-  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 12 } as ViewStyle,
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(150,150,150,0.4)', alignSelf: 'center', marginBottom: 4 } as ViewStyle,
-  sheetTitle: { fontSize: 17 } as TextStyle,
-  sheetSub: { fontSize: 12.5, marginTop: -4 } as TextStyle,
-
-  presetWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 } as ViewStyle,
-  presetChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 } as ViewStyle,
+  presetWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  } as ViewStyle,
+  presetChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  } as ViewStyle,
   presetChipTxt: { fontSize: 11.5 } as TextStyle,
 
-  reasonInput: { height: 72, borderRadius: 12, borderWidth: 1, padding: 10, fontSize: 13 } as TextStyle,
+  reasonInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 10,
+    height: 80,
+    fontSize: 13,
+  } as TextStyle,
 
-  modalBtnRow: { flexDirection: 'row', gap: 10, marginTop: 6 } as ViewStyle,
-  modalCancelBtn: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  modalConfirmBtn: { flex: 1, height: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 } as ViewStyle,
-  modalBtnTxt: { fontSize: 13 } as TextStyle,
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
+  } as ViewStyle,
+  modalCancelBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalCancelTxt: { fontSize: 13 } as TextStyle,
+  modalConfirmBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as ViewStyle,
+  modalConfirmTxt: { fontSize: 13 } as TextStyle,
 });

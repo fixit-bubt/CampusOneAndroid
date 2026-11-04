@@ -423,6 +423,34 @@ export async function updateClubBannerStatus(
   }
 }
 
+export async function updateEventBannerStatus(
+  id: string,
+  inBanner: boolean,
+  bannerOrder = 0
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await (supabase.rpc as any)('set_event_banner', {
+      p_id: id,
+      p_in_banner: inBanner,
+      p_order: bannerOrder,
+    });
+
+    if (error) {
+      const { error: directErr } = await supabase
+        .from('events')
+        .update({ in_banner: inBanner, banner_order: inBanner ? bannerOrder : 0 })
+        .eq('id', id);
+      if (directErr) throw directErr;
+    }
+
+    lastBannerFetchTime = 0;
+    await removeCache(CacheKeys.HOME_BANNER);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to update event banner status' };
+  }
+}
+
 export async function saveBannerOrder(
   items: Array<{ id: string; type: 'announcement' | 'event' | 'club'; order: number }>
 ): Promise<{ success: boolean; error?: string }> {

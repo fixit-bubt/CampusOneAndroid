@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout } from '../../theme';
+import { FontFamily, Layout, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import type { Profile } from '../../types/database';
@@ -61,8 +61,62 @@ function formatDate(iso?: string | null): string {
   }
 }
 
+const UserBarCard = React.memo(function UserBarCard({
+  item,
+  onPress,
+  C,
+}: {
+  item: Profile;
+  onPress: (u: Profile) => void;
+  C: any;
+}) {
+  let metaSubtitle = '';
+  if (item.role === 'student') {
+    const parts: string[] = [];
+    if (item.department) parts.push(item.department);
+    if (item.intake) parts.push(`Intake ${item.intake}`);
+    if (item.section) parts.push(`Sec ${item.section}`);
+    metaSubtitle = parts.join(' · ') || item.student_id || item.email || 'Student';
+  } else if (item.role === 'staff') {
+    metaSubtitle = item.expertise ? `Trade: ${item.expertise}` : item.email || 'Campus Staff';
+  } else {
+    metaSubtitle = item.email || 'Administrator';
+  }
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.userBar58,
+        {
+          backgroundColor: C.surface,
+          borderColor: C.border,
+        },
+      ]}
+      onPress={() => onPress(item)}
+      activeOpacity={0.7}
+    >
+      <Avatar uri={item.avatar_url} name={item.full_name} size="sm" />
+      <View style={styles.userBarBody}>
+        <Text
+          style={[styles.userBarName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
+          numberOfLines={1}
+        >
+          {item.full_name}
+        </Text>
+        <Text
+          style={[styles.userBarMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
+          numberOfLines={1}
+        >
+          {metaSubtitle}
+        </Text>
+      </View>
+      <Feather name="chevron-right" size={18} color={C.textMuted} />
+    </TouchableOpacity>
+  );
+});
+
 export function ManageUsersScreen({ navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const t = useT();
@@ -72,28 +126,53 @@ export function ManageUsersScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Active Tab & Filters
   const [activeTab, setActiveTab] = useState<UserTab>('student');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState<string>('All');
   const [deptModalVisible, setDeptModalVisible] = useState(false);
 
-  // Profile Details Modal
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearch(searchQuery), 180);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const loadUsers = useCallback(async () => {
     try {
       setErrorMsg(null);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('full_name', { ascending: true })
-        .limit(600);
+      const [studentsRes, staffRes, adminsRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('role', 'student')
+          .order('full_name', { ascending: true })
+          .limit(400),
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('role', 'staff')
+          .order('full_name', { ascending: true })
+          .limit(150),
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('role', 'admin')
+          .order('full_name', { ascending: true })
+          .limit(50),
+      ]);
 
-      if (error) {
-        setErrorMsg(error.message);
-      } else if (data) {
-        setUsers(data as Profile[]);
+      const err = studentsRes.error || staffRes.error || adminsRes.error;
+      if (err) {
+        setErrorMsg(err.message);
+      } else {
+        const combined = [
+          ...(studentsRes.data ?? []),
+          ...(staffRes.data ?? []),
+          ...(adminsRes.data ?? []),
+        ] as Profile[];
+        setUsers(combined);
       }
     } catch (err: any) {
       setErrorMsg(err?.message ?? 'Failed to load users.');
@@ -114,12 +193,10 @@ export function ManageUsersScreen({ navigation }: any) {
     await loadUsers();
   }, [loadUsers]);
 
-  // Segregate by role
   const studentUsers = useMemo(() => users.filter((u) => u.role === 'student'), [users]);
   const staffUsers = useMemo(() => users.filter((u) => u.role === 'staff'), [users]);
   const adminUsers = useMemo(() => users.filter((u) => u.role === 'admin'), [users]);
 
-  // Department counts for students
   const deptCounts = useMemo(() => {
     const counts: Record<string, number> = { All: studentUsers.length };
     for (const s of studentUsers) {
@@ -140,13 +217,11 @@ export function ManageUsersScreen({ navigation }: any) {
     return counts;
   }, [studentUsers]);
 
-  // Selected Department Item
   const activeDeptItem = useMemo(
     () => DEPARTMENTS.find((d) => d.id === selectedDept) ?? DEPARTMENTS[0],
     [selectedDept]
   );
 
-  // Tabs for 58dp SegmentedTabs
   const tabs = useMemo<TabItem<UserTab>[]>(
     () => [
       {
@@ -171,7 +246,6 @@ export function ManageUsersScreen({ navigation }: any) {
     [studentUsers.length, staffUsers.length, adminUsers.length]
   );
 
-  // Filtered List based on tab, department, and search
   const displayedUsers = useMemo(() => {
     let list: Profile[] = [];
     if (activeTab === 'student') {
@@ -194,7 +268,7 @@ export function ManageUsersScreen({ navigation }: any) {
       list = adminUsers;
     }
 
-    const q = searchQuery.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     if (!q) return list;
 
     return list.filter((u) => {
@@ -220,15 +294,12 @@ export function ManageUsersScreen({ navigation }: any) {
     adminUsers,
     selectedDept,
     activeDeptItem,
-    searchQuery,
+    debouncedSearch,
   ]);
 
-  const handleUserPress = useCallback(
-    (u: Profile) => {
-      setSelectedUser(u);
-    },
-    []
-  );
+  const handleUserPress = useCallback((u: Profile) => {
+    setSelectedUser(u);
+  }, []);
 
   const handleOpenFullProfile = useCallback(
     (u: Profile) => {
@@ -244,7 +315,15 @@ export function ManageUsersScreen({ navigation }: any) {
     [navigation]
   );
 
-  // Access check
+  const renderUserItem = useCallback(
+    ({ item }: { item: Profile }) => (
+      <UserBarCard item={item} onPress={handleUserPress} C={C} />
+    ),
+    [handleUserPress, C]
+  );
+
+  const keyExtractor = useCallback((item: Profile) => item.id, []);
+
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -262,62 +341,14 @@ export function ManageUsersScreen({ navigation }: any) {
     );
   }
 
-  // Render 58dp User Bar
-  const renderUserItem = ({ item }: { item: Profile }) => {
-    let metaSubtitle = '';
-    if (item.role === 'student') {
-      const parts: string[] = [];
-      if (item.department) parts.push(item.department);
-      if (item.intake) parts.push(`Intake ${item.intake}`);
-      if (item.section) parts.push(`Sec ${item.section}`);
-      metaSubtitle = parts.join(' · ') || item.student_id || item.email || 'Student';
-    } else if (item.role === 'staff') {
-      metaSubtitle = item.expertise ? `Trade: ${item.expertise}` : item.email || 'Campus Staff';
-    } else {
-      metaSubtitle = item.email || 'Administrator';
-    }
-
-    return (
-      <TouchableOpacity
-        style={[
-          styles.userBar58,
-          {
-            backgroundColor: C.surface,
-            borderColor: C.border,
-          },
-        ]}
-        onPress={() => handleUserPress(item)}
-        activeOpacity={0.7}
-      >
-        <Avatar uri={item.avatar_url} name={item.full_name} size="sm" />
-        <View style={styles.userBarBody}>
-          <Text
-            style={[styles.userBarName, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
-            numberOfLines={1}
-          >
-            {item.full_name}
-          </Text>
-          <Text
-            style={[styles.userBarMeta, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}
-            numberOfLines={1}
-          >
-            {metaSubtitle}
-          </Text>
-        </View>
-        <Feather name="chevron-right" size={18} color={C.textMuted} />
-      </TouchableOpacity>
-    );
-  };
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar title="Users" onBack={() => navigation.goBack()} />
 
-      {/* Main Container with Natural Native Scrolling */}
       <View style={[styles.contentContainer, { paddingHorizontal: Layout.screenPadding }]}>
         <FlatList
           data={displayedUsers}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           renderItem={renderUserItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -326,13 +357,13 @@ export function ManageUsersScreen({ navigation }: any) {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />
           }
-          initialNumToRender={15}
-          maxToRenderPerBatch={15}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           ListHeaderComponent={
             <View>
-              {/* 58dp Search Bar */}
+              {/* Search Bar */}
               <View
                 style={[
                   styles.searchBar58,
@@ -366,7 +397,7 @@ export function ManageUsersScreen({ navigation }: any) {
                 )}
               </View>
 
-              {/* 58dp Segmented Tab Bar: [ Student | Staff | Admin ] */}
+              {/* Segmented Tab Bar: [ Student | Staff | Admin ] */}
               <View style={styles.tabsWrapper}>
                 <SegmentedTabs<UserTab>
                   tabs={tabs}
@@ -378,7 +409,7 @@ export function ManageUsersScreen({ navigation }: any) {
                 />
               </View>
 
-              {/* 58dp Department Dropdown Bar (Student Tab Only) */}
+              {/* Department Dropdown Bar (Student Tab Only) */}
               {activeTab === 'student' && (
                 <TouchableOpacity
                   style={[
@@ -410,7 +441,7 @@ export function ManageUsersScreen({ navigation }: any) {
                   </View>
                   <View style={styles.deptBarTrailing}>
                     {selectedDept !== 'All' && (
-                      <View style={[styles.deptCountPill, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}>
+                      <View style={[styles.deptCountPill, { backgroundColor: C.surface2 }]}>
                         <Text style={[styles.deptCountPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                           {displayedUsers.length}
                         </Text>
@@ -444,8 +475,8 @@ export function ManageUsersScreen({ navigation }: any) {
                   onPress={loadUsers}
                   activeOpacity={0.8}
                 >
-                  <Feather name="refresh-cw" size={16} color="#ffffff" />
-                  <Text style={[styles.retryBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                  <Feather name="refresh-cw" size={16} color={C.white} />
+                  <Text style={[styles.retryBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
                     Retry
                   </Text>
                 </TouchableOpacity>
@@ -456,14 +487,14 @@ export function ManageUsersScreen({ navigation }: any) {
                   <Icon name={activeTab === 'student' ? 'users' : activeTab === 'staff' ? 'briefcase' : 'shield'} size={44} color={C.textMuted} />
                 </View>
                 <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                  {searchQuery.trim().length > 0
+                  {debouncedSearch.trim().length > 0
                     ? 'No matching users found'
                     : activeTab === 'student' && selectedDept !== 'All'
                     ? `No students in ${activeDeptItem.code}`
                     : `No ${activeTab} accounts`}
                 </Text>
                 <Text style={[styles.emptyDesc, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                  {searchQuery.trim().length > 0
+                  {debouncedSearch.trim().length > 0
                     ? 'Try refining your search keyword or clearing the search bar.'
                     : activeTab === 'student' && selectedDept !== 'All'
                     ? 'No registered student profiles match this department filter.'
@@ -507,7 +538,7 @@ export function ManageUsersScreen({ navigation }: any) {
             },
           ]}
         >
-          <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#383838' : '#d4d4d8' }]} />
+          <View style={[styles.sheetHandle, { backgroundColor: C.border2 }]} />
 
           <View style={styles.sheetHeaderRow}>
             <View>
@@ -519,7 +550,7 @@ export function ManageUsersScreen({ navigation }: any) {
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.sheetCloseBtn, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}
+              style={[styles.sheetCloseBtn, { backgroundColor: C.surface2 }]}
               onPress={() => setDeptModalVisible(false)}
             >
               <Feather name="x" size={18} color={C.text} />
@@ -540,7 +571,7 @@ export function ManageUsersScreen({ navigation }: any) {
                   style={[
                     styles.deptModalRow58,
                     {
-                      backgroundColor: isSelected ? (isDark ? '#262626' : '#f4f4f5') : 'transparent',
+                      backgroundColor: isSelected ? C.surface2 : 'transparent',
                       borderColor: isSelected ? C.brand : C.border,
                     },
                   ]}
@@ -576,7 +607,7 @@ export function ManageUsersScreen({ navigation }: any) {
                   </View>
 
                   <View style={styles.deptModalTrailing}>
-                    <View style={[styles.deptModalCountPill, { backgroundColor: isDark ? '#1c1c1c' : '#e4e4e7' }]}>
+                    <View style={[styles.deptModalCountPill, { backgroundColor: C.surface3 }]}>
                       <Text style={[styles.deptModalCountTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
                         {count}
                       </Text>
@@ -611,7 +642,7 @@ export function ManageUsersScreen({ navigation }: any) {
             },
           ]}
         >
-          <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#383838' : '#d4d4d8' }]} />
+          <View style={[styles.sheetHandle, { backgroundColor: C.border2 }]} />
 
           {selectedUser && (
             <>
@@ -682,7 +713,7 @@ export function ManageUsersScreen({ navigation }: any) {
                   </View>
                 </View>
                 <TouchableOpacity
-                  style={[styles.sheetCloseBtn, { backgroundColor: isDark ? '#262626' : '#e4e4e7' }]}
+                  style={[styles.sheetCloseBtn, { backgroundColor: C.surface2 }]}
                   onPress={() => setSelectedUser(null)}
                 >
                   <Feather name="x" size={18} color={C.text} />
@@ -791,11 +822,11 @@ export function ManageUsersScreen({ navigation }: any) {
                   onPress={() => handleOpenFullProfile(selectedUser)}
                   activeOpacity={0.8}
                 >
-                  <Feather name="user" size={18} color="#ffffff" />
-                  <Text style={[styles.fullProfileBtnTxt, { color: '#ffffff', fontFamily: FontFamily.jakartaBold }]}>
+                  <Feather name="user" size={18} color={C.white} />
+                  <Text style={[styles.fullProfileBtnTxt, { color: C.white, fontFamily: FontFamily.jakartaBold }]}>
                     View Full Student Profile
                   </Text>
-                  <Feather name="arrow-right" size={18} color="#ffffff" />
+                  <Feather name="arrow-right" size={18} color={C.white} />
                 </TouchableOpacity>
               )}
             </>
@@ -813,10 +844,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   } as ViewStyle,
 
-  /* 58dp Universal Search Bar */
   searchBar58: {
     height: 58,
-    borderRadius: 16,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -830,15 +860,13 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as any,
 
-  /* 58dp Tabs Wrapper */
   tabsWrapper: {
     marginBottom: 12,
   } as ViewStyle,
 
-  /* 58dp Department Dropdown Bar */
   deptDropdownBar58: {
     height: 58,
-    borderRadius: 16,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -870,13 +898,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   } as any,
 
-  /* 58dp User Bar Rows */
   listContent: {
     paddingBottom: 32,
   } as ViewStyle,
   userBar58: {
     height: 58,
-    borderRadius: 16,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -896,7 +923,6 @@ const styles = StyleSheet.create({
     marginTop: 1.5,
   } as any,
 
-  /* Loading & Error */
   centerContainer: {
     flex: 1,
     alignItems: 'center',
@@ -909,7 +935,7 @@ const styles = StyleSheet.create({
 
   errorCard: {
     padding: 24,
-    borderRadius: 16,
+    borderRadius: Radius.md,
     borderWidth: 1,
     alignItems: 'center',
     gap: 10,
@@ -930,14 +956,13 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
     height: 44,
-    borderRadius: 12,
+    borderRadius: Radius.sm,
     marginTop: 6,
   } as ViewStyle,
   retryBtnTxt: {
     fontSize: 14,
   } as any,
 
-  /* Empty State */
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -964,7 +989,7 @@ const styles = StyleSheet.create({
   clearFilterBtn: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: Radius.sm,
     borderWidth: 1,
     marginTop: 8,
   } as ViewStyle,
@@ -972,7 +997,6 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
   } as any,
 
-  /* Modal Sheets */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.65)',
@@ -1005,7 +1029,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  /* Department Bottom Sheet */
   deptSheet: {
     position: 'absolute',
     bottom: 0,
@@ -1018,7 +1041,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   deptModalRow58: {
     height: 58,
-    borderRadius: 16,
+    borderRadius: Radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1054,7 +1077,6 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
   } as any,
 
-  /* User Details Bottom Sheet */
   detailsSheet: {
     position: 'absolute',
     bottom: 0,
@@ -1097,9 +1119,8 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
   } as any,
 
-  /* Details Grid */
   infoGrid: {
-    borderRadius: 16,
+    borderRadius: Radius.md,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 6,
@@ -1125,7 +1146,7 @@ const styles = StyleSheet.create({
 
   fullProfileBtn58: {
     height: 58,
-    borderRadius: 16,
+    borderRadius: Radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1136,7 +1157,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
   } as any,
 
-  /* Access Denied */
   accessDeniedWrap: {
     flex: 1,
     alignItems: 'center',

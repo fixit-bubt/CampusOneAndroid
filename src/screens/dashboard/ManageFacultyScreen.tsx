@@ -185,8 +185,14 @@ export function ManageFacultyScreen({ navigation }: any) {
   const [bloodPickerVisible, setBloodPickerVisible] = useState(false);
   const [buildingPickerVisible, setBuildingPickerVisible] = useState(false);
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedQuery(query), 180);
+    return () => clearTimeout(handler);
+  }, [query]);
 
   // Full-page edit and create target
   const [target, setTarget] = useState<FacultyRow | null>(null);
@@ -253,7 +259,8 @@ export function ManageFacultyScreen({ navigation }: any) {
         supabase
           .from('faculty')
           .select('id, name, designation, department_id, email, phone, photo_url, short_code, room_number, building, floor, counseling_hours, blood_group, is_accepting_research, research_interests, on_leave, is_chairman, departments(id, name, branch)')
-          .order('name'),
+          .order('name')
+          .limit(250),
         supabase.from('departments').select('id, name, branch, dept_number, chairman').order('name'),
         supabase.from('crawler_audit_logs' as any).select('*').eq('feature', 'faculty').order('created_at', { ascending: false }).limit(1),
       ]);
@@ -415,6 +422,11 @@ export function ManageFacultyScreen({ navigation }: any) {
       toast({ type: 'error', title: 'Please provide teacher name' });
       return;
     }
+    const effectiveDeptId = departmentId || target?.department_id;
+    if (!effectiveDeptId) {
+      toast({ type: 'error', title: 'Please select a department' });
+      return;
+    }
     setSaving(true);
     try {
       let photoUrl: string | undefined;
@@ -428,7 +440,7 @@ export function ManageFacultyScreen({ navigation }: any) {
 
       const payload: any = {
         name: name.trim(),
-        department_id: departmentId || target?.department_id,
+        department_id: effectiveDeptId,
         email: email.trim() || null,
         phone: phone.trim() || null,
         designation: designation.trim() || 'Lecturer',
@@ -493,7 +505,7 @@ export function ManageFacultyScreen({ navigation }: any) {
     );
   }
 
-  const q = query.trim().toLowerCase();
+  const q = debouncedQuery.trim().toLowerCase();
   const cleanQ = q.replace(/[^a-z0-9]/g, '');
   const words = useMemo(() => q.split(/[\s.]+/).filter(Boolean), [q]);
 
@@ -569,7 +581,7 @@ export function ManageFacultyScreen({ navigation }: any) {
           </View>
 
           <TouchableOpacity
-            style={[styles.syncActionBtn, { backgroundColor: SectorColors.faculty }]}
+            style={[styles.syncActionBtn, { backgroundColor: C.brand }]}
             onPress={triggerLiveSync}
             disabled={syncing}
             activeOpacity={0.85}
@@ -589,7 +601,7 @@ export function ManageFacultyScreen({ navigation }: any) {
 
         {/* Add Faculty Member 58dp Action Bar */}
         <TouchableOpacity
-          style={[styles.addFacultyBar, { backgroundColor: SectorColors.faculty }]}
+          style={[styles.addFacultyBar, { backgroundColor: C.brand }]}
           onPress={openCreate}
           activeOpacity={0.85}
         >
@@ -680,6 +692,17 @@ export function ManageFacultyScreen({ navigation }: any) {
     );
   };
 
+  const renderTeacherItem = useCallback(({ item }: { item: FacultyRow }) => (
+    <TeacherCard
+      f={item}
+      deptName={deptById[item.department_id]?.name}
+      onPress={() => openEdit(item)}
+      C={C}
+    />
+  ), [deptById, C]);
+
+  const teacherKeyExtractor = useCallback((item: FacultyRow) => item.id, []);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       <SubBar
@@ -689,15 +712,8 @@ export function ManageFacultyScreen({ navigation }: any) {
 
       <FlatList<FacultyRow>
         data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TeacherCard
-            f={item}
-            deptName={deptById[item.department_id]?.name}
-            onPress={() => openEdit(item)}
-            C={C}
-          />
-        )}
+        keyExtractor={teacherKeyExtractor}
+        renderItem={renderTeacherItem}
         ListHeaderComponent={renderHeader()}
         ListEmptyComponent={renderEmpty()}
         initialNumToRender={12}
@@ -757,7 +773,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                     backgroundColor: selectedDeptId === 'All'
                       ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
                       : C.surface2,
-                    borderColor: selectedDeptId === 'All' ? SectorColors.faculty : C.border,
+                    borderColor: selectedDeptId === 'All' ? C.brand : C.border,
                   },
                 ]}
                 onPress={() => {
@@ -774,7 +790,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                     style={[
                       styles.pickerBarText,
                       {
-                        color: selectedDeptId === 'All' ? SectorColors.faculty : C.text,
+                        color: selectedDeptId === 'All' ? C.brand : C.text,
                         fontFamily: FontFamily.jakartaBold,
                       },
                     ]}
@@ -783,7 +799,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                   </Text>
                 </View>
                 {selectedDeptId === 'All' ? (
-                  <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                  <View style={[styles.checkCircle, { backgroundColor: C.brand }]}>
                     <Feather name="check" size={13} color="#fff" />
                   </View>
                 ) : (
@@ -802,7 +818,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         backgroundColor: active
                           ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
                           : C.surface2,
-                        borderColor: active ? SectorColors.faculty : C.border,
+                        borderColor: active ? C.brand : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -823,7 +839,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         style={[
                           styles.pickerBarText,
                           {
-                            color: active ? SectorColors.faculty : C.text,
+                            color: active ? C.brand : C.text,
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
@@ -833,7 +849,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                       </Text>
                     </View>
                     {active ? (
-                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                      <View style={[styles.checkCircle, { backgroundColor: C.brand }]}>
                         <Feather name="check" size={13} color="#fff" />
                       </View>
                     ) : (
@@ -898,7 +914,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         backgroundColor: active
                           ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
                           : C.surface2,
-                        borderColor: active ? SectorColors.faculty : C.border,
+                        borderColor: active ? C.brand : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -919,7 +935,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         style={[
                           styles.pickerBarText,
                           {
-                            color: active ? SectorColors.faculty : C.text,
+                            color: active ? C.brand : C.text,
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
@@ -929,7 +945,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                       </Text>
                     </View>
                     {active ? (
-                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                      <View style={[styles.checkCircle, { backgroundColor: C.brand }]}>
                         <Feather name="check" size={13} color="#fff" />
                       </View>
                     ) : (
@@ -994,7 +1010,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         backgroundColor: active
                           ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
                           : C.surface2,
-                        borderColor: active ? SectorColors.faculty : C.border,
+                        borderColor: active ? C.brand : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -1011,7 +1027,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         style={[
                           styles.pickerBarText,
                           {
-                            color: active ? SectorColors.faculty : C.text,
+                            color: active ? C.brand : C.text,
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
@@ -1021,7 +1037,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                       </Text>
                     </View>
                     {active ? (
-                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                      <View style={[styles.checkCircle, { backgroundColor: C.brand }]}>
                         <Feather name="check" size={13} color="#fff" />
                       </View>
                     ) : (
@@ -1086,7 +1102,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         backgroundColor: active
                           ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
                           : C.surface2,
-                        borderColor: active ? SectorColors.faculty : C.border,
+                        borderColor: active ? C.brand : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -1103,7 +1119,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         style={[
                           styles.pickerBarText,
                           {
-                            color: active ? SectorColors.faculty : C.text,
+                            color: active ? C.brand : C.text,
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
@@ -1112,7 +1128,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                       </Text>
                     </View>
                     {active ? (
-                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                      <View style={[styles.checkCircle, { backgroundColor: C.brand }]}>
                         <Feather name="check" size={13} color="#fff" />
                       </View>
                     ) : (
@@ -1177,7 +1193,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         backgroundColor: active
                           ? (isDark ? 'rgba(79, 70, 229, 0.16)' : 'rgba(79, 70, 229, 0.08)')
                           : C.surface2,
-                        borderColor: active ? SectorColors.faculty : C.border,
+                        borderColor: active ? C.brand : C.border,
                       },
                     ]}
                     onPress={() => {
@@ -1194,7 +1210,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                         style={[
                           styles.pickerBarText,
                           {
-                            color: active ? SectorColors.faculty : C.text,
+                            color: active ? C.brand : C.text,
                             fontFamily: FontFamily.jakartaBold,
                           },
                         ]}
@@ -1203,7 +1219,7 @@ export function ManageFacultyScreen({ navigation }: any) {
                       </Text>
                     </View>
                     {active ? (
-                      <View style={[styles.checkCircle, { backgroundColor: SectorColors.faculty }]}>
+                      <View style={[styles.checkCircle, { backgroundColor: C.brand }]}>
                         <Feather name="check" size={13} color="#fff" />
                       </View>
                     ) : (
@@ -1488,7 +1504,7 @@ export function ManageFacultyScreen({ navigation }: any) {
 
               {/* Save Button (58dp) */}
               <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: SectorColors.faculty, opacity: saving ? 0.6 : 1 }]}
+                style={[styles.saveBtn, { backgroundColor: C.brand, opacity: saving ? 0.6 : 1 }]}
                 onPress={save}
                 disabled={saving}
                 activeOpacity={0.8}

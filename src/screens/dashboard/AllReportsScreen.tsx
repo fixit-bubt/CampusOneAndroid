@@ -253,11 +253,17 @@ export function AllReportsScreen({ navigation }: any) {
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [staff, setStaff] = useState<Profile[]>([]);
   const [assignTarget, setAssignTarget] = useState<ReportWithProfile | null>(null);
   const [assignTab, setAssignTab] = useState<'trade' | 'all'>('trade');
   const [refreshing, setRefreshing] = useState(false);
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedQuery(query), 180);
+    return () => clearTimeout(handler);
+  }, [query]);
 
   // 58dp Dropdown bottom sheet visibility states
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -318,7 +324,7 @@ export function AllReportsScreen({ navigation }: any) {
   }, [staff, t.common.error, toast]);
 
   const filteredReports = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     return reports
       .filter((r) => filter === 'all' || r.status === filter)
       .filter((r) => category === 'All' || r.category === category)
@@ -331,7 +337,7 @@ export function AllReportsScreen({ navigation }: any) {
           .toLowerCase()
           .includes(q);
       });
-  }, [reports, filter, category, query]);
+  }, [reports, filter, category, debouncedQuery]);
 
   const currentStatusOption = useMemo(
     () => STATUS_OPTIONS.find((s) => s.id === filter) ?? STATUS_OPTIONS[0],
@@ -395,6 +401,9 @@ export function AllReportsScreen({ navigation }: any) {
     />
   ), [voteCounts, handleCardPress, handleAssignTrigger, isAdmin, C]);
 
+  const reportKeyExtractor = useCallback((r: ReportWithProfile) => r.id, []);
+  const itemSeparator = useCallback(() => <View style={{ height: 10 }} />, []);
+
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -415,7 +424,7 @@ export function AllReportsScreen({ navigation }: any) {
 
       <FlatList
         data={filteredReports}
-        keyExtractor={(r) => r.id}
+        keyExtractor={reportKeyExtractor}
         renderItem={renderItem}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -433,7 +442,7 @@ export function AllReportsScreen({ navigation }: any) {
             colors={[C.brand]}
           />
         }
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        ItemSeparatorComponent={itemSeparator}
         ListHeaderComponent={
           <View style={styles.listHeader}>
             {/* 1. Strict 58dp Search Bar */}
