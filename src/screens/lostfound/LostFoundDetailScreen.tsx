@@ -476,7 +476,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
           disabled={!item.photo_url}
         >
           {item.photo_url ? (
-            <Image
+            <Image resizeMethod="resize"
               source={{ uri: item.photo_url }}
               style={styles.heroImg}
               resizeMode="cover"

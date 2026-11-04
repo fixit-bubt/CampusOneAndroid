@@ -227,7 +227,7 @@ export function ChatbotScreen({ navigation, route }: any) {
     return (
       <View style={[styles.bubbleRow, mine ? styles.mineRow : styles.theirRow]}>
         <View style={[styles.bubble, bubbleStyle, m.imageUrl ? styles.bubbleWithImage : null]}>
-          {m.imageUrl && <Image source={{ uri: m.imageUrl }} style={styles.bubbleImage} resizeMode="cover" />}
+          {m.imageUrl && <Image resizeMethod="resize" source={{ uri: m.imageUrl }} style={styles.bubbleImage} resizeMode="cover" />}
           {!!m.text && (
             <Text style={[styles.body, { color: mine ? C.white : m.isError ? C.danger : C.text, fontFamily: FontFamily.jakartaMedium }]}>
               {m.text}
@@ -335,7 +335,7 @@ export function ChatbotScreen({ navigation, route }: any) {
         {pendingImage && (
           <View style={[styles.previewRow, { backgroundColor: C.surface, borderTopColor: C.border }]}>
             <View style={styles.previewThumbWrap}>
-              <Image source={{ uri: pendingImage.uri }} style={styles.previewThumb} resizeMode="cover" />
+              <Image resizeMethod="resize" source={{ uri: pendingImage.uri }} style={styles.previewThumb} resizeMode="cover" />
               {uploadingImage && (
                 <View style={styles.previewSpinner}>
                   <ActivityIndicator size="small" color="#fff" />

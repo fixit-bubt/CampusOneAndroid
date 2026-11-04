@@ -72,7 +72,7 @@ const CandidateCard = React.memo(function CandidateCard({
         activeOpacity={0.8}
       >
         {src ? (
-          <Image source={src} style={styles.candidateThumb} resizeMode="cover" />
+          <Image resizeMethod="resize" source={src} style={styles.candidateThumb} resizeMode="cover" />
         ) : (
           <View style={[styles.candidateThumb, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
             <Feather
@@ -536,14 +536,14 @@ export function ManageBannerScreen({ navigation }: any) {
             onPress={() => handleOpenDetail(activePreview)}
             style={[styles.previewCard, { backgroundColor: C.surface2 }]}
           >
-            <Image
+            <Image resizeMethod="resize"
               source={fallbackPreviewSource}
               style={styles.previewBgFallback}
               resizeMode="cover"
             />
 
             {resolvedPreviewSource && (
-              <Image
+              <Image resizeMethod="resize"
                 source={resolvedPreviewSource}
                 style={styles.previewImage}
                 resizeMode="cover"
@@ -688,7 +688,7 @@ export function ManageBannerScreen({ navigation }: any) {
                   activeOpacity={0.8}
                 >
                   {src ? (
-                    <Image source={src} style={styles.activeSlideThumb} resizeMode="cover" />
+                    <Image resizeMethod="resize" source={src} style={styles.activeSlideThumb} resizeMode="cover" />
                   ) : (
                     <View style={[styles.activeSlideThumb, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
                       <Feather name="image" size={16} color={C.textMuted} />

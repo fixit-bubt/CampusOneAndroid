@@ -159,7 +159,7 @@ export function ThumbCard({
         activeOpacity={0.85}
       >
         {uri ? (
-          <Image
+          <Image resizeMethod="resize"
             source={{ uri }}
             style={[
               styles.thumbImg,

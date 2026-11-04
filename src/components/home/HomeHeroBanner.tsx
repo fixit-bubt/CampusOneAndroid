@@ -126,7 +126,7 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
           style={styles.card}
         >
           {imgSource ? (
-            <Image source={imgSource} style={styles.bgImage} />
+            <Image resizeMethod="resize" source={imgSource} style={styles.bgImage} />
           ) : null}
 
           {/* Gradient Scrim for contrast */}

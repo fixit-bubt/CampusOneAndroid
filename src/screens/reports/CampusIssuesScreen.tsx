@@ -535,7 +535,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
         <FlatList
           data={ready ? filteredCampus : []}
           keyExtractor={(_r, index) => String(index)}
-          initialNumToRender={8}
+          initialNumToRender={6}
           maxToRenderPerBatch={8}
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
@@ -589,7 +589,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
         <FlatList
           data={ready ? filteredMine : []}
           keyExtractor={(_r, index) => String(index)}
-          initialNumToRender={8}
+          initialNumToRender={6}
           maxToRenderPerBatch={8}
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}

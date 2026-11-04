@@ -289,7 +289,7 @@ export function MediaPickerModal({
           }}
           activeOpacity={0.88}
         >
-          <Image
+          <Image resizeMethod="resize"
             source={{ uri: item.uri }}
             style={styles.tileImage}
             resizeMode="cover"

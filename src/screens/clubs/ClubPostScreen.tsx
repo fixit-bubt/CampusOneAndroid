@@ -144,7 +144,7 @@ export function ClubPostScreen({ route, navigation }: any) {
         <Text style={[styles.label, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>{t.clubs2.photoOptional}</Text>
         {photoUri ? (
           <View style={[styles.photoContainer, { borderColor: C.border }]}>
-            <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
+            <Image resizeMethod="resize" source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
             <TouchableOpacity
               style={[styles.removePhotoBtn, { backgroundColor: C.surface, borderColor: C.border }]}
               onPress={() => setPhotoUri(null)}

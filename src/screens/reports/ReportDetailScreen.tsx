@@ -466,7 +466,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
         )}
 
         {report.photo_url ? (
-          <Image source={{ uri: report.photo_url }} style={styles.evidencePhoto} resizeMode="cover" />
+          <Image resizeMethod="resize" source={{ uri: report.photo_url }} style={styles.evidencePhoto} resizeMode="cover" />
         ) : null}
 
         {/* Reporter + Assignee */}

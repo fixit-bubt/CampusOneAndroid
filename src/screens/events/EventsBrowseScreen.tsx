@@ -1,3 +1,4 @@
+import { indexKey, listGap } from '../../components/ui/listHelpers';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
@@ -11,8 +12,7 @@ import {
   Image,
   Modal,
   Pressable,
-  type ViewStyle,
-} from 'react-native';
+  type ViewStyle, FlatList } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -132,7 +132,7 @@ function EventCard({
       {/* Banner Cover or Category Header */}
       {bannerSource && !imgError ? (
         <View style={styles.bannerWrap}>
-          <Image
+          <Image resizeMethod="resize"
             source={bannerSource}
             style={styles.bannerImg}
             resizeMode="cover"
@@ -357,6 +357,16 @@ export function EventsBrowseScreen({ navigation }: any) {
     return { upcomingList: upcoming, pastList: past, savedList: saved, displayList: display };
   }, [events, category, search, todayStr, savedIds, tab]);
 
+  const renderEvent = useCallback(({ item }: { item: Event }) => (
+    <EventCard
+      e={item}
+      C={C}
+      isSaved={savedIds.has(item.id)}
+      onToggleSave={() => handleToggleBookmark(item.id)}
+      onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
+    />
+  ), [C, savedIds, handleToggleBookmark, navigation]);
+
   const EVENT_TABS: TabItem<EventTab>[] = useMemo(() => [
     { id: 'upcoming', label: 'Upcoming', count: upcomingList.length > 0 ? upcomingList.length : undefined, color: C.brand },
     { id: 'past',     label: 'Past',     count: pastList.length > 0 ? pastList.length : undefined, color: C.text2 },
@@ -399,13 +409,21 @@ export function EventsBrowseScreen({ navigation }: any) {
       />
 
       {/* Main Events Feed & Agenda with Natural Native Scrolling */}
-      <ScrollView
+      <FlatList
+        data={ready ? displayList : []}
+        keyExtractor={indexKey}
+        renderItem={renderEvent}
+        ItemSeparatorComponent={listGap(10)}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-      >
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        ListHeaderComponent={
+          <View>
         <OfflineBanner visible={isOffline} onRetry={load} />
 
         {/* Instant Search Bar */}
@@ -541,11 +559,14 @@ export function EventsBrowseScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {loadState === 'loading' && events.length === 0 ? (
-          <SkeletonList />
-        ) : loadState === 'error' && events.length === 0 ? (
-          <LoadError onRetry={load} />
-        ) : displayList.length === 0 ? (
+          </View>
+        }
+        ListEmptyComponent={
+          !ready || (loadState === 'loading' && events.length === 0) ? (
+            <SkeletonList rows={5} />
+          ) : loadState === 'error' && events.length === 0 ? (
+            <LoadError onRetry={load} />
+          ) : (
           <View style={styles.empty}>
             <Icon name="events" size={32} color={C.textMuted} />
             <Text style={[styles.emptyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
@@ -561,23 +582,10 @@ export function EventsBrowseScreen({ navigation }: any) {
                 : 'Stay tuned for upcoming campus seminars, workshops, and sports!'}
             </Text>
           </View>
-        ) : !ready ? (
-            <SkeletonList rows={5} />
-          ) : (
-          <View style={styles.list}>
-            {displayList.map((e, idx) => (
-              <EventCard key={idx}
-                e={e}
-                C={C}
-                isSaved={savedIds.has(e.id)}
-                onToggleSave={() => handleToggleBookmark(e.id)}
-                onPress={() => navigation.navigate('EventDetail', { eventId: e.id })}
-              />
-            ))}
-          </View>
-        )}
-        <View style={{ height: 24 }} />
-      </ScrollView>
+          )
+        }
+        ListFooterComponent={<View style={{ height: 24 }} />}
+      />
 
       {/* Category Selection Bottom Sheet Modal (72dp Standard) */}
       <Modal

@@ -209,7 +209,7 @@ export function AnnouncePostScreen({ navigation }: any) {
           activeOpacity={0.75}
         >
           {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.photoPreview} resizeMode="cover" />
+            <Image resizeMethod="resize" source={{ uri: imageUri }} style={styles.photoPreview} resizeMode="cover" />
           ) : (
             <View style={styles.photoPlaceholder}>
               <Feather name="image" size={22} color={C.textMuted} />

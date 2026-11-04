@@ -456,7 +456,7 @@ export function ReportFormScreen({ route, navigation }: any) {
 
           {photoUri ? (
             <View style={[styles.photoPreviewCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-              <Image source={{ uri: photoUri }} style={styles.photoImg} resizeMode="cover" />
+              <Image resizeMethod="resize" source={{ uri: photoUri }} style={styles.photoImg} resizeMode="cover" />
               <TouchableOpacity
                 style={[styles.photoDeleteBtn, { backgroundColor: C.surface2, borderColor: C.border }]}
                 onPress={() => setPhotoUri(null)}

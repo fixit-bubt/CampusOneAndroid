@@ -67,7 +67,7 @@ function LFCard({
     >
       <View style={[styles.thumb, !item.photo_url && { backgroundColor: 'transparent' }]}>
         {item.photo_url ? (
-          <Image source={{ uri: item.photo_url }} style={styles.thumbImg} resizeMode="cover" />
+          <Image resizeMethod="resize" source={{ uri: item.photo_url }} style={styles.thumbImg} resizeMode="cover" />
         ) : (
           <Icon name={CAT_ICON[item.category] ?? 'inbox'} size={32} color={C.text} />
         )}

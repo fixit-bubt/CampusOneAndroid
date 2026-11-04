@@ -260,7 +260,7 @@ export function EventDetailScreen({ route, navigation }: any) {
           if (bannerSource && !bannerError) {
             return (
               <View style={styles.heroBannerWrap}>
-                <Image
+                <Image resizeMethod="resize"
                   source={bannerSource}
                   style={styles.heroBannerImg}
                   resizeMode="cover"

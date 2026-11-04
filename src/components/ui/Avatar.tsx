@@ -55,7 +55,7 @@ export const Avatar = React.memo(function Avatar({ uri, name, size = 'md', style
   return (
     <View style={[containerStyle, style]}>
       {uri ? (
-        <Image source={{ uri }} style={[StyleSheet.absoluteFill]} resizeMode="cover" />
+        <Image resizeMethod="resize" source={{ uri }} style={[StyleSheet.absoluteFill]} resizeMode="cover" />
       ) : (
         <Text style={{ color: C.brand, fontSize: FONT_MAP[size], fontFamily: FontFamily.jakartaSemiBold }}>
           {initials}

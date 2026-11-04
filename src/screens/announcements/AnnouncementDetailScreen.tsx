@@ -522,7 +522,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
               activeOpacity={0.88}
               style={styles.imageWrapper}
             >
-              <Image
+              <Image resizeMethod="resize"
                 source={resolvedNoticeImg}
                 style={styles.noticeImage}
                 resizeMode="cover"

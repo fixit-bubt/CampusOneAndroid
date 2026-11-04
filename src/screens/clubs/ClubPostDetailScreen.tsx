@@ -247,7 +247,7 @@ export function ClubPostDetailScreen({ route, navigation }: any) {
 
         {/* Optional Image Attachment */}
         {post.image_url ? (
-          <Image
+          <Image resizeMethod="resize"
             source={{ uri: resolvePostImageUrl(post.image_url) || post.image_url }}
             style={[styles.postImage, { borderColor: C.border }]}
             resizeMode="cover"

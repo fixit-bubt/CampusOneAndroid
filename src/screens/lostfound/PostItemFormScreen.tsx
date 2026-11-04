@@ -593,7 +593,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
           <Text style={[styles.label, { color: C.text2, fontFamily: FontFamily.jakartaSemiBold }]}>Photo (Optional)</Text>
           {photoUri || existingPhotoUrl ? (
             <View style={[styles.photoCard, { borderColor: C.border, backgroundColor: C.surface }]}>
-              <Image source={{ uri: photoUri || existingPhotoUrl! }} style={styles.photoThumb} resizeMode="cover" />
+              <Image resizeMethod="resize" source={{ uri: photoUri || existingPhotoUrl! }} style={styles.photoThumb} resizeMode="cover" />
               <View style={styles.photoActions}>
                 <TouchableOpacity
                   style={[styles.photoBtn, { backgroundColor: C.surface2 }]}

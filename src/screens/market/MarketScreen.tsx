@@ -315,7 +315,7 @@ export function MarketScreen({ navigation }: any) {
         {/* Thumbnail Hero */}
         <View style={[styles.cardThumb, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : C.surface2 }]}>
           {item.photo_url ? (
-            <Image source={{ uri: item.photo_url }} style={styles.cardImg} resizeMode="cover" />
+            <Image resizeMethod="resize" source={{ uri: item.photo_url }} style={styles.cardImg} resizeMode="cover" />
           ) : (
             <Feather name={catMeta.icon} size={36} color={C.text} />
           )}

@@ -202,6 +202,13 @@ export function BloodScreen({ route, navigation }: any) {
   const t = useT();
   const [tab, setTab] = useState<Tab>('requests');
   const ready = useAfterInteractions();
+  const [donorsMounted, setDonorsMounted] = useState(false);
+  useEffect(() => {
+    if (tab === 'donors') { setDonorsMounted(true); return; }
+    if (!ready) return;
+    const timer = setTimeout(() => setDonorsMounted(true), 800);
+    return () => clearTimeout(timer);
+  }, [tab, ready]);
   const [highlightCode, setHighlightCode] = useState<string | null>(route?.params?.requestCode ?? null);
 
   useEffect(() => {
@@ -782,8 +789,9 @@ export function BloodScreen({ route, navigation }: any) {
           <SkeletonList />
         ) : loadState === 'error' && requests.length === 0 && donors.length === 0 ? (
           <LoadError onRetry={load} />
-        ) : tab === 'requests' ? (
-          <View style={styles.list}>
+        ) : (
+          <>
+          <View style={[styles.list, tab === 'requests' ? null : styles.hidden]}>
             {/* Compact 8-Group Grid (De-bloated: Neutral by default, Red accent only on selected) */}
             <View style={[styles.compactGridCard, { backgroundColor: C.surface, borderColor: C.border }]}>
               <View style={styles.compactGridHeader}>
@@ -1081,8 +1089,8 @@ export function BloodScreen({ route, navigation }: any) {
             )}
 
           </View>
-        ) : (
-          <View style={styles.list}>
+          {donorsMounted && (
+          <View style={[styles.list, tab === 'donors' ? null : styles.hidden]}>
             {/* Donor Status / Registration Banner (Universal 72dp Content Standard) */}
             {myDonor ? (
               <View style={[styles.myStatusCard, { backgroundColor: C.surface, borderColor: C.border, marginBottom: 2 }]}>
@@ -1273,6 +1281,8 @@ export function BloodScreen({ route, navigation }: any) {
               </View>
             )}
           </View>
+          )}
+          </>
         )}
         <View style={{ height: 12 }} />
       </ScrollView>
@@ -1304,6 +1314,7 @@ export function BloodScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  hidden: { display: 'none' } as ViewStyle,
   safe: { flex: 1 } as ViewStyle,
   heroActBtn: {
     height: 58,

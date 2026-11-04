@@ -361,7 +361,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
         >
           {listing.photo_url ? (
             <>
-              <Image source={{ uri: listing.photo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              <Image resizeMethod="resize" source={{ uri: listing.photo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               <View style={styles.zoomHintPill}>
                 <Feather name="maximize-2" size={12} color="#fff" />
                 <Text style={styles.zoomHintText}>Tap to zoom</Text>

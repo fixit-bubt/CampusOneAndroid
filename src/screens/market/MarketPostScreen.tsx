@@ -407,7 +407,7 @@ export function MarketPostScreen({ route, navigation }: any) {
           <View style={[styles.photoBox, { backgroundColor: C.surface, borderColor: photoUri ? MARKET_COLOR : C.border }]}>
             {photoUri ? (
               <View style={styles.photoPreviewWrapper}>
-                <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
+                <Image resizeMethod="resize" source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
                 <TouchableOpacity
                   style={styles.photoRemoveBtn}
                   onPress={handleRemovePhoto}

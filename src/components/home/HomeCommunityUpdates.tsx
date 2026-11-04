@@ -476,7 +476,7 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
                 ]}
               >
                 {item.imageSource && !failedImages[item.id] ? (
-                  <Image
+                  <Image resizeMethod="resize"
                     source={item.imageSource}
                     style={styles.thumbImage}
                     resizeMode="cover"

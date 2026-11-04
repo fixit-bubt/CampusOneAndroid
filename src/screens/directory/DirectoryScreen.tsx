@@ -612,9 +612,9 @@ export function DirectoryScreen({ route, navigation }: any) {
           data={ready ? filteredStudents : []}
           keyExtractor={(_s, index) => String(index)}
         ItemSeparatorComponent={listGap(10)}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={7}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
           showsVerticalScrollIndicator={false}

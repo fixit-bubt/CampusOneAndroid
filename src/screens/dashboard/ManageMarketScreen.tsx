@@ -115,7 +115,7 @@ const MarketAdminCard = memo(function MarketAdminCard({
       {/* Card Body: Title & Photo thumbnail */}
       <View style={styles.cardBodyRow}>
         {item.photo_url ? (
-          <Image source={{ uri: item.photo_url }} style={styles.thumbnail} resizeMode="cover" />
+          <Image resizeMethod="resize" source={{ uri: item.photo_url }} style={styles.thumbnail} resizeMode="cover" />
         ) : (
           <View style={[styles.thumbnailPlaceholder, { backgroundColor: C.surface2, borderColor: C.border }]}>
             <Feather name="tag" size={22} color={C.textMuted} />

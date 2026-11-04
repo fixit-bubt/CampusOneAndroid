@@ -242,7 +242,7 @@ export function EventPostScreen({ navigation }: any) {
           </Text>
           {bannerUrl ? (
             <View style={styles.bannerPreviewWrap}>
-              <Image source={{ uri: bannerUrl }} style={styles.bannerPreviewImg} resizeMode="cover" />
+              <Image resizeMethod="resize" source={{ uri: bannerUrl }} style={styles.bannerPreviewImg} resizeMode="cover" />
               <TouchableOpacity
                 style={[styles.removeBannerBtn, { backgroundColor: C.danger }]}
                 onPress={() => setBannerUrl(null)}
