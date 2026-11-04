@@ -532,6 +532,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
   4. **Instant Control Reappearance:** On scrolling up or initiating pull-to-refresh (`RefreshControl`), all top controls reappear immediately.
   5. **React TextInput Focus Preservation Rule:** Passing an inline anonymous function component to `ListHeaderComponent` (e.g. `ListHeaderComponent={() => <View>...<TextInput />...</View>}`) causes React to unmount and remount the DOM/native subtree on every single keystroke, immediately dismissing the keyboard and losing focus. To preserve continuous focus, always pass a stable JSX element (`ListHeaderComponent={<View>...<TextInput />...</View>}` or `ListHeaderComponent={listHeaderJSX}`) so React reconciles the tree in-place without unmounting.
   6. **Fluid Keyboard & Momentum Configuration:** Every scroll container strictly specifies `keyboardDismissMode="on-drag"` and `keyboardShouldPersistTaps="handled"`, allowing users to tap items while dismissing the keyboard seamlessly when dragging.
+  7. **Zero-Double-Padding Rule:** Wrapper views inside `ListHeaderComponent` must NEVER specify `paddingHorizontal: Layout.screenPadding` if the parent `FlatList` already applies `paddingHorizontal: Layout.screenPadding` via its `contentContainerStyle` (`styles.listContent`). Stacking padding adds 32dp total side margins, squishing top bars and making them render narrower than the feed cards below. All header bars must align edge-to-edge with card margins.
 
 ---
 
@@ -4335,3 +4336,21 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: 0 errors (`npx.cmd tsc --noEmit`).
   - Local Gradle Native Build: `assembleRelease` passed in 45s with release keystore.
   - Physical Device Verification: Streamed install via ADB and successfully launched on device `8734b5da`.
+
+---
+
+### 116. Zero-Double-Padding Standard in Scrollable Headers (`CampusIssuesScreen.tsx`, `ManageMarketScreen.tsx`) (/zero-slop, /code-review-and-quality)
+- **Root Cause & Visual Defect:**
+  - When migrating sticky search bars, action buttons, category dropdowns, and segment tabs into `FlatList`'s `ListHeaderComponent` (for Universal Natural Native Scrolling), wrapper containers inside `ListHeaderComponent` retained `paddingHorizontal: Layout.screenPadding` (16dp).
+  - Because `FlatList`'s `contentContainerStyle` (`styles.listContent`) already applies 16dp horizontal padding to all children, the header controls received double horizontal padding (**32dp total margins** on left and right).
+  - Consequently, top bars (`[ Campus | Mine ]`, `[ + New Report ]`, `[ Filter by Status ]`) rendered 32dp narrower than the feed cards below them, appearing visibly shrunken and indented.
+- **Architectural Fix:**
+  - `CampusIssuesScreen.tsx`: Removed redundant horizontal padding from `tabContainer`, `actionContainer`, and `filterContainer`, as well as `loadingContainer` and `errorContainer`.
+  - `ManageMarketScreen.tsx`: Removed redundant horizontal padding wrappers from search bar, category dropdown, filter tabs, and `countRow`.
+  - Stretched all header controls to 100% of the list content width, achieving pixel-perfect edge-to-edge alignment with the cards below.
+- **Universal Zero-Double-Padding Rule Added to Section 5.11:**
+  - When placing top controls inside `ListHeaderComponent`, wrapper containers must NEVER re-apply `paddingHorizontal: Layout.screenPadding` if the parent `FlatList`'s `contentContainerStyle` already enforces it.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Local Native Release Build: Compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 42s`).
+  - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
