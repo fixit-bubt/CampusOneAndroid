@@ -1,3 +1,4 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
@@ -202,6 +203,7 @@ export function BloodScreen({ route, navigation }: any) {
   const { user, profile } = useAuth();
   const t = useT();
   const [tab, setTab] = useState<Tab>('requests');
+  const ready = useAfterInteractions();
   const [highlightCode, setHighlightCode] = useState<string | null>(route?.params?.requestCode ?? null);
 
   useEffect(() => {
@@ -849,7 +851,9 @@ export function BloodScreen({ route, navigation }: any) {
             </View>
 
             {/* Request list */}
-            {filteredRequests.length === 0 ? (
+            {!ready ? (
+              <SkeletonList rows={4} />
+            ) : filteredRequests.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
@@ -1230,7 +1234,9 @@ export function BloodScreen({ route, navigation }: any) {
             </View>
 
             {/* Donor list */}
-            {filteredDonors.length === 0 ? (
+            {!ready ? (
+              <SkeletonList rows={4} />
+            ) : filteredDonors.length === 0 ? (
               <View style={[styles.emptyWrap, { backgroundColor: C.surface, borderColor: C.border }]}>
                 <AnimatedIcon family="feather" name="droplet" size={36} color={C.textMuted} />
                 <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>

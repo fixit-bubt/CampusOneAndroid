@@ -1,3 +1,6 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
+import { FadeIn } from '../../components/ui/FadeIn';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { normalizePdfUrl } from '../../utils/pdfUrl';
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
@@ -161,6 +164,7 @@ export function AnnouncementsScreen({ navigation }: any) {
     return cachedSaves ? new Set(cachedSaves) : new Set();
   });
   const [mainTab, setMainTab] = useState<MainTab>('all');
+  const ready = useAfterInteractions();
   const [pdfItem, setPdfItem] = useState<Announcement | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
@@ -470,6 +474,7 @@ export function AnnouncementsScreen({ navigation }: any) {
   );
 
   const renderCard = useCallback(({ item }: { item: Announcement }) => (
+    <FadeIn>
     <AnnouncementCard
       a={item}
       C={C}
@@ -482,6 +487,7 @@ export function AnnouncementsScreen({ navigation }: any) {
       onPress={handlePressCard}
       onOpenPdf={handleOpenPdf}
     />
+    </FadeIn>
   ), [C, isDark, readIds, savedIds, isAdmin, handleToggleSave, deleteAnnouncement, handlePressCard, handleOpenPdf]);
 
   return (
@@ -528,7 +534,7 @@ export function AnnouncementsScreen({ navigation }: any) {
 
       {/* Main Announcements Virtualized List with Natural Native Scrolling */}
       <FlatList
-        data={displayedItems}
+        data={ready ? displayedItems : []}
         keyExtractor={(_item, index) => String(index)}
         renderItem={renderCard}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
@@ -651,10 +657,8 @@ export function AnnouncementsScreen({ navigation }: any) {
           </View>
         }
         ListEmptyComponent={
-          loading ? (
-            <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
-              <ActivityIndicator size="small" color={C.brand} />
-            </View>
+          !ready || loading ? (
+            <SkeletonList rows={5} />
           ) : (
             <View style={styles.empty}>
               <Icon name="announce" size={36} color={C.textMuted} />
