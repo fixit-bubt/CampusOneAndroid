@@ -52,6 +52,10 @@ This document is the single, authoritative reference for any AI agent or develop
 - **API URL:** `https://xhgpxvyqrufbbuivttmi.supabase.co`
 - **Anon Key:** Configured in `src/lib/supabase.ts` (safe for client bundle)
 - **MCP Database Changes:** Allowed via project-scoped `.mcp.json`. Always verify the project ref is `xhgpxvyqrufbbuivttmi` before running any DDL or migration.
+- **Dedicated Staff Test Account:**
+  - **Email:** `staff@bubt.edu.bd`
+  - **Password:** `campusone2026`
+  - **Role:** `staff` (Campus Maintenance Staff, Department: `Electrical & Mechanical`, Expertise: `Electrical`)
 
 ### 2.3 Working Directories
 - **React Native Project Root:** `c:\Users\dracu\Desktop\CampusOne\CampusOne`
