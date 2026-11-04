@@ -1,3 +1,4 @@
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
@@ -7,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { WebView } from 'react-native-webview';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -15,7 +15,7 @@ import { FontFamily, Layout, Accent, SectorColors, pillBg, Radius } from '../../
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
-import { normalizePdfUrl, buildGoogleDocsViewerUrl } from '../../utils/pdfUrl';
+import { normalizePdfUrl } from '../../utils/pdfUrl';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
@@ -50,23 +50,11 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const [notFound, setNotFound] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(true);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [zoomLoading, setZoomLoading] = useState(false);
-
-  // PDF modal loading state & safety timeout
-  useEffect(() => {
-    if (pdfModalVisible) {
-      setPdfLoading(true);
-      const timer = setTimeout(() => {
-        setPdfLoading(false);
-      }, 6500);
-      return () => clearTimeout(timer);
-    }
-  }, [pdfModalVisible]);
 
   useEffect(() => {
     let active = true;
@@ -252,9 +240,6 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const resolvedNoticeImg = resolveBannerSource(displayImageUrl);
 
   const resolvedAttachment = normalizePdfUrl(item.attachment_url);
-  const googleDocsPdfViewer = resolvedAttachment
-    ? buildGoogleDocsViewerUrl(resolvedAttachment)
-    : null;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -646,277 +631,15 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* =========================================================================
-          MODAL 1: IN-APP PDF VIEWER MODAL
-         ========================================================================= */}
-      <Modal
+      <CampusPdfViewerModal
         visible={pdfModalVisible}
-        animationType="slide"
-        onRequestClose={() => setPdfModalVisible(false)}
-      >
-        <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-          <View style={[styles.pdfHeader, { backgroundColor: C.surface, borderBottomColor: C.border }]}>
-            <TouchableOpacity onPress={() => setPdfModalVisible(false)} hitSlop={8} style={{ padding: 4 }}>
-              <Feather name="x" size={22} color={C.text} />
-            </TouchableOpacity>
-            <Text style={[styles.pdfHeaderTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-              {item.attachment_name || 'Notice PDF'}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              {resolvedAttachment && (
-                <TouchableOpacity
-                  onPress={() => openUrl(resolvedAttachment)}
-                  hitSlop={8}
-                  style={{ padding: 4 }}
-                >
-                  <Feather name="external-link" size={18} color={C.text} />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={handleDownloadPdf} hitSlop={8} style={{ padding: 4 }}>
-                <Feather name="download" size={19} color={C.text} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={{ flex: 1, position: 'relative' }}>
-            {pdfModalVisible && googleDocsPdfViewer && (
-              <WebView
-                source={{ uri: googleDocsPdfViewer }}
-                style={{
-                  flex: 1,
-                  backgroundColor: isDark ? '#000000' : '#f8fafc',
-                  opacity: pdfLoading ? 0 : 1,
-                }}
-                scalesPageToFit={false}
-                textZoom={100}
-                cacheEnabled={true}
-                cacheMode="LOAD_DEFAULT"
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                originWhitelist={['*']}
-                mixedContentMode="always"
-                setSupportMultipleWindows={false}
-                showsHorizontalScrollIndicator={false}
-                showsVerticalScrollIndicator={true}
-                onMessage={(event) => {
-                  try {
-                    const data = JSON.parse(event.nativeEvent.data);
-                    if (data.type === 'pdfRendered') {
-                      setPdfLoading(false);
-                    }
-                  } catch {}
-                }}
-                injectedJavaScriptBeforeContentLoaded={`
-                  (function() {
-                    // 1. Responsive mobile viewport
-                    const meta = document.createElement('meta');
-                    meta.name = 'viewport';
-                    meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes';
-                    (document.head || document.documentElement).appendChild(meta);
-
-                    // 2. Critical anti-flash & layout CSS: Injected before first DOM paint to completely prevent Google toolbar/skin flicker
-                    const style = document.createElement('style');
-                    style.id = 'campusone-pdf-critical-css';
-                    style.innerHTML = \`
-                      *, *::before, *::after {
-                        box-sizing: border-box !important;
-                      }
-                      html, body {
-                        width: 100% !important;
-                        max-width: 100vw !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        overflow-x: hidden !important;
-                      }
-                      /* Eliminate Google Drive toolbar, buttons, pop-outs, and loading skins */
-                      .ndfHFb-c4YZDc-Wrql6b,
-                      .drive-viewer-toolstrip,
-                      div[role="toolbar"],
-                      .goog-inline-block,
-                      a[href*="docs.google.com"],
-                      .ndfHFb-c4YZDc-V67aGc,
-                      .ndfHFb-c4YZDc-cYSp0e-B7I4Od,
-                      .ndfHFb-c4YZDc-cYSp0e-DARUcf-hSRGPd,
-                      .ndfHFb-c4YZDc-EglORb-ge6pde,
-                      .ndfHFb-aZ2wEe,
-                      .ndfHFb-vyDMJf-aZ2wEe,
-                      .ndfHFb-c4YZDc-GSQQnc-LgbsSe,
-                      .ndfHFb-c4YZDc-to915-LgbsSe,
-                      .ndfHFb-c4YZDc-AHmuwe-wcotoc-zTETae {
-                        display: none !important;
-                        visibility: hidden !important;
-                        height: 0 !important;
-                        opacity: 0 !important;
-                        pointer-events: none !important;
-                      }
-                      /* Zero out top offset reserved for Google toolbar */
-                      .ndfHFb-c4YZDc-oKVyEf-s2gQvd,
-                      .ndfHFb-c4YZDc-HiaYvf-s2gQvd {
-                        top: 0 !important;
-                        padding-top: 0 !important;
-                      }
-                      .ndfHFb-c4YZDc-TJEFFc .ndfHFb-c4YZDc-cYSp0e-Oz6c3e {
-                        margin-top: 0 !important;
-                        margin-bottom: 20px !important;
-                      }
-                      /* All Google Docs layout containers: zero out offsets */
-                      .ndfHFb-c4YZDc,
-                      .ndfHFb-c4YZDc-s2gQvd,
-                      .ndfHFb-c4YZDc-cYSp0e,
-                      .ndfHFb-c4YZDc-cYSp0e-s2gQvd,
-                      .ndfHFb-c4YZDc-zTETae,
-                      .ndfHFb-c4YZDc-bC7sje,
-                      .ndfHFb-c4YZDc-c3fl2b,
-                      .ndfHFb-c4YZDc-cYSp0e-tJHJj,
-                      .ndfHFb-c4YZDc-bC7sje-tJHJj,
-                      .ndfHFb-c4YZDc-AWhBae,
-                      div[role="document"] {
-                        background: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        background-color: ${isDark ? '#000000' : '#f8fafc'} !important;
-                        width: 100% !important;
-                        max-width: 100% !important;
-                        min-width: 0 !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        left: 0 !important;
-                        right: 0 !important;
-                        box-shadow: none !important;
-                        box-sizing: border-box !important;
-                      }
-                      /* Centered page list wrapper with safe side gutters */
-                      .ndfHFb-c4YZDc-cYSp0e-Oz6c3e,
-                      .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf {
-                        width: 100% !important;
-                        max-width: 100vw !important;
-                        margin: 0 auto !important;
-                        padding: 0 10px !important;
-                        left: 0 !important;
-                        right: 0 !important;
-                        box-sizing: border-box !important;
-                      }
-                      /* Page images & canvases: centered, natural aspect ratio, elegant card styling */
-                      img,
-                      canvas,
-                      .ndfHFb-c4YZDc-s2gQvd img,
-                      .ndfHFb-c4YZDc-bC7sje img,
-                      .ndfHFb-c4YZDc-cYSp0e-tJHJj img,
-                      .ndfHFb-c4YZDc-c3fl2b img,
-                      .ndfHFb-c4YZDc-AWhBae img,
-                      .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf img {
-                        width: 100% !important;
-                        max-width: 100% !important;
-                        min-width: 0 !important;
-                        height: auto !important;
-                        margin: 8px auto 16px auto !important;
-                        padding: 0 !important;
-                        display: block !important;
-                        box-sizing: border-box !important;
-                        border-radius: 4px !important;
-                        box-shadow: 0 2px 10px rgba(0,0,0,0.12) !important;
-                      }
-                    \`;
-                    (document.head || document.documentElement).appendChild(style);
-                  })();
-                  true;
-                `}
-                injectedJavaScript={`
-                  (function() {
-                    var notified = false;
-                    function fitViewer() {
-                      try {
-                        var outer = document.querySelector('.ndfHFb-c4YZDc-cYSp0e-Oz6c3e, .ndfHFb-c4YZDc-qwU8Me-b0t70b-haAclf');
-                        if (outer) {
-                          outer.style.setProperty('padding-left', '10px', 'important');
-                          outer.style.setProperty('padding-right', '10px', 'important');
-                          outer.style.setProperty('margin-left', 'auto', 'important');
-                          outer.style.setProperty('margin-right', 'auto', 'important');
-                          outer.style.setProperty('left', '0px', 'important');
-                          outer.style.setProperty('width', '100%', 'important');
-                          outer.style.setProperty('max-width', '100vw', 'important');
-                          outer.style.setProperty('box-sizing', 'border-box', 'important');
-                        }
-
-                        var media = document.querySelectorAll('img, canvas');
-                        var hasContent = false;
-                        for (var i = 0; i < media.length; i++) {
-                          var el = media[i];
-                          if (el.tagName.toLowerCase() === 'img' || el.tagName.toLowerCase() === 'canvas') {
-                            if ((el.tagName.toLowerCase() === 'img' && el.complete && el.naturalWidth > 0) ||
-                                (el.tagName.toLowerCase() === 'canvas' && el.width > 0)) {
-                              hasContent = true;
-                            }
-
-                            el.style.setProperty('width', '100%', 'important');
-                            el.style.setProperty('max-width', '100%', 'important');
-                            el.style.setProperty('min-width', '0px', 'important');
-                            el.style.setProperty('height', 'auto', 'important');
-                            el.style.setProperty('margin', '8px auto 16px auto', 'important');
-                            el.style.setProperty('display', 'block', 'important');
-                            el.style.setProperty('box-sizing', 'border-box', 'important');
-
-                            var p = el.parentElement;
-                            for (var depth = 0; depth < 5 && p && p !== document.body; depth++) {
-                              p.style.setProperty('width', '100%', 'important');
-                              p.style.setProperty('max-width', '100%', 'important');
-                              p.style.setProperty('min-width', '0px', 'important');
-                              p.style.setProperty('left', '0px', 'important');
-                              p.style.setProperty('right', '0px', 'important');
-                              p.style.setProperty('margin-left', 'auto', 'important');
-                              p.style.setProperty('margin-right', 'auto', 'important');
-                              p.style.setProperty('padding-left', '0px', 'important');
-                              p.style.setProperty('padding-right', '0px', 'important');
-                              p.style.setProperty('box-sizing', 'border-box', 'important');
-                              p = p.parentElement;
-                            }
-                          }
-                        }
-
-                        if (hasContent && !notified) {
-                          notified = true;
-                          renderedCount++;
-                          if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
-                            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pdfRendered' }));
-                          }
-                          if (renderedCount >= 3 && fitTimer) {
-                            clearInterval(fitTimer);
-                            fitTimer = null;
-                          }
-                        }
-                      } catch (e) {}
-                    }
-                    fitViewer();
-                    var renderedCount = 0;
-                    var pollCount = 0;
-                    var fitTimer = setInterval(function() {
-                      pollCount++;
-                      fitViewer();
-                      if (pollCount > 30 && fitTimer) {
-                        clearInterval(fitTimer);
-                        fitTimer = null;
-                      }
-                    }, 200);
-                  })();
-                  true;
-                `}
-              />
-            )}
-
-            {pdfLoading && (
-              <View style={[StyleSheet.absoluteFill, styles.pdfLoading, { backgroundColor: isDark ? '#000000' : '#f8fafc', zIndex: 10 }]}>
-                <ActivityIndicator size="large" color={C.brand} />
-                <Text style={[styles.pdfLoadingTxt, { color: C.text, fontFamily: FontFamily.jakartaBold, marginTop: 12 }]}>
-                  Loading official PDF…
-                </Text>
-                <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 4, fontFamily: FontFamily.jakartaRegular }}>
-                  Preparing university document…
-                </Text>
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
-      </Modal>
+        onClose={() => setPdfModalVisible(false)}
+        title={item.attachment_name || item.title}
+        subtitle={item.category ?? 'BUBT Notice'}
+        category="Notice"
+        fileUrl={resolvedAttachment || ''}
+        fileName={`${item.code ?? 'notice'}.pdf`}
+      />
 
       {/* =========================================================================
           MODAL 2: FULLSCREEN IMAGE VIEWER MODAL WITH PINCH-TO-ZOOM
@@ -981,6 +704,10 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.96)',
+  } as ViewStyle,
   safe: { flex: 1 } as ViewStyle,
   content: { paddingTop: 14, paddingBottom: 24 } as ViewStyle,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
@@ -1196,35 +923,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   // PDF Viewer Modal
-  pdfHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
-  } as ViewStyle,
-  pdfHeaderTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111',
-    marginHorizontal: 12,
-  } as any,
-  pdfLoading: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  } as ViewStyle,
-  pdfLoadingTxt: { fontSize: 13 } as any,
-
-  // Fullscreen Image Modal
-  imageModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.96)',
-  } as ViewStyle,
   imageModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
