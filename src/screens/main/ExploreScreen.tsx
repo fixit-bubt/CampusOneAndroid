@@ -515,20 +515,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   } as any,
 
-  childDesc: {
-    fontSize: 11.5,
-    lineHeight: 16,
-    marginTop: 2,
-  } as any,
 
   cellTitle: {
     fontSize: 14.5,
     lineHeight: 20,
   } as any,
 
-  cellDesc: {
-    fontSize: 11.5,
-    lineHeight: 16,
-    marginTop: 2,
-  } as any,
 });

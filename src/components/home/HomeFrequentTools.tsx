@@ -593,10 +593,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
   },
 
-  pickerItemSub: {
-    fontSize: 11.5,
-    marginTop: 2,
-  },
 
   badgePicked: {
     width: 22,

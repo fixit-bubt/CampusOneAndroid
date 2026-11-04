@@ -1839,18 +1839,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  badgePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.full,
-  } as ViewStyle,
 
-  badgeTxt: {
-    fontSize: 11,
-  } as any,
 
   tCard: {
     width: 124,

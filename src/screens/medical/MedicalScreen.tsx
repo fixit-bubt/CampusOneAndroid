@@ -2153,10 +2153,6 @@ const styles = StyleSheet.create({
   pickerBarText: {
     fontSize: 14,
   } as any,
-  pickerBarSub: {
-    fontSize: 11.5,
-    marginTop: 2,
-  } as any,
   checkCircle: {
     width: 22,
     height: 22,

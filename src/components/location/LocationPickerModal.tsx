@@ -1763,18 +1763,6 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   /* Universal 58dp Primary Action CTA Standard */
-  confirmButton58: {
-    height: Layout.controlHeight, // 58dp
-    borderRadius: Layout.controlRadius, // 16dp
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.32,
-    shadowRadius: 8,
-    elevation: 6,
-  },
   confirmButtonText: {
     color: '#ffffff',
     fontSize: 15.5,
@@ -1795,19 +1783,6 @@ const styles = StyleSheet.create({
     height: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  nativeReticleRing: {
-    position: 'absolute',
-    left: -14,
-    top: -14,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    opacity: 0.8,
   },
   nativeReticleDot: {
     position: 'absolute',

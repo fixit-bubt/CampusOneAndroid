@@ -182,11 +182,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     lineHeight: 12,
   } as any,
-  actionGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  } as ViewStyle,
   subbar: {
     height: 60,
     flexDirection: 'row',

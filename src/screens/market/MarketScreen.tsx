@@ -978,22 +978,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
 
   // Admin 72dp Shortcut Bar
-  adminBar72: {
-    height: 72,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    marginBottom: 6,
-  } as ViewStyle,
-  adminIconSlot32: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  } as ViewStyle,
   iconSlot32: {
     width: 32,
     height: 32,
@@ -1001,22 +985,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   } as ViewStyle,
-  adminBarTextCol: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: 'center',
-    paddingRight: 8,
-  } as ViewStyle,
-  adminBarTitle: {
-    flexShrink: 1,
-    fontSize: 14.5,
-    lineHeight: 20,
-  } as TextStyle,
-  adminBarSubtitle: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-  } as TextStyle,
 
   // Prominent Hero Action Bar
   heroActBtn: {
@@ -1033,42 +1001,7 @@ const styles = StyleSheet.create({
   } as any,
 
   // Segmented Tab Switcher (Matches Blood & Directory)
-  tabContainer: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginHorizontal: Layout.screenPadding,
-    marginBottom: 8,
-    position: 'relative',
-  } as ViewStyle,
-  activeIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 9,
-    gap: 5,
-    zIndex: 1,
-  } as ViewStyle,
   tabBtnTxt: { fontSize: 13 } as any,
-  tabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 10,
-  } as ViewStyle,
   tabBadgeTxt: { fontSize: 10.5 } as any,
 
   // Dual Control Bar (Matches Directory)
@@ -1386,37 +1319,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: 8,
   } as any,
-  segTrack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 42,
-    borderRadius: 13,
-    padding: 3,
-    position: 'relative',
-    marginBottom: 4,
-  } as ViewStyle,
-  segIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  segBtn: {
-    flex: 1,
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    zIndex: 1,
-  } as ViewStyle,
   segBtnTxt: { fontSize: 12 } as any,
 
   switchRowCard: {

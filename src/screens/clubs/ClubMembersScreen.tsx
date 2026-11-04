@@ -317,14 +317,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 10, paddingBottom: 24 } as ViewStyle,
 
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    height: 36,
-    borderRadius: 10,
-  } as ViewStyle,
   addBtnTxt: { fontSize: 12 } as TextStyle,
 
   card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' } as ViewStyle,
@@ -347,16 +339,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   } as ViewStyle,
-  barLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  } as ViewStyle,
-  barTitle: {
-    fontSize: 14,
-    flexShrink: 1,
-  } as TextStyle,
   dropdownBar: {
     justifyContent: 'space-between',
   } as ViewStyle,
@@ -385,23 +367,6 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 18 } as TextStyle,
   sheetSub: { fontSize: 13, marginTop: 2 } as TextStyle,
 
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 8,
-  } as ViewStyle,
-  addPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  } as ViewStyle,
   addPillTxt: { fontSize: 12 } as TextStyle,
   emptyTxt: { fontSize: 13, textAlign: 'center', paddingVertical: 24 } as TextStyle,
 });

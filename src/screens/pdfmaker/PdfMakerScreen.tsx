@@ -104,5 +104,4 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, height: 72, borderRadius: 16, borderWidth: 1 } as ViewStyle,
   tile: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   cardTitle: { fontSize: 15 },
-  cardDesc: { fontSize: 12.5, marginTop: 1 },
 });

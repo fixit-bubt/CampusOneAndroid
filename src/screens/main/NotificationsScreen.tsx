@@ -341,21 +341,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  chips: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 10,
-  } as ViewStyle,
 
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  } as ViewStyle,
 
   chipText: { fontSize: 13 } as any,
   chipCount: { fontSize: 12 } as any,

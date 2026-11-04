@@ -1129,19 +1129,6 @@ const styles = StyleSheet.create({
   pill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999 } as ViewStyle,
   pillTxt: { fontSize: 12 } as TextStyle,
 
-  courseRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    padding: 11,
-    borderRadius: 11,
-    borderWidth: 1,
-  } as ViewStyle,
-  courseTxt: {
-    fontSize: 13,
-    lineHeight: 18,
-    flex: 1,
-  } as TextStyle,
   pubCard: {
     padding: 13,
     borderRadius: 14,
@@ -1198,22 +1185,6 @@ const styles = StyleSheet.create({
   qualRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 } as ViewStyle,
   qualTxt: { flex: 1, fontSize: 13, lineHeight: 19 } as TextStyle,
 
-  linkGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 11,
-  } as ViewStyle,
-  linkGridItem: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 11,
-    borderRadius: 11,
-    borderWidth: 1,
-  } as ViewStyle,
   linkGridTxt: { fontSize: 12.5, flex: 1 } as TextStyle,
 
   officialLink: {

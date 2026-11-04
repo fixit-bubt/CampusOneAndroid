@@ -1330,17 +1330,6 @@ const styles = StyleSheet.create({
   heroActBtnTxt: {
     fontSize: 15,
   } as TextStyle,
-  actBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 9,
-    height: 58,
-    borderRadius: 16,
-  } as ViewStyle,
-  actBtnTxt: {
-    fontSize: 14.5,
-  } as any,
   searchAreaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1520,28 +1509,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     gap: 8,
   } as ViewStyle,
-  hospitalTouchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 10,
-    gap: 8,
-  } as ViewStyle,
   hospitalRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
     flex: 1,
-  } as ViewStyle,
-  hospitalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginTop: 10,
   } as ViewStyle,
   hospitalTxt: {
     fontSize: 13,
@@ -1557,18 +1529,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   mapLinkTxt: {
     fontSize: 11.5,
-  } as TextStyle,
-  mapHintBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  } as ViewStyle,
-  mapHintTxt: {
-    fontSize: 11,
   } as TextStyle,
   clinicalBadgesRow: {
     flexDirection: 'row',
@@ -1598,20 +1558,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   pledgeStatusTxt: {
     fontSize: 12,
-  } as TextStyle,
-  pledgeStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginTop: 10,
-  } as ViewStyle,
-  pledgeStripTxt: {
-    fontSize: 12,
-    flex: 1,
   } as TextStyle,
   cardActionBtn: {
     flexDirection: 'row',

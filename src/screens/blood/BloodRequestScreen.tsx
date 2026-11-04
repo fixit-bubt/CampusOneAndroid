@@ -856,11 +856,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
   } as TextStyle,
 
-  dropdownHint: {
-    fontSize: 11.5,
-    marginTop: 2,
-    lineHeight: 16,
-  } as TextStyle,
 
   dropdownRight: {
     flexDirection: 'row',

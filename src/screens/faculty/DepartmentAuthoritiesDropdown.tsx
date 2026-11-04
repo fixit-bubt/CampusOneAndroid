@@ -305,10 +305,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
   } as TextStyle,
 
-  barSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  } as TextStyle,
 
   rightSlot: {
     flexDirection: 'row',

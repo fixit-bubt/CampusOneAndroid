@@ -932,40 +932,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingTop: 6, paddingBottom: 24 },
 
-  segmentedTrack: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    marginBottom: 12,
-    position: 'relative',
-  } as ViewStyle,
-  slidingIndicator: {
-    position: 'absolute',
-    top: 3,
-    bottom: 3,
-    left: 3,
-    borderRadius: 11,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  } as ViewStyle,
-  segmentedTabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 11,
-    minHeight: 44,
-    zIndex: 1,
-  } as ViewStyle,
-  segmentedTabTxt: {
-    fontSize: 12.5,
-  } as TextStyle,
 
   sectionLabel: {
     fontSize: 11,
@@ -987,22 +953,9 @@ const styles = StyleSheet.create({
     minHeight: 78,
     justifyContent: 'center',
   } as ViewStyle,
-  vehicleIcon: { fontSize: 24, marginBottom: 3 },
   vehicleLabel: { fontSize: 12.5 } as TextStyle,
   vehicleSeatsHint: { fontSize: 10.5, marginTop: 1 } as TextStyle,
 
-  input: {
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    fontSize: 14,
-  } as TextStyle,
-  multilineInput: {
-    height: 70,
-    paddingTop: 10,
-    textAlignVertical: 'top',
-  } as TextStyle,
 
   labelRow: {
     flexDirection: 'row',
@@ -1053,11 +1006,6 @@ const styles = StyleSheet.create({
   dropdownValue: {
     fontSize: 14.5,
   } as TextStyle,
-  dropdownHint: {
-    fontSize: 11.5,
-    marginTop: 2,
-    lineHeight: 16,
-  } as TextStyle,
   dropdownRight: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1087,65 +1035,8 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
-  } as ViewStyle,
 
   /* Picker Trigger Cards */
-  pickerTriggerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 56,
-    borderRadius: 14,
-    borderWidth: 1.2,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginTop: 8,
-    marginBottom: 6,
-  } as ViewStyle,
-  pickerTriggerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    flex: 1,
-    paddingRight: 8,
-  } as ViewStyle,
-  pickerTriggerIconBox: {
-    width: 38,
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  pickerTriggerContent: {
-    flex: 1,
-    minWidth: 0,
-  } as ViewStyle,
-  pickerTriggerLabel: {
-    fontSize: 10,
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  } as TextStyle,
-  pickerTriggerValue: {
-    fontSize: 13.5,
-  } as TextStyle,
-  pickerTriggerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexShrink: 0,
-  } as ViewStyle,
-  activeBadgeCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
 
   timePreviewBadge: {
     paddingHorizontal: 8,
@@ -1219,206 +1110,18 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   /* Target Switcher inside Location Modal */
-  targetSwitcherTrack: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 10,
-    gap: 4,
-  } as ViewStyle,
-  targetSwitcherBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 6,
-  } as ViewStyle,
-  targetSwitcherTxt: {
-    fontSize: 12,
-  } as TextStyle,
-  targetMiniDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  } as ViewStyle,
 
   /* Custom Location Input Bar */
-  modalCustomLocationBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    marginBottom: 8,
-    gap: 8,
-  } as ViewStyle,
-  modalCustomLocationInput: {
-    flex: 1,
-    fontSize: 13.5,
-    paddingVertical: 0,
-  } as TextStyle,
-  modalCustomLocationApplyBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  modalCustomLocationApplyTxt: {
-    fontSize: 12,
-  } as TextStyle,
 
   /* Search Box */
-  modalSearchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    gap: 8,
-  } as ViewStyle,
-  modalSearchInput: {
-    flex: 1,
-    height: '100%',
-    fontSize: 14.5,
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  } as TextStyle,
 
   /* Location Bars (Main Screen) */
-  locationBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 58,
-    borderRadius: 16,
-    borderWidth: 1.2,
-    paddingLeft: 14,
-    paddingRight: 8,
-    marginBottom: 8,
-    gap: 8,
-  } as ViewStyle,
-  locationBarLeftIcon: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  locationBarInput: {
-    flex: 1,
-    fontSize: 14,
-    paddingVertical: 0,
-  } as TextStyle,
-  locationBarPickBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 38,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 4,
-    flexShrink: 0,
-  } as ViewStyle,
-  locationBarMapBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
-  locationBarPickTxt: {
-    fontSize: 12.5,
-  } as TextStyle,
 
   /* 58dp Map & GPS Trigger Card */
-  mapTriggerCard58: {
-    height: Layout.controlHeight,
-    borderRadius: Layout.controlRadius,
-    borderWidth: 1.2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    marginBottom: 10,
-    gap: 12,
-  } as ViewStyle,
-  mapTriggerIconWrap: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  mapTriggerTitle: {
-    fontSize: 13.5,
-    lineHeight: 18,
-    includeFontPadding: false,
-  } as TextStyle,
-  mapTriggerSub: {
-    fontSize: 11,
-    lineHeight: 15,
-    marginTop: 2,
-    includeFontPadding: false,
-  } as TextStyle,
 
   /* 2-Bar Category Switcher (Modal) */
-  categorySwitcherTrack: {
-    flexDirection: 'row',
-    borderRadius: 13,
-    padding: 3,
-    marginBottom: 10,
-    position: 'relative',
-  } as ViewStyle,
-  categorySlidingIndicator: {
-    position: 'absolute',
-    top: 3,
-    bottom: 3,
-    left: 3,
-    borderRadius: 10,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
-  } as ViewStyle,
-  categorySwitcherBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 9,
-    borderRadius: 10,
-    gap: 6,
-    zIndex: 1,
-  } as ViewStyle,
-  categorySwitcherTxt: {
-    fontSize: 12.5,
-  } as TextStyle,
-  categoryMiniBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-  } as ViewStyle,
-  categoryMiniBadgeTxt: {
-    fontSize: 10.5,
-  } as TextStyle,
 
   /* Custom Search Card fallback */
-  modalCustomCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 11,
-    padding: 11,
-    borderRadius: 14,
-    borderWidth: 1.2,
-    marginBottom: 10,
-  } as ViewStyle,
 
   modalCustomTimeBar: {
     flexDirection: 'row',

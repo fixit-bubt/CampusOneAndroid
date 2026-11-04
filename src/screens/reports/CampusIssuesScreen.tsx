@@ -735,10 +735,6 @@ const styles = StyleSheet.create({
     flex: 1,
   } as ViewStyle,
 
-  tabContainer: {
-    paddingTop: 8,
-    paddingBottom: 4,
-  } as ViewStyle,
 
   actionContainer: {
     paddingVertical: 5,

@@ -798,11 +798,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
   } as TextStyle,
 
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  } as ViewStyle,
   pdfBtn: {
     flexDirection: 'row',
     alignItems: 'center',

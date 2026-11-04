@@ -430,11 +430,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
   } as TextStyle,
-  dot10: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  } as ViewStyle,
 
   textarea: {
     borderRadius: 16,

@@ -1133,11 +1133,6 @@ const styles = StyleSheet.create({
   dropdownValue: {
     fontSize: 14.5,
   } as TextStyle,
-  dropdownHint: {
-    fontSize: 11.5,
-    marginTop: 2,
-    lineHeight: 16,
-  } as TextStyle,
   dropdownRight: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1152,13 +1147,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
 
   // Text inputs
-  input: {
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 14,
-  } as TextStyle,
   textarea: {
     height: 90,
     borderRadius: 16,
@@ -1195,32 +1183,6 @@ const styles = StyleSheet.create({
   photoSubTxt: { fontSize: 11 } as any,
 
   // Spring Animated Condition Bar
-  condTrack: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    padding: 3,
-    position: 'relative',
-    height: 42,
-  } as ViewStyle,
-  condIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  condBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  } as ViewStyle,
   condBtnTxt: { fontSize: 13 } as any,
 
   // Switch row
@@ -1416,35 +1378,6 @@ const styles = StyleSheet.create({
   } as TextStyle,
 
   // 2-Bar Switcher
-  categorySwitcherTrack: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 10,
-    position: 'relative',
-    height: 38,
-  } as ViewStyle,
-  categorySlidingIndicator: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
-    bottom: 3,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
-  categorySwitcherBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    zIndex: 1,
-  } as ViewStyle,
   categorySwitcherTxt: { fontSize: 12 } as any,
 
   // Custom location query pill

@@ -795,11 +795,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   } as TextStyle,
 
-  bar72Desc: {
-    fontSize: 11.5,
-    lineHeight: 16,
-    marginTop: 2,
-  } as TextStyle,
 
   inputBox58: {
     height: 58,

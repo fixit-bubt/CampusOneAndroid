@@ -1110,11 +1110,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   } as TextStyle,
 
-  dropdownSub: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
-  } as TextStyle,
 
   dropdownChevBox: {
     width: 24,

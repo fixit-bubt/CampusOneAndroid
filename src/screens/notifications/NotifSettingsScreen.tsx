@@ -492,12 +492,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 14,
   } as any,
-  pageSubtitle: {
-    fontSize: 12.5,
-    lineHeight: 18,
-    marginBottom: 12,
-    marginTop: 2,
-  } as any,
   settingCard: {
     borderRadius: 16,
     borderWidth: 1,

@@ -1351,10 +1351,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     letterSpacing: -0.1,
   } as TextStyle,
-  card72Sub: {
-    fontSize: 12,
-    marginTop: 2,
-  } as TextStyle,
   card72Right: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1435,12 +1431,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 12,
-  } as ViewStyle,
-  adminBarIconSlot: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
   } as ViewStyle,
   adminBarTitle: {
     fontSize: 14.5,

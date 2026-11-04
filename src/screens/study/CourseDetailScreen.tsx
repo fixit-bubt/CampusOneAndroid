@@ -824,14 +824,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     maxWidth: 260,
   } as ViewStyle,
-  forSaleThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  } as ViewStyle,
   forSaleName: { fontSize: 13.5, flexShrink: 1 } as any,
   forSalePrice: { fontSize: 13, marginTop: 2 } as any,
 

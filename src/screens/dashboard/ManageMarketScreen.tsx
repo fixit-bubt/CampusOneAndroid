@@ -579,13 +579,6 @@ const styles = StyleSheet.create({
   body: { flex: 1 } as ViewStyle,
   centerBox: { paddingVertical: 60, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
 
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
 
   // Universal 58dp Bars Standard
   bar58: {

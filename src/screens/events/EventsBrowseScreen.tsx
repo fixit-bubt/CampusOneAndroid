@@ -845,11 +845,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     lineHeight: 20,
   } as any,
-  pickerBarSub: {
-    fontSize: 11.5,
-    lineHeight: 16,
-    marginTop: 2,
-  } as any,
   radioOutline: {
     width: 20,
     height: 20,

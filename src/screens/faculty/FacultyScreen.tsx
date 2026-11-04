@@ -988,55 +988,10 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
 
   // Tab switcher matching HomeCommunityUpdates
-  tabTrack: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: 12,
-    marginTop: 4,
-    position: 'relative',
-  } as ViewStyle,
 
-  tabIndicator: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    bottom: 4,
-    borderRadius: 13,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
 
-  tabItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    borderRadius: 13,
-    zIndex: 1,
-  } as ViewStyle,
 
-  tabText: {
-    fontSize: 13,
-  } as TextStyle,
 
-  tabBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 999,
-    minWidth: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
-  tabBadgeTxt: {
-    fontSize: 11,
-  } as TextStyle,
 
   // Search input
   searchBar: {
@@ -1078,10 +1033,6 @@ const styles = StyleSheet.create({
   } as TextStyle,
   categorySubtitle: {
     fontSize: 12,
-    marginTop: 2,
-  } as TextStyle,
-  categoryDesc: {
-    fontSize: 11.5,
     marginTop: 2,
   } as TextStyle,
 
@@ -1143,15 +1094,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  dropdownBody: {
-    flex: 1,
-    minWidth: 0,
-  } as ViewStyle,
-  dropdownLabel: {
-    fontSize: 11,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  } as TextStyle,
   dropdownValue: {
     fontSize: 14,
   } as TextStyle,
@@ -1277,10 +1219,6 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   pickerBarText: {
     fontSize: 14,
-  } as TextStyle,
-  pickerBarSub: {
-    fontSize: 11.5,
-    marginTop: 2,
   } as TextStyle,
   checkCircle: {
     width: 22,

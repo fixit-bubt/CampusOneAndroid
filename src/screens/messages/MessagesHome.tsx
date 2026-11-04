@@ -451,10 +451,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
 
-  searchBoxWrap: {
-    paddingTop: 8,
-    paddingBottom: 8,
-  } as ViewStyle,
   searchBar: {
     height: 42,
     flexDirection: 'row',
@@ -470,13 +466,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   } as TextStyle,
 
-  pillRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: Layout.screenPadding,
-    paddingBottom: 10,
-    paddingTop: 2,
-  } as ViewStyle,
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
