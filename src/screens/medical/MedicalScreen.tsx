@@ -1,6 +1,6 @@
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -278,6 +278,12 @@ function getDoctorDuty(doc: Doctor, C: any, t: Dict): DutyState {
 
 export function MedicalScreen({ navigation }: any) {
   const ready = useAfterInteractions();
+  const [panesReady, setPanesReady] = useState(false);
+  useEffect(() => {
+    if (!ready) return;
+    const timer = setTimeout(() => setPanesReady(true), 700);
+    return () => clearTimeout(timer);
+  }, [ready]);
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
@@ -671,8 +677,8 @@ export function MedicalScreen({ navigation }: any) {
         </View>
 
         {/* TAB 1: DOCTORS & STAFF */}
-        {activeTab === 'staff' && (
-          <View style={styles.tabContent}>
+        {(activeTab === 'staff' || panesReady) && (
+          <View style={[styles.tabContent, activeTab === 'staff' ? null : styles.hidden]}>
             {/* Search Input */}
             <View
               style={[
@@ -886,8 +892,8 @@ export function MedicalScreen({ navigation }: any) {
         )}
 
         {/* TAB 2: CLINIC SERVICES & FREE MEDICINE */}
-        {activeTab === 'services' && (
-          <View style={styles.tabContent}>
+        {(activeTab === 'services' || panesReady) && (
+          <View style={[styles.tabContent, activeTab === 'services' ? null : styles.hidden]}>
             {/* Clinic Policy Card */}
             <View
               style={[
@@ -1165,8 +1171,8 @@ export function MedicalScreen({ navigation }: any) {
         )}
 
         {/* TAB 3: EMERGENCY & NEARBY HOSPITALS */}
-        {activeTab === 'emergency' && (
-          <View style={styles.tabContent}>
+        {(activeTab === 'emergency' || panesReady) && (
+          <View style={[styles.tabContent, activeTab === 'emergency' ? null : styles.hidden]}>
             {/* Emergency Hotline Header Card */}
             <View
               style={[
@@ -1696,6 +1702,7 @@ export function MedicalScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  hidden: { display: 'none' } as ViewStyle,
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 6, paddingBottom: 20 } as ViewStyle,
 
