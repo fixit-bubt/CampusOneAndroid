@@ -792,7 +792,7 @@ export function JobsBrowseScreen({ navigation }: any) {
         ) : (
           /* Browse & Saved List View */
           <View style={styles.list}>
-            {browseList.map(j => {
+            {browseList.map((j, idx) => {
               const status = computeJobStatus(j);
               const s = jobStatusTone(C, t, status, isDark);
               const isSaved = savedIds.has(j.id);
@@ -805,7 +805,7 @@ export function JobsBrowseScreen({ navigation }: any) {
               });
 
               return (
-                <View key={j.id} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <View key={idx} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <TouchableOpacity
                     style={styles.cardMain}
                     onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}

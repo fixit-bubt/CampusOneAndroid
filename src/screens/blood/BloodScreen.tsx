@@ -873,7 +873,7 @@ export function BloodScreen({ route, navigation }: any) {
                 )}
               </View>
             ) : (
-              filteredRequests.map(r => {
+              filteredRequests.map((r, idx) => {
                 const meta = parseBloodRequestMeta(r.patient, r.hospital, r.units);
                 const pledgeCount = (r as any).pledge_count || 0;
                 const unitsLeft = Math.max(0, meta.unitCount - pledgeCount);
@@ -884,7 +884,7 @@ export function BloodScreen({ route, navigation }: any) {
 
                 return (
                   <View
-                    key={r.id}
+                    key={idx}
                     style={[
                       styles.reqCard,
                       {
@@ -1255,9 +1255,9 @@ export function BloodScreen({ route, navigation }: any) {
               </View>
             ) : (
               <View style={styles.list}>
-                {filteredDonors.map(d => (
+                {filteredDonors.map((d, idx) => (
                   <DonorCardItem
-                    key={d.user_id}
+                    key={idx}
                     d={d}
                     isMe={d.user_id === user?.id}
                     isDark={isDark}

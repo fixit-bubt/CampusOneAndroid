@@ -466,9 +466,9 @@ export function LostFoundBrowseScreen({ navigation }: any) {
           </View>
         ) : (
           <View style={styles.list}>
-            {filteredList.map(item => (
+            {filteredList.map((item, idx) => (
               <LFCard
-                key={item.id}
+                key={idx}
                 item={item}
                 C={C}
                 isDark={isDark}

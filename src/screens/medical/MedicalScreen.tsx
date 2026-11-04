@@ -782,13 +782,13 @@ export function MedicalScreen({ navigation }: any) {
               </View>
             ) : (
               <View style={styles.doctorList}>
-                {filteredDoctors.map((doc) => {
+                {filteredDoctors.map((doc, idx) => {
                   const duty = getDoctorDuty(doc, C, t);
                   const iconCfg = getDoctorIconConfig(doc, isDark);
 
                   return (
                     <TouchableOpacity
-                      key={doc.id}
+                      key={idx}
                       style={[
                         styles.doctorCard72,
                         { backgroundColor: C.surface, borderColor: C.border },

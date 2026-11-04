@@ -315,7 +315,7 @@ export function RidesScreen({ navigation }: any) {
           </View>
         ) : (
           <View style={styles.list}>
-            {filteredRides.map(r => {
+            {filteredRides.map((r, idx) => {
               const isOwnRide = r.driver_id === user?.id;
               const isRequested = requestedIds.has(r.id);
               const isPassengerRequest = r.post_type === 'request';
@@ -326,7 +326,7 @@ export function RidesScreen({ navigation }: any) {
 
               return (
                 <TouchableOpacity
-                  key={r.id}
+                  key={idx}
                   style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
                   onPress={() => navigation.navigate('RideDetail', { rideId: r.id })}
                   activeOpacity={0.85}
