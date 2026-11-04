@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useOptimistic, startTransition } from 'react';
 import {
   View,
   Text,
@@ -36,11 +36,14 @@ interface SegmentedTabsProps<T extends string = string> {
 
 export function SegmentedTabs<T extends string = string>({
   tabs,
-  activeTab,
+  activeTab: committedTab,
   onTabChange,
   style,
   size = 'md',
 }: SegmentedTabsProps<T>) {
+  // Highlight the tapped tab right away; the (possibly heavy) page re-render
+  // runs as a low-priority transition so it can't block the tap or the slide.
+  const [activeTab, setActiveTab] = useOptimistic<T, T>(committedTab, (_cur, next) => next);
   const { C, isDark } = useTheme();
   const [trackWidth, setTrackWidth] = useState(0);
 
@@ -75,7 +78,10 @@ export function SegmentedTabs<T extends string = string>({
         useNativeDriver: true,
       }).start();
     }
-    onTabChange(id);
+    startTransition(() => {
+      setActiveTab(id);
+      onTabChange(id);
+    });
   };
 
   useEffect(() => {
