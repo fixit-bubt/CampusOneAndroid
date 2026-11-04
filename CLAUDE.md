@@ -4314,3 +4314,24 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 43s`).
   - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).
+
+---
+
+### 115. Admin Notification Architecture & Settings Audit (`NotifSettingsScreen.tsx`, `NotificationsScreen.tsx`, `NotifDetailScreen.tsx`, `notifTarget.ts`) (/code-review-and-quality, /zero-slop)
+- **Role-Aware Notification Settings Category Audit (`NotifSettingsScreen.tsx`):**
+  - Audited `ADMIN_NOTIF_SECTORS` against admin-managed feature domains. Added missing active administrative domains:
+    - **`study` (Study Hub)**: Administrators moderate study notes and question banks via `ManageStudyHubScreen`.
+    - **`market` (Marketplace)**: Administrators moderate student listings via `ManageMarketScreen` and `admin_moderate_listing` RPC.
+  - Confirmed intentional exclusion of 8 student-only and static sectors: `directory` (student connections), `lostfound` (student claims), `ride` (peer-to-peer carpool), `messages` (student DMs), `coverpage` (assignment tool), `routines` (personal timetable), `medical` (static clinic hours), and `prayer` (static masjid times).
+  - Preserved standard 72dp high-touch ergonomic category bars (`styles.sectorCard`, `styles.sectorRow`) with 32dp monochrome vector icons.
+- **Notification Deep-Link Resolution & Fallbacks (`notifTarget.ts`, `NotifDetailScreen.tsx`):**
+  - Added support for `'listing'` reference type from `admin_moderate_listing` to navigate to `Market` or `MarketDetail`.
+  - Added safe sector fallbacks (`SECTOR_FALLBACK`) and graceful toast handling so tapping deleted/moderated items never crashes or fails silently.
+  - Standardized bilingual category titles in `NotifDetailScreen.tsx` via `t.sectorTitles?.[n.sector] ?? t.notif?.sectorLabel(n.sector)`.
+- **Notifications Screen Sanitization (`NotificationsScreen.tsx`):**
+  - Suppressed student connection action buttons (`connUiFor`) for admin and staff roles.
+  - Localized screen title via `t.mainx?.notificationsTitle ?? 'Notifications'`.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: 0 errors (`npx.cmd tsc --noEmit`).
+  - Local Gradle Native Build: `assembleRelease` passed in 45s with release keystore.
+  - Physical Device Verification: Streamed install via ADB and successfully launched on device `8734b5da`.
