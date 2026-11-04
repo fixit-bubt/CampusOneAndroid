@@ -1,4 +1,3 @@
-import { padToPool } from '../../components/ui/pooledList';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo, useRef } from 'react';
@@ -20,7 +19,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { useToast } from '../../components/ui/Toast';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { localToday, nowDhakaMinutes, formatTime, formatPrice, formatDate } from '../../utils/format';
@@ -321,7 +320,7 @@ export function RidesScreen({ navigation }: any) {
             <SkeletonList rows={5} />
           ) : (
           <View style={styles.list}>
-            {padToPool(filteredRides).map((r, idx) => {
+            {filteredRides.map((r, idx) => {
               const isOwnRide = r.driver_id === user?.id;
               const isRequested = requestedIds.has(r.id);
               const isPassengerRequest = r.post_type === 'request';
@@ -331,8 +330,7 @@ export function RidesScreen({ navigation }: any) {
               const departureText = formatDepartureLabel(r.date, r.time, t);
 
               return (
-<View key={idx} style={idx >= filteredRides.length ? { display: 'none' } : undefined}>
-                <TouchableOpacity
+                <TouchableOpacity key={idx}
                   style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
                   onPress={() => navigation.navigate('RideDetail', { rideId: r.id })}
                   activeOpacity={0.85}
@@ -508,8 +506,7 @@ export function RidesScreen({ navigation }: any) {
                     </TouchableOpacity>
                   )}
                 </TouchableOpacity>
-              </View>
-);
+              );
             })}
           </View>
         )}

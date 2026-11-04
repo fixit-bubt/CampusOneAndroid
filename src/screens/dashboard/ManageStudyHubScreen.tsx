@@ -153,7 +153,6 @@ export function ManageStudyHubScreen({ navigation }: any) {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const activeDept = useMemo(() => departments.find(d => d.id === activeDeptId), [departments, activeDeptId]);
-  const targetIntakeForSection = useMemo(() => intakes.find(i => i.id === addSectionIntakeId) ?? selectedIntake, [intakes, addSectionIntakeId, selectedIntake]);
 
   // Keep selectedSection synchronized when sectionsByIntake updates
   useEffect(() => {

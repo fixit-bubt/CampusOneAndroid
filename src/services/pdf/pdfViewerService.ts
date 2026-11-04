@@ -5,7 +5,7 @@
 import { Asset } from 'expo-asset';
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { engineDir, safeFileName } from './pdfFiles';
+import { engineDir } from './pdfFiles';
 import { buildViewerHtml } from './viewerHtml';
 import { normalizePdfUrl } from '../../utils/pdfUrl';
 

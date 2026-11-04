@@ -1,7 +1,8 @@
 // Jobs moderation - admin-only.
 // Reported tab: live jobs with reports, most-reported first, with direct
 // dismiss and remove actions. Removed tab: withdrawn/removed jobs with restore.
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import { indexKey, listGap } from '../../components/ui/listHelpers';
+import { useState, useCallback, useMemo, memo } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, StyleSheet,
   RefreshControl, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView,
@@ -161,10 +162,6 @@ const JobModerateCard = memo(function JobModerateCard({
   );
 });
 
-const Separator = memo(function Separator() {
-  return <View style={{ height: 10 }} />;
-});
-
 export function JobsModerateScreen({ navigation }: any) {
   const { C } = useTheme();
   const { profile } = useAuth();
@@ -287,8 +284,6 @@ export function JobsModerateScreen({ navigation }: any) {
     { id: 'removed', label: t.jobs.removed, count: removed.length, color: Accent.slate },
   ], [t.jobs, reported.length, removed.length, C.danger]);
 
-  const keyExtractorJob = useCallback((j: JobRow) => j.id, []);
-
   const renderJobItem = useCallback(({ item: j }: { item: JobRow }) => (
     <JobModerateCard
       j={j}
@@ -301,6 +296,7 @@ export function JobsModerateScreen({ navigation }: any) {
       t={t}
     />
   ), [tab, handleNavigateDetail, restore, confirmDismissReports, handleOpenRemoveModal, C, t]);
+
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -319,9 +315,9 @@ export function JobsModerateScreen({ navigation }: any) {
 
       <FlatList
         data={list}
-        keyExtractor={keyExtractorJob}
+        keyExtractor={indexKey}
+        ItemSeparatorComponent={listGap(10)}
         renderItem={renderJobItem}
-        ItemSeparatorComponent={Separator}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"

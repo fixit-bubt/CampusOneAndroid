@@ -19,13 +19,9 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout, Radius } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import {
-  getEventLiveStatus,
-  triggerBubtEventsSync,
-  type EventLiveStatus,
-} from '../../services/eventsService';
+import { getEventLiveStatus, triggerBubtEventsSync } from '../../services/eventsService';
 import { formatDateLong, formatTime } from '../../utils/format';
 import type { Event } from '../../types/database';
 

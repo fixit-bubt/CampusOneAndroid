@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   ActivityIndicator, Alert, Image, Modal, type ViewStyle,
@@ -17,14 +17,12 @@ import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
-import { localToday } from '../../utils/format';
 import { resolveBannerSource } from '../../components/home/HomeHeroBanner';
 import {
   getEventLiveStatus,
   shareEventDetails,
   toggleBookmark,
   fetchUserEventBookmarks,
-  type EventLiveStatus,
 } from '../../services/eventsService';
 import type { Event } from '../../types/database';
 

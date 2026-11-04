@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import { indexKey, listGap } from '../../components/ui/listHelpers';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet,
@@ -273,10 +274,6 @@ const ReportCard = memo(function ReportCard({
   );
 });
 
-const Separator = memo(function Separator() {
-  return <View style={{ height: 12 }} />;
-});
-
 export function AdminDashboardScreen({ navigation }: any) {
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
@@ -505,7 +502,6 @@ export function AdminDashboardScreen({ navigation }: any) {
     );
   }, [C, t.status, handlePressCard, handleOpenAssign]);
 
-  const keyExtractor = useCallback((r: Report) => r.id, []);
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -525,7 +521,8 @@ export function AdminDashboardScreen({ navigation }: any) {
 
       <FlatList
         data={displayedReports}
-        keyExtractor={keyExtractor}
+        keyExtractor={indexKey}
+        ItemSeparatorComponent={listGap(12)}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
@@ -538,7 +535,6 @@ export function AdminDashboardScreen({ navigation }: any) {
             colors={[C.brand]}
           />
         }
-        ItemSeparatorComponent={Separator}
         renderItem={renderItem}
         removeClippedSubviews={true}
         initialNumToRender={6}

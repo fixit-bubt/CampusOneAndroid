@@ -21,11 +21,10 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
-import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { useToast } from '../../components/ui/Toast';
 import { ContactSheet } from '../../components/ui/ContactSheet';
-import { FontFamily, Layout, Accent, Radius } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { openUrl } from '../../utils/link';
 import { useAuth } from '../../store/authStore';
@@ -153,7 +152,7 @@ function parseDeepProfileHtml(html: string) {
 }
 
 export function FacultyProfileScreen({ route, navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const t = useT();
   const toast = useToast();
   const { user, profile } = useAuth();

@@ -3,8 +3,16 @@
 // Nothing is stored or sent.
 import { useState, useRef, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal,
-  KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Modal,
+  KeyboardAvoidingView,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';

@@ -3,11 +3,22 @@ import { SkeletonList } from '../../components/ui/LoadState';
 import { FadeIn } from '../../components/ui/FadeIn';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { normalizePdfUrl } from '../../utils/pdfUrl';
-import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
-  View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, Platform,
-  RefreshControl, Alert, TextInput, Modal, Pressable,
-  ActivityIndicator, Animated, DeviceEventEmitter, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  Alert,
+  TextInput,
+  Modal,
+  Pressable,
+  DeviceEventEmitter,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -173,12 +184,11 @@ export function AnnouncementsScreen({ navigation }: any) {
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('ALL');
-  const [includeUniversal, setIncludeUniversal] = useState(true);
+  const [includeUniversal] = useState(true);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [deptModalVisible, setDeptModalVisible] = useState(false);
   const [loading, setLoading] = useState(() => !hasCacheSync(CacheKeys.ANNOUNCEMENTS));
   const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
 
 
@@ -282,25 +292,6 @@ export function AnnouncementsScreen({ navigation }: any) {
       });
     }
   }, [user?.id, savedIds, toast, t]);
-
-  async function handleManualSync(deep = false) {
-    if (syncing) return;
-    setSyncing(true);
-    toast({ type: 'info', title: deep ? 'Deep crawling BUBT archive…' : t.announce2.syncing });
-    const res = await triggerNoticeSync(deep);
-    setSyncing(false);
-
-    if (res.success) {
-      await load();
-      if ((res.newAdded ?? 0) > 0) {
-        toast({ type: 'success', title: t.announce2.syncSuccess(res.newAdded!) });
-      } else {
-        toast({ type: 'info', title: t.announce2.syncUpToDate });
-      }
-    } else {
-      toast({ type: 'error', title: t.announce2.syncFailed, message: res.error });
-    }
-  }
 
   const deleteAnnouncement = useCallback((a: Announcement) => {
     Alert.alert(t.common.delete, a.title, [

@@ -7,7 +7,6 @@ export function buildViewerHtml(isDark: boolean = true): string {
   const bg = isDark ? '#000000' : '#f1f5f9';
   const paperBg = '#ffffff';
   const shadowColor = isDark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.12)';
-  const textColor = isDark ? '#a1a1aa' : '#64748b';
 
   return `<!doctype html>
 <html>

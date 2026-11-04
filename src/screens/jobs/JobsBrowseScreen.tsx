@@ -1,9 +1,17 @@
-import { padToPool } from '../../components/ui/pooledList';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, Animated, Modal, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  Alert,
+  Modal,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,9 +41,6 @@ import {
   type JobStatus,
 } from '../../services/jobsService';
 import type { Job, JobApplication } from '../../types/database';
-
-const JOB_COLOR = SectorColors.jobs;
-const JOB_BG    = `${SectorColors.jobs}1e`;
 
 export type MainTab = 'browse' | 'saved' | 'my_applications';
 export type TypeFilter = 'all' | 'internship' | 'tuition' | 'on_campus' | 'part_time' | 'full_time' | 'freelance' | 'expired';
@@ -201,15 +206,6 @@ function formatSalary(stipend?: string | null): string {
   }
   return trimmed;
 }
-
-const TYPE_COLORS: Record<string, string> = {
-  internship: Accent.purple,
-  tuition:    Accent.teal,
-  on_campus:  '#f59e0b',
-  part_time:  Accent.teal,
-  full_time:  Accent.blue,
-  freelance:  '#ec4899',
-};
 
 function getTypeLabel(t: any, type: string): string {
   switch (type) {
@@ -797,7 +793,7 @@ export function JobsBrowseScreen({ navigation }: any) {
           ) : (
           /* Browse & Saved List View */
           <View style={styles.list}>
-            {padToPool(browseList).map((j, idx) => {
+            {browseList.map((j, idx) => {
               const status = computeJobStatus(j);
               const s = jobStatusTone(C, t, status, isDark);
               const isSaved = savedIds.has(j.id);
@@ -810,8 +806,7 @@ export function JobsBrowseScreen({ navigation }: any) {
               });
 
               return (
-<View key={idx} style={idx >= browseList.length ? { display: 'none' } : undefined}>
-                <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
+                <View key={idx} style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
                   <TouchableOpacity
                     style={styles.cardMain}
                     onPress={() => navigation.navigate('JobDetail', { jobId: j.id })}
@@ -904,8 +899,7 @@ export function JobsBrowseScreen({ navigation }: any) {
                     />
                   </TouchableOpacity>
                 </View>
-              </View>
-);
+              );
             })}
           </View>
         )}

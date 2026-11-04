@@ -1,10 +1,19 @@
 // Club member management - president/VP only. Add students by search, change
 // member roles (vp / editor / member), remove members. Presidency itself is
 // transferred from the Manage screen.
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  Modal, Alert, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Modal,
+  Alert,
+  KeyboardAvoidingView,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +24,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { fetchPeople, loadPeople } from '../../services/peopleService';
+import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -40,7 +49,7 @@ const ASSIGNABLE = ['vp', 'editor', 'member'];
 
 export function ClubMembersScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const t = useT();
   const clubId: string = route.params?.clubId;
   const [members, setMembers] = useState<Member[]>([]);

@@ -1,9 +1,8 @@
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
+import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, ActivityIndicator, type ViewStyle,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -113,6 +112,7 @@ function Empty({ C }: { C: any }) {
 }
 
 export function NotificationsScreen({ navigation }: any) {
+  const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const t = useT();
   const toast = useToast();
@@ -293,10 +293,8 @@ export function NotificationsScreen({ navigation }: any) {
             onTabChange={setFilter}
           />
         </View>
-        {loading ? (
-          <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator size="small" color={C.brand} />
-          </View>
+        {loading || !ready ? (
+          <SkeletonList rows={6} />
         ) : buckets.length === 0 ? (
           <Empty C={C} />
         ) : (
@@ -307,7 +305,7 @@ export function NotificationsScreen({ navigation }: any) {
               </Text>
               <View style={[styles.group, { marginHorizontal: Layout.screenPadding, backgroundColor: C.surface, borderColor: C.border }]}>
                 {g.items.map((n, i) => (
-                  <View key={n.id}>
+                  <View key={i}>
                     {i > 0 && <View style={[styles.divider, { backgroundColor: C.border }]} />}
                     <NotifRow
                       n={n} C={C} isDark={isDark}

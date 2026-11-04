@@ -469,7 +469,6 @@ export function ManageBannerScreen({ navigation }: any) {
         ? BANNERS_MAP['blood-drive.jpg']
         : BANNERS_MAP['convocation-2026.jpg'])
     : BANNERS_MAP['convocation-2026.jpg'];
-  const previewSource = resolvedPreviewSource || fallbackPreviewSource;
 
   const renderCandidateItem = useCallback(({ item }: { item: CandidateItem }) => (
     <CandidateCard

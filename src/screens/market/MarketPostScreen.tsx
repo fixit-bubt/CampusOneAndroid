@@ -1,7 +1,17 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  StyleSheet, Image, Modal, Animated, Dimensions, ActivityIndicator, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  StyleSheet,
+  Image,
+  Modal,
+  ActivityIndicator,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +28,7 @@ import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
-import { uploadPhoto, uploadFile } from '../../utils/storage';
+import { uploadPhoto } from '../../utils/storage';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { ALL_DHAKA_COMMUTE_AREAS } from '../rides/RidePostScreen';
 import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
@@ -45,8 +55,6 @@ const CATEGORIES: CategoryOption[] = [
   { id: 'Furniture',   labelKey: 'catFurniture',   icon: 'layers',    color: Accent.amber,  subKey: 'catFurnitureSub' },
   { id: 'Other',       labelKey: 'catOther',       icon: 'package',   color: Accent.slate,  subKey: 'catOtherSub'     },
 ];
-
-const CONDITIONS = ['New', 'Like New', 'Used'] as const;
 
 export const CAMPUS_SPECIFIC_SPOTS = [
   { name: 'BUBT Building 1 Cafeteria', nameBn: 'বিল্ডিং ১ ক্যাফেটেরিয়া', desc: 'Ground floor canteen & hangout area', icon: 'coffee' as const },

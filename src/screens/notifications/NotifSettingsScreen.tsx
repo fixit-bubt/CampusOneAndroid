@@ -12,7 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent, SectorColors } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
@@ -253,8 +253,6 @@ export function NotifSettingsScreen({ navigation }: any) {
         ) : !isDenied && (push.state === 'error' || push.state === 'unsupported') ? (
           (() => {
             const copy = pushStatusCopy(push);
-            const tone = C.danger;
-            const toneBg = C.dangerBg;
             return (
               <View style={[styles.settingCard, { backgroundColor: C.surface, borderColor: copy.bad ? C.danger : C.border }]}>
                 <View style={styles.settingRow}>

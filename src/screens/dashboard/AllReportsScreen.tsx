@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { indexKey, listGap } from '../../components/ui/listHelpers';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -401,8 +402,6 @@ export function AllReportsScreen({ navigation }: any) {
     />
   ), [voteCounts, handleCardPress, handleAssignTrigger, isAdmin, C]);
 
-  const reportKeyExtractor = useCallback((r: ReportWithProfile) => r.id, []);
-  const itemSeparator = useCallback(() => <View style={{ height: 10 }} />, []);
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -424,7 +423,8 @@ export function AllReportsScreen({ navigation }: any) {
 
       <FlatList
         data={filteredReports}
-        keyExtractor={reportKeyExtractor}
+        keyExtractor={indexKey}
+        ItemSeparatorComponent={listGap(10)}
         renderItem={renderItem}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
@@ -442,7 +442,6 @@ export function AllReportsScreen({ navigation }: any) {
             colors={[C.brand]}
           />
         }
-        ItemSeparatorComponent={itemSeparator}
         ListHeaderComponent={
           <View style={styles.listHeader}>
             {/* 1. Strict 58dp Search Bar */}

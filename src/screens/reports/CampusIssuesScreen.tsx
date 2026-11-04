@@ -2,7 +2,6 @@
 // My Reports feeds in a single ultra-responsive view with 0ms in-memory tab
 // switching, 58dp controls, 4.5dp category stripes, 32dp monochrome static icons,
 // and premium squircle badges.
-import { padToPool, renderPooled } from '../../components/ui/pooledList';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
@@ -521,16 +520,6 @@ export function CampusIssuesScreen({ navigation, route }: any) {
     );
   }, [C, boardMap, toggleBoard, confirmDelete, navigation, t]);
 
-  const pooledCampus = useMemo(() => padToPool(filteredCampus), [filteredCampus]);
-  const pooledCampusItem = useMemo(
-    () => renderPooled(renderCampusItem, filteredCampus.length),
-    [renderCampusItem, filteredCampus.length],
-  );
-  const pooledMine = useMemo(() => padToPool(filteredMine), [filteredMine]);
-  const pooledMyItem = useMemo(
-    () => renderPooled(renderMyItem, filteredMine.length),
-    [renderMyItem, filteredMine.length],
-  );
 
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
@@ -544,7 +533,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
       {activeTab === 'Campus' ? (
         /* CAMPUS BOARD FEED */
         <FlatList
-          data={ready ? pooledCampus : []}
+          data={ready ? filteredCampus : []}
           keyExtractor={(_r, index) => String(index)}
           initialNumToRender={8}
           maxToRenderPerBatch={8}
@@ -592,13 +581,13 @@ export function CampusIssuesScreen({ navigation, route }: any) {
                 </TouchableOpacity>
               </View>
             )) : <SkeletonList rows={5} />}
-          renderItem={pooledCampusItem}
+          renderItem={renderCampusItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
       ) : (
         /* MY REPORTS FEED */
         <FlatList
-          data={ready ? pooledMine : []}
+          data={ready ? filteredMine : []}
           keyExtractor={(_r, index) => String(index)}
           initialNumToRender={8}
           maxToRenderPerBatch={8}
@@ -646,7 +635,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
                 </TouchableOpacity>
               </View>
             )) : <SkeletonList rows={5} />}
-          renderItem={pooledMyItem}
+          renderItem={renderMyItem}
           ListFooterComponent={<View style={{ height: 28 }} />}
         />
       )}

@@ -1,7 +1,14 @@
 import { useState, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Image, type ViewStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  StyleSheet,
+  Image,
+  type ViewStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { SafeAreaView } from 'react-native-safe-area-context';

@@ -1,7 +1,8 @@
 // Staff's full assigned-report list with search and status filters. Status
 // changes happen on the detail screen; this is the searchable overview the
 // dashboard links into.
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import { indexKey, listGap } from '../../components/ui/listHelpers';
+import { useState, useCallback, useMemo, memo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
   RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
@@ -106,10 +107,6 @@ const AssignedReportCard = memo(function AssignedReportCard({
   );
 });
 
-const Separator = memo(function Separator() {
-  return <View style={styles.sep} />;
-});
-
 export function AssignedToMeScreen({ navigation }: any) {
   const { C } = useTheme();
   const { user } = useAuth();
@@ -204,7 +201,6 @@ export function AssignedToMeScreen({ navigation }: any) {
     );
   }, [C, t.status, handlePressCard]);
 
-  const keyExtractor = useCallback((r: AssignedReport) => r.id, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -212,13 +208,13 @@ export function AssignedToMeScreen({ navigation }: any) {
 
       <FlatList
         data={filtered}
-        keyExtractor={keyExtractor}
+        keyExtractor={indexKey}
+        ItemSeparatorComponent={listGap(11)}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-        ItemSeparatorComponent={Separator}
         renderItem={renderItem}
         removeClippedSubviews={true}
         initialNumToRender={8}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { Radius, FontFamily, FontSize } from '../../theme';
+import { FontFamily, FontSize } from '../../theme';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 

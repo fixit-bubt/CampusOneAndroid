@@ -1,24 +1,30 @@
-import { padToPool } from '../../components/ui/pooledList';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Alert, TextInput, Keyboard, Animated, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  Alert,
+  TextInput,
+  Keyboard,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
-import { Icon } from '../../components/ui/Icon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
-import { StatusBadge } from '../../components/ui/StatusBadge';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -47,15 +53,6 @@ type Tab = 'requests' | 'donors';
 
 const BLOOD_COLOR = SectorColors.blood;
 const BLOOD_BG    = `${SectorColors.blood}1e`;
-
-// Urgency tones from theme tokens (dark-mode aware via C)
-function urgencyTone(C: any, urgency: string): { fg: string; bg: string } {
-  switch (urgency) {
-    case 'Urgent': return { fg: C.danger, bg: C.dangerBg };
-    case 'Today':  return { fg: C.warn,   bg: C.warnBg };
-    default:       return { fg: C.textMuted, bg: C.surface2 };
-  }
-}
 
 function GroupBadge({ group, size = 42, isDark = true }: { group: string; size?: number; isDark?: boolean }) {
   return (
@@ -878,7 +875,7 @@ export function BloodScreen({ route, navigation }: any) {
                 )}
               </View>
             ) : (
-              padToPool(filteredRequests).map((r, idx) => {
+              filteredRequests.map((r, idx) => {
                 const meta = parseBloodRequestMeta(r.patient, r.hospital, r.units);
                 const pledgeCount = (r as any).pledge_count || 0;
                 const unitsLeft = Math.max(0, meta.unitCount - pledgeCount);
@@ -888,8 +885,7 @@ export function BloodScreen({ route, navigation }: any) {
                 const isTarget = highlightCode !== null && r.code === highlightCode;
 
                 return (
-<View key={idx} style={idx >= filteredRequests.length ? { display: 'none' } : undefined}>
-                  <View
+                  <View key={idx}
                     style={[
                       styles.reqCard,
                       {
@@ -1080,8 +1076,7 @@ export function BloodScreen({ route, navigation }: any) {
                       </TouchableOpacity>
                     )}
                   </View>
-                </View>
-);
+                );
               })
             )}
 
@@ -1263,9 +1258,8 @@ export function BloodScreen({ route, navigation }: any) {
               </View>
             ) : (
               <View style={styles.list}>
-                {padToPool(filteredDonors).map((d, idx) => (
-<View key={idx} style={idx >= filteredDonors.length ? { display: 'none' } : undefined}>
-                  <DonorCardItem
+                {filteredDonors.map((d, idx) => (
+                  <DonorCardItem key={idx}
                     d={d}
                     isMe={d.user_id === user?.id}
                     isDark={isDark}
@@ -1275,8 +1269,7 @@ export function BloodScreen({ route, navigation }: any) {
                     onMarkDonated={markDonatedToday}
                     onRevealContact={revealContact}
                   />
-                </View>
-))}
+                ))}
               </View>
             )}
           </View>

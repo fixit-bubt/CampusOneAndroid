@@ -69,7 +69,6 @@ export function StudentProfileScreen({ route, navigation }: any) {
   const [studentClubs, setStudentClubs] = useState<{ id: string; name: string; role: string }[]>([]);
   const [loading, setLoading] = useState<boolean>(!initial && !!targetId);
   const [isOffline, setIsOffline] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // Single-profile lookup RPC - fast, lightweight, and bandwidth-efficient

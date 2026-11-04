@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, RefreshControl, ActivityIndicator, KeyboardAvoidingView,
@@ -154,12 +154,12 @@ export function ClubsScreen({ navigation }: any) {
 
   const otherClubs = useMemo(() => filteredClubs.filter(c => !c.user_role), [filteredClubs]);
 
-  const renderClubCard = useCallback((c: Club) => {
+  const renderClubCard = useCallback((c: Club, i: number) => {
     const role = c.user_role;
     const isMyClub = !!role;
     return (
       <TouchableOpacity
-        key={c.id}
+        key={i}
         style={[
           styles.card,
           {

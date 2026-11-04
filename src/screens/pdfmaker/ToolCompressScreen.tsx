@@ -14,7 +14,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { formatFileSize } from '../../utils/format';
 import {
   LIMITS, COMPRESS_TARGETS, TEXT_HEAVY_CHARS_PER_PAGE, PdfError, type CompressTargetKey,

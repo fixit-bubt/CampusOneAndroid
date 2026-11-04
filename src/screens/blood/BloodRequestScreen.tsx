@@ -1,11 +1,19 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView,
-  StyleSheet, KeyboardAvoidingView, Animated, Modal,
-  Dimensions, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Animated,
+  Modal,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -13,7 +21,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
 import { removeCache, CacheKeys } from '../../services/cacheService';
@@ -24,11 +32,6 @@ import type { Coordinates } from '../../services/locationService';
 import type { BloodRequest } from '../../types/database';
 
 const GROUPS: BloodRequest['blood_group'][] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-const URGENCIES: { id: BloodRequest['urgency']; label: string }[] = [
-  { id: 'Urgent',    label: 'Urgent' },
-  { id: 'Today',     label: 'Today' },
-  { id: 'This week', label: 'This week' },
-];
 
 interface MedicalReasonOption {
   id: string;

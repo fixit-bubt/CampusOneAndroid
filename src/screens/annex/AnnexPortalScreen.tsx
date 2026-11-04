@@ -3,7 +3,12 @@
 // form is the portal's own page, rendered as-is.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, BackHandler, Linking, ActivityIndicator,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  BackHandler,
+  ActivityIndicator,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +16,6 @@ import { WebView, type WebViewNavigation } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { Icon } from '../../components/ui/Icon';
-import { LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout } from '../../theme';
 import { openUrl } from '../../utils/link';
 

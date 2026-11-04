@@ -159,11 +159,6 @@ const BUBT_CAMPUS_HUBS: CampusHub[] = [
   },
 ];
 
-function hexAlpha(hex: string, a: number) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
-
 function extractPhotoStoragePath(url: string | null): string | null {
   if (!url) return null;
   const marker = `/storage/v1/object/public/${BUCKETS.photos}/`;

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo, useOptimistic, startTransition } from 'react';
+import { useRef, useEffect, useState, useMemo, useOptimistic, startTransition } from 'react';
 import {
   View,
   Text,

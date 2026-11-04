@@ -222,17 +222,6 @@ export function ManageFacultyScreen({ navigation }: any) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Department quick map and count
-  const countByDept = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const f of list) {
-      if (f.department_id) {
-        counts[f.department_id] = (counts[f.department_id] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [list]);
-
   const deptById = useMemo(() => {
     const map: Record<string, Department> = {};
     for (const d of departments) {
@@ -545,6 +534,17 @@ export function ManageFacultyScreen({ navigation }: any) {
     return sortFaculty(res as unknown as FacultyMember[]) as unknown as FacultyRow[];
   }, [list, selectedDeptId, q, cleanQ, words, deptById]);
 
+  const renderTeacherItem = useCallback(({ item }: { item: FacultyRow }) => (
+    <TeacherCard
+      f={item}
+      deptName={deptById[item.department_id]?.name}
+      onPress={() => openEdit(item)}
+      C={C}
+    />
+  ), [deptById, C]);
+
+  const teacherKeyExtractor = useCallback((item: FacultyRow) => item.id, []);
+
   if (profile && profile.role !== 'admin') {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -692,16 +692,6 @@ export function ManageFacultyScreen({ navigation }: any) {
     );
   };
 
-  const renderTeacherItem = useCallback(({ item }: { item: FacultyRow }) => (
-    <TeacherCard
-      f={item}
-      deptName={deptById[item.department_id]?.name}
-      onPress={() => openEdit(item)}
-      C={C}
-    />
-  ), [deptById, C]);
-
-  const teacherKeyExtractor = useCallback((item: FacultyRow) => item.id, []);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

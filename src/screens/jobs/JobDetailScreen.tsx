@@ -22,7 +22,7 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { openUrl } from '../../utils/link';
 import { formatFileSize } from '../../utils/format';
-import { MAX_FILE_SIZE_MB, JOB_TYPES, COMPENSATION_TYPES } from '../../constants/app';
+import { MAX_FILE_SIZE_MB, JOB_TYPES } from '../../constants/app';
 import {
   computeJobStatus,
   daysRemainingLabel,
@@ -42,7 +42,6 @@ import {
 import type { JobApplication } from '../../types/database';
 
 const JOB_COLOR = SectorColors.jobs;
-const JOB_BG    = `${SectorColors.jobs}1e`;
 
 function jobStatusTone(C: any, t: any, k: JobStatus, isDark?: boolean): { label: string; fg: string; bg: string } {
   switch (k) {

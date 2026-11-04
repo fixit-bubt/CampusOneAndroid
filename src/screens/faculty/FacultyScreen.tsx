@@ -1,12 +1,21 @@
 // Faculty Directory - browse departments grouped by faculty categories,
 // search by teacher initial routine codes (DALM, SR, SAM), filter research mentors
 // for paper publication, and manage saved teachers.
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, Animated, Modal, KeyboardAvoidingView, Platform,
-  BackHandler, ActivityIndicator,
-  type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  Modal,
+  KeyboardAvoidingView,
+  BackHandler,
+  ActivityIndicator,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,7 +30,7 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
-import { FontFamily, Layout, Accent, Radius } from '../../theme';
+import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
@@ -553,35 +562,7 @@ export function FacultyScreen({ navigation }: any) {
                   {t.faculty2.noMatchingTeachers}
                 </Text>
               </View>
-            ) : (
-              <View style={styles.list}>
-                {displayedResults.map(f => (
-                  <TeacherBar
-                    key={f.id}
-                    f={f}
-                    deptName={deptById[f.department_id]?.name}
-                    saved={savedIds.has(f.id)}
-                    onToggleSave={() => toggleSave(f.id)}
-                    onOpen={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
-                    C={C}
-                    goldColor={Accent.gold}
-                  />
-                ))}
-
-                {results.length > visibleLimit && (
-                  <TouchableOpacity
-                    style={[styles.loadMoreBar, { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setVisibleLimit(prev => prev + 25)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.loadMoreTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
-                      Show more ({results.length - visibleLimit} remaining)
-                    </Text>
-                    <Feather name="chevron-down" size={16} color={FACULTY_ACCENT} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+            ) : null}
           </View>
         )}
 
@@ -629,35 +610,7 @@ export function FacultyScreen({ navigation }: any) {
                   {t.faculty2.noSavedTeachersEmpty}
                 </Text>
               </View>
-            ) : (
-              <View style={styles.list}>
-                {displayedResults.map(f => (
-                  <TeacherBar
-                    key={f.id}
-                    f={f}
-                    deptName={deptById[f.department_id]?.name}
-                    saved={savedIds.has(f.id)}
-                    onToggleSave={() => toggleSave(f.id)}
-                    onOpen={() => navigation.navigate('FacultyProfile', { facultyId: f.id })}
-                    C={C}
-                    goldColor={Accent.gold}
-                  />
-                ))}
-
-                {results.length > visibleLimit && (
-                  <TouchableOpacity
-                    style={[styles.loadMoreBar, { backgroundColor: C.surface, borderColor: C.border }]}
-                    onPress={() => setVisibleLimit(prev => prev + 25)}
-                    activeOpacity={0.75}
-                  >
-                    <Text style={[styles.loadMoreTxt, { color: FACULTY_ACCENT, fontFamily: FontFamily.jakartaBold }]}>
-                      Show more ({results.length - visibleLimit} remaining)
-                    </Text>
-                    <Feather name="chevron-down" size={16} color={FACULTY_ACCENT} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+            ) : null}
           </View>
         )}
 
@@ -684,11 +637,16 @@ export function FacultyScreen({ navigation }: any) {
                   {t.faculty2.noMatchingTeachers}
                 </Text>
               </View>
-            ) : (
-              <View style={styles.list}>
-                {displayedResults.map(f => (
+            ) : null}
+          </View>
+        )}
+          </>
+        )}
+        {results.length > 0 && (isSearchActive || mode === 'mentors' || mode === 'saved') && (
+          <View style={styles.list}>
+                {displayedResults.map((f, idx) => (
+                  <View key={idx} style={idx >= displayedResults.length ? { display: 'none' } : undefined}>
                   <TeacherBar
-                    key={f.id}
                     f={f}
                     deptName={deptById[f.department_id]?.name}
                     saved={savedIds.has(f.id)}
@@ -697,6 +655,7 @@ export function FacultyScreen({ navigation }: any) {
                     C={C}
                     goldColor={Accent.gold}
                   />
+                  </View>
                 ))}
 
                 {results.length > visibleLimit && (
@@ -711,11 +670,7 @@ export function FacultyScreen({ navigation }: any) {
                     <Feather name="chevron-down" size={16} color={FACULTY_ACCENT} />
                   </TouchableOpacity>
                 )}
-              </View>
-            )}
           </View>
-        )}
-          </>
         )}
 
         <View style={{ height: 28 }} />
@@ -801,9 +756,6 @@ export function FacultyScreen({ navigation }: any) {
               </TouchableOpacity>
 
               {departments.map(d => {
-                const count = mode === 'mentors'
-                  ? researchMentors.filter(f => f.department_id === d.id).length
-                  : (countByDept[d.id] || 0);
                 const active = selectedDeptId === d.id;
 
                 return (

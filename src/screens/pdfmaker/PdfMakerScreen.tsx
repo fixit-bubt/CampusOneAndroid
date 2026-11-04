@@ -7,7 +7,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { smokeTestPdfLib } from '../../services/pdf/smokeTest';
 import { PrivacyNote } from './components';
 
@@ -53,7 +53,7 @@ export function PdfMakerScreen({ navigation }: any) {
         </Text>
 
         {TOOLS.map((tool) => {
-          const { title, blurb } = label(tool.key);
+          const { title } = label(tool.key);
           return (
             <TouchableOpacity
               key={tool.key}

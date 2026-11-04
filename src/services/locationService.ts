@@ -36,7 +36,6 @@ import {
   findMasterLocationByName,
   searchMasterLocations,
   findNearestMasterLocation,
-  type MasterLocation,
 } from '../constants/dhakaMasterLocations';
 
 export { findMasterLocationByName };

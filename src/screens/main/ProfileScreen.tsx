@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -8,7 +8,6 @@ import {
   ScrollView,
   Modal,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   type ViewStyle,
   type TextStyle,

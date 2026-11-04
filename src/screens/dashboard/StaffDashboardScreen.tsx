@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
+import { indexKey, listGap } from '../../components/ui/listHelpers';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TouchableOpacity, FlatList, StyleSheet,
@@ -248,10 +249,6 @@ const ReportCard = memo(function ReportCard({
   );
 });
 
-const Separator = memo(function Separator() {
-  return <View style={{ height: 12 }} />;
-});
-
 export function StaffDashboardScreen({ navigation }: any) {
   const { C } = useTheme();
   const insets = useSafeAreaInsets();
@@ -381,7 +378,6 @@ export function StaffDashboardScreen({ navigation }: any) {
     );
   }, [C, t.status, advanceStatus, declineAssigned, handlePressCard]);
 
-  const keyExtractor = useCallback((r: Report) => r.id, []);
 
   if (profile && profile.role !== 'staff' && profile.role !== 'admin') {
     return (
@@ -401,13 +397,13 @@ export function StaffDashboardScreen({ navigation }: any) {
 
       <FlatList
         data={displayedReports}
-        keyExtractor={keyExtractor}
+        keyExtractor={indexKey}
+        ItemSeparatorComponent={listGap(12)}
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
-        ItemSeparatorComponent={Separator}
         renderItem={renderItem}
         removeClippedSubviews={true}
         initialNumToRender={6}

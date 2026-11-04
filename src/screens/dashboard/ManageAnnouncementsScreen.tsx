@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
-import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { useAuth } from '../../store/authStore';
 import { useToast } from '../../components/ui/Toast';
 import { formatRelativeTime } from '../../utils/format';

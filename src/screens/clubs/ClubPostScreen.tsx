@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  StyleSheet, Image, type ViewStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  StyleSheet,
+  Image,
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -69,7 +69,7 @@ interface StudentItem {
 }
 
 export function ClubAddMemberScreen({ route, navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const { user } = useAuth();
   const toast = useToast();
   const clubId: string = route.params?.clubId;

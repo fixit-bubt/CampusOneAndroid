@@ -1,10 +1,22 @@
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  RefreshControl, Image, ActivityIndicator, Animated, FlatList,
-  Modal, ScrollView, Dimensions, Platform, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  Image,
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  ScrollView,
+  Dimensions,
+  Platform,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import { useFocusEffect } from '@react-navigation/native';
@@ -55,8 +67,7 @@ export function MarketScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const t = useT();
-  const { user, profile } = useAuth();
-  const isAdmin = profile?.role === 'admin';
+  const { user } = useAuth();
 
   // Primary filters
   const [tab, setTab] = useState<Tab>('all');
@@ -424,6 +435,7 @@ export function MarketScreen({ navigation }: any) {
       </TouchableOpacity>
     );
   }, [cardWidth, savedIds, peopleMap, isDark, C, navigation, t]);
+
 
   const listHeader = (
     <View>

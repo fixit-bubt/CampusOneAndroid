@@ -5,7 +5,7 @@ import {
   StyleSheet, RefreshControl, Linking, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useToast } from '../../components/ui/Toast';
@@ -14,14 +14,12 @@ import { useAuth } from '../../store/authStore';
 import { useApp } from '../../store/appStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
-import { openUrl } from '../../utils/link';
 import {
   minutesToHHMM,
   nowDhakaMinutes,
@@ -34,12 +32,10 @@ import type { BusRoute } from '../../types/database';
 import { BusRouteEditorModal } from './BusRouteEditorModal';
 
 const BUS_COLOR = SectorColors.bus;
-const BUS_BG    = `${SectorColors.bus}1e`;
 
 export function BusScreen({ navigation }: any) {
   const pdfViewer = usePdfViewer();
   const { C } = useTheme();
-  const insets = useSafeAreaInsets();
   const toast = useToast();
   const t = useT();
   const { lang } = useApp();

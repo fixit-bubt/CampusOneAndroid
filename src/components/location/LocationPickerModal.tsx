@@ -776,13 +776,6 @@ export function LocationPickerModal({
               formattedAddress: 'BUBT Main Campus',
               coords: BUBT_COORDS,
             });
-            const timer = setTimeout(() => {
-              if (active) {
-                selectionLockUntilRef.current = Date.now() + 2500;
-                isProgrammaticMoveRef.current = true;
-                flyToCoordinates(BUBT_COORDS, 16);
-              }
-            }, 350);
           }
         });
 

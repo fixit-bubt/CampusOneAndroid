@@ -6,7 +6,6 @@ import {
   Modal,
   StyleSheet,
   ActivityIndicator,
-  Dimensions,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
@@ -14,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { openUrl } from '../../utils/link';
 import {
@@ -84,8 +83,6 @@ function generateDirectionMapHtml(
   const destLng = destCoords.longitude;
   const destLat = destCoords.latitude;
   const initialCoordinatesJson = initialRoute ? JSON.stringify(initialRoute.coordinates) : 'null';
-  const initialDistance = initialRoute ? initialRoute.distanceM : 0;
-  const initialDuration = initialRoute ? initialRoute.durationS : 0;
   const safeOriginLabel = escapeMapLabel(originLabel);
   const safeDestLabel = escapeMapLabel(destLabel);
 

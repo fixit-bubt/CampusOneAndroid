@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
   FlatList, ScrollView, StyleSheet, Keyboard, KeyboardAvoidingView,
@@ -8,7 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { LocationPickerModal } from '../location/LocationPickerModal';
 import { findMasterLocationByName, searchMasterLocations } from '../../constants/dhakaMasterLocations';
 import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';

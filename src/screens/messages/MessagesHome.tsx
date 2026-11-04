@@ -1,10 +1,10 @@
 // Messages home - the student's conversation list: accepted-connection DMs plus
 // auto-provisioned chats per club and per approved study section.
+import { indexKey } from '../../components/ui/listHelpers';
+import { SkeletonList } from '../../components/ui/LoadState';
+import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
-  ActivityIndicator, RefreshControl, type ViewStyle, type TextStyle,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl, type ViewStyle, type TextStyle } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -243,6 +243,12 @@ export function MessagesHome({ navigation }: any) {
     );
   }, [lastByConv, navigation, C, t]);
 
+  const rowDivider = useCallback(
+    () => <View style={[styles.divider, { backgroundColor: C.border }]} />,
+    [C.border],
+  );
+  const ready = useAfterInteractions();
+
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       <TopBar
@@ -262,8 +268,9 @@ export function MessagesHome({ navigation }: any) {
       />
 
       <FlatList
-        data={filteredRows}
-        keyExtractor={r => r.key}
+        data={ready ? filteredRows : []}
+        keyExtractor={indexKey}
+        ItemSeparatorComponent={rowDivider}
         initialNumToRender={12}
         maxToRenderPerBatch={10}
         windowSize={7}
@@ -279,7 +286,6 @@ export function MessagesHome({ navigation }: any) {
             tintColor={C.brand}
           />
         }
-        ItemSeparatorComponent={() => <View style={[styles.divider, { backgroundColor: C.border }]} />}
         ListHeaderComponent={
           <View style={{ marginBottom: 4 }}>
             {/* Search Bar */}
@@ -353,8 +359,7 @@ export function MessagesHome({ navigation }: any) {
             </View>
           </View>
         }
-        ListEmptyComponent={
-          loading && !refreshing ? (
+        ListEmptyComponent={ready ? (loading && !refreshing ? (
             <View style={{ paddingVertical: 48, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="small" color={C.brand} />
             </View>
@@ -430,8 +435,7 @@ export function MessagesHome({ navigation }: any) {
                 </TouchableOpacity>
               </View>
             </View>
-          )
-        }
+          )) : <SkeletonList rows={6} />}
         renderItem={renderRow}
       />
     </View>

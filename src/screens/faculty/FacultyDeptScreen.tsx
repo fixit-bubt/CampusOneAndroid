@@ -25,7 +25,7 @@ import {
 import { DepartmentAuthoritiesDropdown } from './DepartmentAuthoritiesDropdown';
 
 export function FacultyDeptScreen({ route, navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const t = useT();
   const toast = useToast();
   const { user } = useAuth();

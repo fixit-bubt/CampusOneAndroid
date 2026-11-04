@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   RefreshControl, Alert, ActivityIndicator, Modal, type ViewStyle, type TextStyle, type ImageStyle,
@@ -10,7 +10,7 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Radius, Accent, pillBg } from '../../theme';
+import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { personName } from '../../services/peopleService';
 import { useT } from '../../i18n';

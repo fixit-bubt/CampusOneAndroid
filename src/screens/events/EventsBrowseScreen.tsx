@@ -1,15 +1,22 @@
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  RefreshControl, TextInput, Image, ActivityIndicator, Modal, Pressable,
-  type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  RefreshControl,
+  TextInput,
+  Image,
+  Modal,
+  Pressable,
+  type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
-import { useT } from '../../i18n';
 import { Feather } from '@expo/vector-icons';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
@@ -18,7 +25,7 @@ import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
-import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 import { localToday } from '../../utils/format';
@@ -113,7 +120,8 @@ function EventCard({
   const { status, countdownText } = getEventLiveStatus(e);
   const isOfficial = e.source === 'bubt_news';
   const bannerSource = resolveBannerSource(e.banner_url);
-  const [imgError, setImgError] = useState(false);
+  const [errorUrl, setErrorUrl] = useState<string | null>(null);
+  const imgError = errorUrl !== null && errorUrl === e.banner_url;
 
   return (
     <TouchableOpacity
@@ -128,7 +136,7 @@ function EventCard({
             source={bannerSource}
             style={styles.bannerImg}
             resizeMode="cover"
-            onError={() => setImgError(true)}
+            onError={() => setErrorUrl(e.banner_url ?? '')}
           />
           <View style={styles.bannerOverlay}>
             <View style={[styles.catTag, { backgroundColor: 'rgba(0,0,0,0.65)' }]}>
@@ -217,7 +225,6 @@ export function EventsBrowseScreen({ navigation }: any) {
   const ready = useAfterInteractions();
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
-  const t = useT();
   const toast = useToast();
 
   const [isEventOrganizer, setIsEventOrganizer] = useState(false);
@@ -243,7 +250,6 @@ export function EventsBrowseScreen({ navigation }: any) {
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading');
   const [isOffline, setIsOffline] = useState(false);
 
@@ -298,30 +304,6 @@ export function EventsBrowseScreen({ navigation }: any) {
       setSavedIds(bSet);
     }
     setRefreshing(false);
-  }
-
-  async function handleSyncBubt() {
-    if (syncing) return;
-    setSyncing(true);
-    try {
-      const res = await triggerBubtEventsSync();
-      const scanned = res?.features?.events?.scanned ?? res?.items_scanned ?? res?.total_scanned ?? 0;
-      const added = res?.features?.events?.added ?? res?.items_added ?? res?.new_added ?? 0;
-      toast({
-        type: 'success',
-        title: 'BUBT Events Synced',
-        message: `Found ${scanned} events, added ${added} new.`,
-      });
-      await load();
-    } catch (e: any) {
-      toast({
-        type: 'info',
-        title: 'Sync in Progress',
-        message: 'BUBT crawler is updating campus calendar in background.',
-      });
-    } finally {
-      setSyncing(false);
-    }
   }
 
   async function handleToggleBookmark(eventId: string) {
@@ -583,9 +565,8 @@ export function EventsBrowseScreen({ navigation }: any) {
             <SkeletonList rows={5} />
           ) : (
           <View style={styles.list}>
-            {displayList.map(e => (
-              <EventCard
-                key={e.id}
+            {displayList.map((e, idx) => (
+              <EventCard key={idx}
                 e={e}
                 C={C}
                 isSaved={savedIds.has(e.id)}

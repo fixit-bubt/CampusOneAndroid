@@ -12,7 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { LIMITS, THUMB_MAX_DIM, PdfError } from '../../services/pdf/presets';
 import { moveItem, baseName, parseRanges, isPdfFile } from '../../services/pdf/pdfUtils';
 import { organizePdf, type PageOp } from '../../services/pdf/organizePdf';

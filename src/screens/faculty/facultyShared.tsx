@@ -9,7 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
-import { FontFamily, SectorColors, pillBg, Radius, Accent } from '../../theme';
+import { FontFamily, SectorColors, Accent } from '../../theme';
 import { openUrl } from '../../utils/link';
 import { useT } from '../../i18n';
 import type { Colors } from '../../theme';

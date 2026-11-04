@@ -1,11 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -404,25 +410,6 @@ export function RideDetailScreen({ route, navigation }: any) {
       const driveMin = Math.max(3, Math.round((distMeters / 1000) / 25 * 60));
       proximityEstimate = `~${driveMin} min drive`;
     }
-  }
-
-  function openRouteNavigation() {
-    if (!ride) return;
-    const originParam = originCoords
-      ? `${originCoords.latitude},${originCoords.longitude}`
-      : encodeURIComponent(`${ride.origin}, Dhaka`);
-    const destParam = destCoords
-      ? `${destCoords.latitude},${destCoords.longitude}`
-      : encodeURIComponent(`${ride.destination}, Dhaka`);
-    openUrl(`https://www.google.com/maps/dir/?api=1&origin=${originParam}&destination=${destParam}&travelmode=driving`);
-  }
-
-  function openGoogleMaps() {
-    if (!ride) return;
-    const query = originCoords
-      ? `${originCoords.latitude},${originCoords.longitude}`
-      : encodeURIComponent(`${ride.origin}, Dhaka`);
-    openUrl(`https://www.google.com/maps/search/?api=1&query=${query}`);
   }
 
   if (!ride) {

@@ -1,13 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Image,
-  ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Animated,
   DeviceEventEmitter,
   type ViewStyle,
   type ImageSourcePropType,
@@ -17,10 +15,10 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
-import { FontFamily, SectorColors, pillBg } from '../../theme';
+import { FontFamily, SectorColors } from '../../theme';
 import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { supabase } from '../../lib/supabase';
-import { localToday, formatDate } from '../../utils/format';
+import { formatDate } from '../../utils/format';
 import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys } from '../../services/cacheService';
 import { markAnnouncementAsRead } from '../../services/announcementService';
 
@@ -192,7 +190,6 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
     }
 
     try {
-      const today = localToday();
       const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
       const [annRes, evRes, clubPostsRes] = await Promise.all([
         supabase

@@ -1,13 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  type ViewStyle,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';

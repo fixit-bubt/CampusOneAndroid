@@ -1,7 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
-  ActivityIndicator, Alert, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -48,15 +55,8 @@ interface Member {
 
 const ROLE_RANK: Record<string, number> = { president: 0, vp: 1, editor: 2, member: 3 };
 
-function timeAgo(iso: string): string {
-  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
-
 export function ClubDetailScreen({ route, navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
   const toast = useToast();
@@ -183,26 +183,6 @@ export function ClubDetailScreen({ route, navigation }: any) {
           if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
           setMyRole(null);
           setMembers(prev => prev.filter(m => m.user_id !== user.id));
-        },
-      },
-    ]);
-  }
-
-  async function togglePin(p: Post) {
-    const { error } = await supabase.from('club_posts').update({ is_pinned: !p.is_pinned }).eq('id', p.id);
-    if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
-    load();
-  }
-
-  function deletePost(p: Post) {
-    Alert.alert(t.clubs.deletePostTitle, t.clubs.deletePostBody, [
-      { text: t.common.cancel, style: 'cancel' },
-      {
-        text: t.common.delete, style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase.from('club_posts').delete().eq('id', p.id);
-          if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
-          setPosts(prev => prev.filter(x => x.id !== p.id));
         },
       },
     ]);

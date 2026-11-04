@@ -4,10 +4,9 @@ import {
   View, Text, TouchableOpacity, StyleSheet, type ViewStyle,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { useT } from '../../i18n';
 import { Icon } from '../ui/Icon';
 import { LogoMark } from '../ui/Logo';
-import { FontFamily, FontSize, Layout } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import type { Profile } from '../../types/database';
 
 // Home TopBar
@@ -23,7 +22,6 @@ interface TopBarProps {
 
 export function TopBar({ profile, title, subtitle: customSubtitle, unread = 0, onBell, right }: TopBarProps) {
   const { C, isDark } = useTheme();
-  const t = useT();
 
   if (title) {
     return (

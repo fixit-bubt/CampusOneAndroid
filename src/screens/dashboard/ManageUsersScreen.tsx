@@ -1,3 +1,4 @@
+import { indexKey } from '../../components/ui/listHelpers';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -322,7 +323,6 @@ export function ManageUsersScreen({ navigation }: any) {
     [handleUserPress, C]
   );
 
-  const keyExtractor = useCallback((item: Profile) => item.id, []);
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -348,7 +348,7 @@ export function ManageUsersScreen({ navigation }: any) {
       <View style={[styles.contentContainer, { paddingHorizontal: Layout.screenPadding }]}>
         <FlatList
           data={displayedUsers}
-          keyExtractor={keyExtractor}
+          keyExtractor={indexKey}
           renderItem={renderUserItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

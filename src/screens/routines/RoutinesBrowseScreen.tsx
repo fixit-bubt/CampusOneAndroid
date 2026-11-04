@@ -10,7 +10,7 @@ import {
   TextInput,
   Share,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -223,7 +223,6 @@ type RoutineStep = 'types' | 'departments' | 'options' | 'all' | 'choose';
 export function RoutinesBrowseScreen({ route, navigation }: any) {
   const { C, isDark } = useTheme();
   const { profile } = useAuth();
-  const insets = useSafeAreaInsets();
   const toast = useToast();
 
   // Primary Navigation Step

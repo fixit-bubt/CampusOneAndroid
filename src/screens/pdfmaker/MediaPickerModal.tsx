@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library/legacy';
 import { useTheme } from '../../hooks/useTheme';
-import { FontFamily, Radius } from '../../theme';
+import { FontFamily } from '../../theme';
 
 interface MediaPickerModalProps {
   visible: boolean;

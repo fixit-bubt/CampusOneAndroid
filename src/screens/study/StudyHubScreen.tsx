@@ -694,6 +694,12 @@ export function StudyHubScreen({ navigation }: any) {
   const [sub, setSub] = useState<Sub>('home');
   const [persona, setPersona] = useState<Persona>('notjoined');
   const [homeTab, setHomeTab] = useState<HomeTab>('courses');
+  const [semMounted, setSemMounted] = useState(false);
+  useEffect(() => {
+    if (homeTab !== 'courses') { setSemMounted(true); return; }
+    const timer = setTimeout(() => setSemMounted(true), 1500);
+    return () => clearTimeout(timer);
+  }, [homeTab]);
   const [manageTab, setManageTab] = useState<ManageTab>('members');
 
   const [mySection, setMySection] = useState<SectionRow | null>(null);
@@ -1960,8 +1966,7 @@ export function StudyHubScreen({ navigation }: any) {
           style={{ marginBottom: 12 }}
         />
 
-        {homeTab === 'courses' ? (
-          <View>
+        <View style={homeTab === 'courses' ? undefined : { display: 'none' }}>
             {/* Archive semester switcher chips */}
             {archivedSemesters.length > 0 && (
               <ScrollView
@@ -2148,10 +2153,9 @@ export function StudyHubScreen({ navigation }: any) {
                 />
               ))
             )}
-          </View>
-        ) : (
-          /* 12-Semester Academic Archive */
-          <View>
+        </View>
+        {semMounted && (
+          <View style={homeTab === 'archive' ? undefined : { display: 'none' }}>
             <Text style={[s.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, marginTop: 4 }]}>
               ACADEMIC SEMESTERS (1 - 12)
             </Text>

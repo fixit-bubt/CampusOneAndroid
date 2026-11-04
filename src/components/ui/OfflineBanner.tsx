@@ -1,8 +1,7 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, type ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { FontFamily, FontSize, Spacing, Radius } from '../../theme';
+import { FontFamily, Radius } from '../../theme';
 
 interface OfflineBannerProps {
   visible?: boolean;

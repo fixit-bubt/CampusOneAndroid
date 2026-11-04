@@ -1,5 +1,5 @@
 // Edit club details + transfer presidency.
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, ActivityIndicator, KeyboardAvoidingView, Platform, type ViewStyle, type TextStyle,
@@ -9,7 +9,6 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Avatar } from '../../components/ui/Avatar';
-import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
@@ -35,10 +34,10 @@ const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
 };
 
 export function ClubManageScreen({ route, navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const t = useT();
   const toast = useToast();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const { clubId } = route.params ?? {};
   const id = clubId;
 

@@ -17,7 +17,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { supabase } from '../../lib/supabase';
 import { localToday } from '../../utils/format';
-import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent, pillBg } from '../../theme';
+import { FontFamily, FontSize, Layout, Radius, Spacing, SectorColors, Accent } from '../../theme';
 import { sharePdf, savePdfToDevice, saveLatestCoverPage } from '../../services/pdf/pdfFiles';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { getCache, setCache, CacheKeys } from '../../services/cacheService';
@@ -363,7 +363,7 @@ function buildHtml(f: HtmlData): string {
 }
 
 export function CoverPageFormScreen({ navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const { profile } = useAuth();
   const t = useT();
   const toast = useToast();

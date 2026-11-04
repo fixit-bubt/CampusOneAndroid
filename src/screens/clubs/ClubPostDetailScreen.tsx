@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -54,7 +54,7 @@ interface PostDetail {
 }
 
 export function ClubPostDetailScreen({ route, navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const { user } = useAuth();
   const toast = useToast();
 

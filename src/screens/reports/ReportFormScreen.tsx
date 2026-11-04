@@ -23,7 +23,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { LiquidToggle } from '../../components/ui/LiquidToggle';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useT } from '../../i18n';
 import { createReport } from '../../services/reportsService';
@@ -85,7 +85,7 @@ const PLACES: PlaceOption[] = [
 ];
 
 export function ReportFormScreen({ route, navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { user } = useAuth();

@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { FontFamily, FontSize, SectorColors } from '../../theme';

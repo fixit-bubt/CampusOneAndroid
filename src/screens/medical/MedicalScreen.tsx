@@ -1,4 +1,3 @@
-import { padToPool } from '../../components/ui/pooledList';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo } from 'react';
@@ -788,13 +787,12 @@ export function MedicalScreen({ navigation }: any) {
             <SkeletonList rows={5} />
           ) : (
               <View style={styles.doctorList}>
-                {padToPool(filteredDoctors).map((doc, idx) => {
+                {filteredDoctors.map((doc, idx) => {
                   const duty = getDoctorDuty(doc, C, t);
                   const iconCfg = getDoctorIconConfig(doc, isDark);
 
                   return (
-<View key={idx} style={idx >= filteredDoctors.length ? { display: 'none' } : undefined}>
-                    <TouchableOpacity
+                    <TouchableOpacity key={idx}
                       style={[
                         styles.doctorCard72,
                         { backgroundColor: C.surface, borderColor: C.border },
@@ -880,8 +878,7 @@ export function MedicalScreen({ navigation }: any) {
                         <Icon name="chevR" size={16} color={C.textMuted} />
                       </View>
                     </TouchableOpacity>
-                  </View>
-);
+                  );
                 })}
               </View>
             )}

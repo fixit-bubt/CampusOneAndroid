@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   type ViewStyle,
@@ -9,7 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../hooks/useTheme';
 import { Avatar } from './Avatar';
 import { useToast } from './Toast';
-import { FontFamily, FontSize, Radius, Layout } from '../../theme';
+import { FontFamily } from '../../theme';
 import { callPhone, openWhatsApp, openUrl } from '../../utils/link';
 
 interface ContactSheetProps {
@@ -37,7 +36,7 @@ export function ContactSheet({
   inAppChatAction,
   onClose,
 }: ContactSheetProps) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const toast = useToast();
 

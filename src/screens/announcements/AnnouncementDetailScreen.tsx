@@ -1,8 +1,19 @@
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
 import { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image,
-  Modal, Share, Pressable, Dimensions, Alert, type ViewStyle, type TextStyle, type ImageSourcePropType,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  Modal,
+  Share,
+  Dimensions,
+  Alert,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -11,7 +22,7 @@ import * as Sharing from 'expo-sharing';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
-import { FontFamily, Layout, Accent, SectorColors, pillBg, Radius } from '../../theme';
+import { FontFamily, Layout, Accent, pillBg, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { getCache, CacheKeys } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';

@@ -1,22 +1,18 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import {
-  View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView,
-  Keyboard, StyleSheet, Animated, Modal, type ViewStyle, type TextStyle,
-} from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, StyleSheet, Modal, type ViewStyle, type TextStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
-import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { LocationPickerModal } from '../../components/location/LocationPickerModal';
 import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { localToday, nowDhakaMinutes, formatDate, formatTime } from '../../utils/format';
+import { localToday, nowDhakaMinutes, formatTime } from '../../utils/format';
 import { BUBT_COORDS, type Coordinates } from '../../services/locationService';
 import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
 import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
@@ -161,11 +157,6 @@ export function RidePostScreen({ route, navigation }: any) {
     { id: 'tomorrow', label: `${t.rides2.tomorrowText ?? 'Tomorrow'} · ${formatShortDate(localTomorrow())}`, color: accentColor },
   ], [accentColor, t.rides2.todayText, t.rides2.tomorrowText]);
 
-  const LOC_CAT_TABS: TabItem<'mirpur' | 'dhaka'>[] = useMemo(() => [
-    { id: 'mirpur', label: 'Mirpur & Campus', color: accentColor },
-    { id: 'dhaka', label: 'Greater Dhaka', color: accentColor },
-  ], [accentColor]);
-
   const handlePostTypeChange = (next: 'offer' | 'request') => {
     setPostType(next);
     if (next === 'offer' && fare === '40') setFare('50');
@@ -217,26 +208,9 @@ export function RidePostScreen({ route, navigation }: any) {
     }
   }
 
-  const activeHub = direction === 'To Campus' ? from : to;
-
   function openLocationModal(field: 'from' | 'to') {
     setTargetField(field);
     setHubModalVisible(true);
-  }
-
-  function openMapModal(field: 'from' | 'to') {
-    setTargetField(field);
-    setMapModalVisible(true);
-  }
-
-  function handleAreaSelect(areaName: string) {
-    Keyboard.dismiss();
-    if (targetField === 'from') {
-      setFrom(areaName);
-    } else {
-      setTo(areaName);
-    }
-    setHubModalVisible(false);
   }
 
 

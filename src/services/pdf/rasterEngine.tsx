@@ -5,7 +5,7 @@
 // the page, loaded from that same folder over file://, reads it itself. What
 // comes back is one page JPEG at a time; the assembled PDF is built natively
 // by pdf-lib and written straight to disk, so it never crosses either.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Asset } from 'expo-asset';

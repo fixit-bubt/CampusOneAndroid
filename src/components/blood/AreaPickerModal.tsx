@@ -1,17 +1,16 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, Modal,
   FlatList, ScrollView, StyleSheet, Keyboard, KeyboardAvoidingView,
   Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import { DHAKA_AREAS, type DhakaAreaInfo } from '../../constants/dhakaAreas';
 import { LocationPickerModal } from '../location/LocationPickerModal';
-import { useT } from '../../i18n';
 import type { Coordinates } from '../../services/locationService';
 import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
 import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
@@ -442,7 +441,6 @@ export function AreaPickerModal({
   title = 'Hospitals & Areas',
 }: AreaPickerModalProps) {
   const { C, isDark } = useTheme();
-  const t = useT();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [openZoneId, setOpenZoneId] = useState<string | null>(null);

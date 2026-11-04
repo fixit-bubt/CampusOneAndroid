@@ -12,7 +12,7 @@ import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { SectorIcon } from '../../components/ui/SectorIcon';
 import { Icon } from '../../components/ui/Icon';
 import { TopBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout, SectorColors, pillBg } from '../../theme';
+import { FontFamily, Layout, SectorColors } from '../../theme';
 import type { SectorKey } from '../../theme';
 
 // Maps sector id → app navigator route name

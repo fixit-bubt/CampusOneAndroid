@@ -25,7 +25,6 @@ import { fetchPeople } from '../../services/peopleService';
 import { formatFileSize, formatRelativeTime } from '../../utils/format';
 
 const STUDY_COLOR = SectorColors.study;
-const STUDY_BG = `${SectorColors.study}1e`;
 
 type Tab = 'materials' | 'questions' | 'books' | 'slides';
 type Sort = 'new' | 'name';
@@ -115,7 +114,7 @@ export function CourseDetailScreen({ route, navigation }: any) {
   const scrollRef = useRef<ScrollView>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<Sort>('new');
+  const [sort] = useState<Sort>('new');
   const [examFilter, setExamFilter] = useState<string>('All');
   const [batchFilter, setBatchFilter] = useState<string>('All');
   const [batchOptions, setBatchOptions] = useState<string[]>([]);
@@ -434,22 +433,6 @@ export function CourseDetailScreen({ route, navigation }: any) {
     materials: materials.length, questions: questions.length, books: books.length, slides: slides.length,
   };
 
-  if (!course) {
-    return (
-      <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
-        <SubBar title={t.study2.course} onBack={() => navigation.goBack()} />
-        <View style={styles.center}>
-          {loading ? (
-            <ActivityIndicator color={C.brand} />
-          ) : (
-            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{t.common.notFound}</Text>
-          )}
-        </View>
-      </View>
-    );
-  }
-  const tintBg = isDark ? `${STUDY_COLOR}2e` : STUDY_BG;
-
   // Exam options for the questions filter (memoized)
   const examOptions = useMemo(
     () => ['All', ...Array.from(new Set(questions.map(q => q.exam).filter(Boolean) as string[]))],
@@ -469,6 +452,21 @@ export function CourseDetailScreen({ route, navigation }: any) {
         : (b.created_at > a.created_at ? 1 : b.created_at < a.created_at ? -1 : 0)
     );
   }, [lists, tab, query, examFilter, batchFilter, sort]);
+
+  if (!course) {
+    return (
+      <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
+        <SubBar title={t.study2.course} onBack={() => navigation.goBack()} />
+        <View style={styles.center}>
+          {loading ? (
+            <ActivityIndicator color={C.brand} />
+          ) : (
+            <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{t.common.notFound}</Text>
+          )}
+        </View>
+      </View>
+    );
+  }
 
   const emptyMsg = query.trim()
     ? t.study2.noMatches
@@ -705,13 +703,12 @@ export function CourseDetailScreen({ route, navigation }: any) {
               <Feather name="inbox" size={32} color={C.textMuted} />
               <Text style={[styles.emptyTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaSemiBold }]}>{emptyMsg}</Text>
             </View>
-          ) : tabFiles.map((f) => {
+          ) : tabFiles.map((f, idx) => {
             const isLink = !!f.url && !f.storage_path;
             const sizeStr = f.size_bytes ? formatFileSize(f.size_bytes) : null;
             const tagText = tab === 'materials' ? f.type : tab === 'questions' ? f.exam : tab === 'books' ? f.kind : 'Slide';
             return (
-              <TouchableOpacity
-                key={f.id}
+              <TouchableOpacity key={idx}
                 style={[styles.fileCard72, { backgroundColor: C.surface, borderColor: C.border }]}
                 onPress={() => openEntry(f)}
                 activeOpacity={0.75}

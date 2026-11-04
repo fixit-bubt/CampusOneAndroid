@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
@@ -7,11 +7,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
-import { supabase } from '../../lib/supabase';
 import { updateProfile } from '../../services/profileService';
 import { Icon } from '../../components/ui/Icon';
 import { Brand } from './LandingScreen';
-import { FontFamily, Layout, Radius, Spacing } from '../../theme';
+import { FontFamily, Layout, Spacing } from '../../theme';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 

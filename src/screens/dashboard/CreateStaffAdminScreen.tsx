@@ -86,7 +86,7 @@ const TRADE_OPTIONS: TradeOption[] = [
 ];
 
 export function CreateStaffAdminScreen({ navigation }: any) {
-  const { C, isDark } = useTheme();
+  const { C } = useTheme();
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
   const showToast = useToast();

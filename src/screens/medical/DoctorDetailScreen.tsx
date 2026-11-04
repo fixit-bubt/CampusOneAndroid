@@ -28,7 +28,6 @@ import { BUBT_CLINIC_INFO } from '../../constants/medicalServices';
 import type { Doctor } from '../../types/database';
 
 const MED_COLOR = SectorColors.medical;
-const MED_BG = `${SectorColors.medical}1e`;
 
 interface DutyState {
   badge: 'on_duty' | 'starting_soon' | 'off_duty' | 'on_leave';

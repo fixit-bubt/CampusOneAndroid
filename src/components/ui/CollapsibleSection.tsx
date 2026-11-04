@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { FontFamily, pillBg } from '../../theme';
+import { FontFamily } from '../../theme';
 import { Icon } from './Icon';
 
 export interface CollapsibleSectionProps {

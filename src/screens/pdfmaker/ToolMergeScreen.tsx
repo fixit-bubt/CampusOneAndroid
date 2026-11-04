@@ -9,7 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
-import { FontFamily, Layout, SectorColors } from '../../theme';
+import { FontFamily, Layout } from '../../theme';
 import { LIMITS, PdfError } from '../../services/pdf/presets';
 import { moveItem, baseName, isHeicFile, isPdfFile, isImageFile } from '../../services/pdf/pdfUtils';
 import { mergeToPdf, type MergeItem } from '../../services/pdf/mergePdf';

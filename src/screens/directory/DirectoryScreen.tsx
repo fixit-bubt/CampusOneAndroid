@@ -3,14 +3,24 @@
 // native spring animation, structured dual control bar (My Section + Department picker),
 // CR badges, blood group indicators, and instant contact reveal via ContactSheet.
 
-import { padToPool, renderPooled } from '../../components/ui/pooledList';
+import { listGap } from '../../components/ui/listHelpers';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
-  Modal, Animated, RefreshControl, ActivityIndicator, ScrollView,
-  Platform, type ViewStyle, type TextStyle,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  Modal,
+  RefreshControl,
+  ActivityIndicator,
+  ScrollView,
+  Platform,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -564,11 +574,6 @@ export function DirectoryScreen({ route, navigation }: any) {
     );
   }, [actionBusy, C, navigation, tab, isDark, t, handleCancel, handleConnect, handleAccept, handleDecline, setContactStudent]);
 
-  const pooledStudents = useMemo(() => padToPool(filteredStudents), [filteredStudents]);
-  const pooledStudentItem = useMemo(
-    () => renderPooled(renderStudentItem, filteredStudents.length, { marginBottom: 10 }),
-    [renderStudentItem, filteredStudents.length],
-  );
 
   const hasCohort = !!(profile?.intake && profile?.section);
 
@@ -604,8 +609,9 @@ export function DirectoryScreen({ route, navigation }: any) {
         </View>
       ) : (
         <FlatList
-          data={ready ? pooledStudents : []}
+          data={ready ? filteredStudents : []}
           keyExtractor={(_s, index) => String(index)}
+        ItemSeparatorComponent={listGap(10)}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={7}
@@ -784,7 +790,7 @@ export function DirectoryScreen({ route, navigation }: any) {
                 )}
               </View>
             )) : <SkeletonList rows={5} />}
-          renderItem={pooledStudentItem}
+          renderItem={renderStudentItem}
         />
       )}
 
@@ -846,7 +852,6 @@ export function DirectoryScreen({ route, navigation }: any) {
                 const active = selectedDept.toLowerCase() === d.id.toLowerCase();
                 const count = deptCounts[d.id.toUpperCase()] ?? (d.id === 'All' ? students.length : 0);
                 const fg = d.color;
-                const iconBg = isDark ? `${fg}24` : `${fg}15`;
 
                 return (
                   <TouchableOpacity

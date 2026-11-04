@@ -1,7 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Alert,
-  StyleSheet, RefreshControl, KeyboardAvoidingView, Platform, type ViewStyle,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Alert,
+  StyleSheet,
+  RefreshControl,
+  KeyboardAvoidingView,
+  type ViewStyle,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -271,7 +280,7 @@ export function PrayerScreen({ navigation }: any) {
 
         {/* Month table - campus runs a fixed timetable, so every day shares
             the same times; today's row is highlighted. */}
-        {view === 'month' && (
+        <View style={view === 'month' ? undefined : styles.hidden}>
           <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
             <View style={[styles.monthRow, { paddingVertical: 10 }]}>
               <Text style={[styles.monthDayCol, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold, fontSize: 10.5 }]}>{t.prayer2.dayCol}</Text>
@@ -312,10 +321,10 @@ export function PrayerScreen({ navigation }: any) {
               return rows;
             })()}
           </View>
-        )}
+        </View>
 
         {/* Timetable */}
-        {view === 'today' && (
+        <View style={view === 'today' ? undefined : styles.hidden}>
         <View style={[styles.tableCard, { backgroundColor: C.surface, borderColor: C.border, marginTop: 0 }]}>
           {/* Header row */}
           <View style={styles.tableHeader}>
@@ -362,7 +371,7 @@ export function PrayerScreen({ navigation }: any) {
             );
           })}
         </View>
-        )}
+        </View>
 
         {/* Musallah locations */}
         <View style={styles.musHeader}>
@@ -459,6 +468,7 @@ export function PrayerScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  hidden: { display: 'none' } as ViewStyle,
   safe: { flex: 1 } as ViewStyle,
   scroll: { paddingTop: 8, paddingBottom: 20 } as ViewStyle,
 

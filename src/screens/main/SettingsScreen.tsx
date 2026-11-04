@@ -1,7 +1,18 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, Modal, KeyboardAvoidingView,
-  StyleSheet, ActivityIndicator, Share, Linking, AppState, Platform, NativeModules, type ViewStyle,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  KeyboardAvoidingView,
+  StyleSheet,
+  ActivityIndicator,
+  Share,
+  AppState,
+  Platform,
+  NativeModules,
+  type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';

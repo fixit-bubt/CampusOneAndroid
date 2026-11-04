@@ -672,7 +672,6 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
             </Text>
             <View style={{ gap: 10, marginTop: 10 }}>
               {matches.map(m => {
-                const mfg = CAT_COLOR[m.category] ?? Accent.slate;
                 return (
                   <TouchableOpacity
                     key={m.id}

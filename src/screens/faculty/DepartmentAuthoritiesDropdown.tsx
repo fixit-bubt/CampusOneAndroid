@@ -3,7 +3,7 @@
 // matching the exact look and feel of the directory roster. Tapping any bar navigates
 // directly to that authority's full teacher profile.
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   Platform, UIManager, LayoutAnimation,
