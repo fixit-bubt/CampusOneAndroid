@@ -1,56 +1,8 @@
 // Reports Service - report DB logic.
 
 import { supabase } from '../lib/supabase';
-import { fetchPeople } from './peopleService';
-import type { Report, ReportEvent } from '../types/database';
-import { PAGE_SIZE } from '../constants/app';
+import type { Report } from '../types/database';
 import type { ServiceResult } from './authService';
-
-export interface ReportWithProfile extends Report {
-  profiles: { full_name: string; avatar_url: string | null } | null;
-}
-
-export async function getReports(
-  page = 0,
-  status?: Report['status'],
-): Promise<ServiceResult<ReportWithProfile[]>> {
-  let query = supabase
-    .from('reports')
-    .select('*')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-
-  if (status) query = query.eq('status', status);
-
-  const { data, error } = await query;
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: await withReporters(data ?? []) };
-}
-
-// profiles RLS only exposes the caller's own row (contact details live there),
-// so reporter names come from the roster RPC rather than an embed.
-async function withReporters(rows: any[]): Promise<ReportWithProfile[]> {
-  const people = await fetchPeople(rows.map(r => r.reporter_id));
-  return rows.map(r => ({
-    ...r,
-    profiles: people[r.reporter_id]
-      ? { full_name: people[r.reporter_id].full_name, avatar_url: people[r.reporter_id].avatar_url }
-      : null,
-  })) as ReportWithProfile[];
-}
-
-export interface CampusReport extends Report {
-  reporter_name: string | null;
-}
-
-// Campus-wide feed (own + other students') via SECURITY DEFINER RPC, since the
-// reports_select policy is owner/assigned/admin only.
-export async function getCampusReports(limit = 200): Promise<ServiceResult<CampusReport[]>> {
-  const { data, error } = await supabase.rpc('campus_reports', { p_limit: limit });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: (data ?? []) as CampusReport[] };
-}
 
 export async function getMyReports(userId: string): Promise<ServiceResult<Report[]>> {
   const { data, error } = await supabase
@@ -58,20 +10,10 @@ export async function getMyReports(userId: string): Promise<ServiceResult<Report
     .select('*')
     .eq('reporter_id', userId)
     .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: data as Report[] };
-}
-
-export async function getReportByCode(code: string): Promise<ServiceResult<ReportWithProfile>> {
-  const { data, error } = await supabase
-    .from('reports')
-    .select('*')
-    .eq('code', code)
-    .is('deleted_at', null)
-    .single();
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: (await withReporters([data]))[0] };
 }
 
 export async function createReport(payload: {
@@ -103,14 +45,4 @@ export async function declineReport(reportId: string): Promise<ServiceResult<nul
   if (error) return { ok: false, error: error.message };
   if (!res?.ok) return { ok: false, error: res?.error ?? 'Could not decline this report.' };
   return { ok: true, data: null };
-}
-
-export async function getReportEvents(reportId: string): Promise<ServiceResult<ReportEvent[]>> {
-  const { data, error } = await supabase
-    .from('report_events')
-    .select('*')
-    .eq('report_id', reportId)
-    .order('created_at', { ascending: true });
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: data as ReportEvent[] };
 }

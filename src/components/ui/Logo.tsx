@@ -25,28 +25,6 @@ export function LogoMark({ size = 56, shadow = true }: LogoMarkProps) {
   );
 }
 
-export function LogoFull({ width = 180, height }: { width?: number; height?: number }) {
-  const calculatedHeight = height ?? width * (871 / 1013);
-  return (
-    <Image
-      source={require('../../../assets/logo.png')}
-      style={{ width, height: calculatedHeight }}
-      resizeMode="contain"
-    />
-  );
-}
-
-export function LogoText({ width = 140, height }: { width?: number; height?: number }) {
-  const calculatedHeight = height ?? width * (182 / 1003);
-  return (
-    <Image
-      source={require('../../../assets/logo-text.png')}
-      style={{ width, height: calculatedHeight }}
-      resizeMode="contain"
-    />
-  );
-}
-
 const styles = StyleSheet.create({
   box: {
     alignItems: 'center',
