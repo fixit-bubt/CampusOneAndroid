@@ -1,3 +1,5 @@
+import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
+import { normalizePdfUrl } from '../../utils/pdfUrl';
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet, Platform,
@@ -57,6 +59,7 @@ const AnnouncementCard = memo(function AnnouncementCard({
   onToggleSave,
   onDelete,
   onPress,
+  onOpenPdf,
 }: {
   a: Announcement;
   C: any;
@@ -67,14 +70,18 @@ const AnnouncementCard = memo(function AnnouncementCard({
   onToggleSave: (a: Announcement) => void;
   onDelete: (a: Announcement) => void;
   onPress: (id: string) => void;
+  onOpenPdf: (a: Announcement) => void;
 }) {
-  const { fg, bg: priBg } = priTone(C, a.priority, isDark);
+  const { fg } = priTone(C, a.priority, isDark);
   const isOfficial = a.source === 'bubt_official' || a.code?.startsWith('BUBT-N-');
-  const bg = `${fg}1a`;
+  const dept = a.department_code && a.department_code !== 'ALL' ? a.department_code : a.department;
 
   const handleCardPress = useCallback(() => onPress(a.id), [onPress, a.id]);
   const handleToggle = useCallback(() => onToggleSave(a), [onToggleSave, a]);
   const handleDelete = useCallback(() => onDelete(a), [onDelete, a]);
+  const handlePdf = useCallback(() => onOpenPdf(a), [onOpenPdf, a]);
+
+  const meta = { color: C.textMuted, fontFamily: FontFamily.jakartaMedium };
 
   return (
     <TouchableOpacity
@@ -88,43 +95,6 @@ const AnnouncementCard = memo(function AnnouncementCard({
       </View>
 
       <View style={styles.cardBody}>
-        {/* Eyebrow: Department, Time, Official Badge */}
-        <View style={styles.eyebrowRow}>
-          <Text
-            style={[styles.cardEyebrow, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}
-            numberOfLines={1}
-          >
-            {a.department_code && a.department_code !== 'ALL'
-              ? `${a.department_code} · `
-              : `${a.department} · `}
-            {timeAgo(a.created_at)}
-          </Text>
-
-          {isOfficial && (
-            <View style={[styles.officialBadge, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.18)' : '#e0edff' }]}>
-              <Feather name="check-circle" size={10} color="#2563eb" />
-              <Text style={[styles.officialTxt, { color: '#2563eb', fontFamily: FontFamily.jakartaBold }]}>
-                BUBT Official
-              </Text>
-            </View>
-          )}
-
-          {/* Bookmark Button */}
-          <TouchableOpacity
-            onPress={handleToggle}
-            hitSlop={8}
-            activeOpacity={0.7}
-            style={styles.starBtn}
-          >
-            <Feather
-              name="bookmark"
-              size={15}
-              color={isSaved ? Accent.gold : C.textMuted}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Title */}
         <Text
           style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}
           numberOfLines={2}
@@ -132,56 +102,36 @@ const AnnouncementCard = memo(function AnnouncementCard({
           {a.title}
         </Text>
 
-        {/* Cohesive Metadata Bar */}
-        <View style={styles.cardMetaBar}>
-          <View style={[styles.priPill, { backgroundColor: priBg }]}>
-            <View style={[styles.priDot, { backgroundColor: fg }]} />
-            <Text style={[styles.priText, { color: fg, fontFamily: FontFamily.jakartaBold }]}>
-              {a.priority}
+        <Text style={[styles.metaLine, meta]} numberOfLines={1}>
+          {a.pinned ? <Text style={{ color: C.brand, fontFamily: FontFamily.jakartaBold }}>Pinned · </Text> : null}
+          {a.priority !== 'General' ? (
+            <Text style={{ color: fg, fontFamily: FontFamily.jakartaBold }}>{a.priority} · </Text>
+          ) : null}
+          {a.category ? `${a.category} · ` : ''}
+          {dept ? `${dept} · ` : ''}
+          {timeAgo(a.created_at)}
+          {a.attachment_url ? (
+            <Text onPress={handlePdf} style={{ color: C.brand, fontFamily: FontFamily.jakartaBold }}>
+              {' · PDF'}
             </Text>
-          </View>
+          ) : a.image_url ? ' · Photo' : ''}
+        </Text>
 
-          {a.category && (
-            <View style={[styles.catPill, { backgroundColor: C.surface2, borderColor: C.border }]}>
-              <Text style={[styles.catText, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
-                {a.category}
-              </Text>
-            </View>
-          )}
-
-          {a.pinned && (
-            <View style={[styles.pinnedPill, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.16)' : '#e0edff' }]}>
-              <Icon name="pin" size={10} color={C.brand} />
-              <Text style={[styles.pinnedTxt, { color: C.brand, fontFamily: FontFamily.jakartaBold }]}>
-                Pinned
-              </Text>
-            </View>
-          )}
-
-          {a.attachment_url && (
-            <View style={[styles.attachBadge, { backgroundColor: isDark ? 'rgba(214, 61, 53, 0.14)' : '#fee2e2' }]}>
-              <Feather name="file-text" size={10} color={C.danger} />
-              <Text style={[styles.attachTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
-                PDF
-              </Text>
-            </View>
-          )}
-
-          {a.image_url && !a.attachment_url && (
-            <View style={[styles.attachBadge, { backgroundColor: isDark ? 'rgba(14, 156, 138, 0.14)' : '#e0f4f0' }]}>
-              <Feather name="image" size={10} color={SectorColors.jobs} />
-              <Text style={[styles.attachTxt, { color: SectorColors.jobs, fontFamily: FontFamily.jakartaBold }]}>
-                Photo
-              </Text>
-            </View>
-          )}
-        </View>
+        {isOfficial ? (
+          <Text style={[styles.metaLine, { color: '#2563eb', fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
+            BUBT Official
+          </Text>
+        ) : null}
       </View>
 
+      <Pressable onPress={handleToggle} hitSlop={8} style={styles.starBtn}>
+        <Feather name="bookmark" size={15} color={isSaved ? Accent.gold : C.textMuted} />
+      </Pressable>
+
       {canDelete && (
-        <TouchableOpacity onPress={handleDelete} hitSlop={8} activeOpacity={0.7} style={{ padding: 4 }}>
+        <Pressable onPress={handleDelete} hitSlop={8} style={{ padding: 4 }}>
           <Feather name="trash-2" size={15} color={C.danger} />
-        </TouchableOpacity>
+        </Pressable>
       )}
     </TouchableOpacity>
   );
@@ -211,6 +161,7 @@ export function AnnouncementsScreen({ navigation }: any) {
     return cachedSaves ? new Set(cachedSaves) : new Set();
   });
   const [mainTab, setMainTab] = useState<MainTab>('all');
+  const [pdfItem, setPdfItem] = useState<Announcement | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -290,6 +241,14 @@ export function AnnouncementsScreen({ navigation }: any) {
     }
     navigation.navigate('AnnouncementDetail', { announcementId: id });
   }, [navigation, user?.id, readIds]);
+
+  const handleOpenPdf = useCallback((a: Announcement) => {
+    if (!readIds.has(a.id)) {
+      setReadIds(prev => new Set(prev).add(a.id));
+      markAnnouncementAsRead(a.id, user?.id || 'guest');
+    }
+    setPdfItem(a);
+  }, [readIds, user?.id]);
 
   const handleToggleSave = useCallback(async (item: Announcement) => {
     if (!user?.id) {
@@ -521,8 +480,9 @@ export function AnnouncementsScreen({ navigation }: any) {
       onToggleSave={handleToggleSave}
       onDelete={deleteAnnouncement}
       onPress={handlePressCard}
+      onOpenPdf={handleOpenPdf}
     />
-  ), [C, isDark, readIds, savedIds, isAdmin, handleToggleSave, deleteAnnouncement, handlePressCard]);
+  ), [C, isDark, readIds, savedIds, isAdmin, handleToggleSave, deleteAnnouncement, handlePressCard, handleOpenPdf]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -930,6 +890,15 @@ export function AnnouncementsScreen({ navigation }: any) {
           </View>
         </View>
       </Modal>
+          <CampusPdfViewerModal
+        visible={!!pdfItem}
+        onClose={() => setPdfItem(null)}
+        title={pdfItem?.title ?? ''}
+        subtitle={pdfItem?.category ?? 'BUBT Notice'}
+        category="Notice"
+        fileUrl={normalizePdfUrl(pdfItem?.attachment_url) || ''}
+        fileName={`${pdfItem?.code ?? 'notice'}.pdf`}
+      />
     </SafeAreaView>
   );
 }
@@ -940,57 +909,11 @@ const styles = StyleSheet.create({
   headerBtn: { padding: 6 } as ViewStyle,
 
   // Animated Segmented Switcher
-  tabContainer: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    padding: 4,
-    marginBottom: 4,
-    position: 'relative',
-  } as ViewStyle,
 
-  activeIndicator: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    bottom: 4,
-    borderRadius: 13,
-    borderWidth: 1.5,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-  } as ViewStyle,
 
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4.5,
-    paddingHorizontal: 4,
-    paddingVertical: 10,
-    borderRadius: 13,
-    zIndex: 1,
-  } as ViewStyle,
 
-  tabBtnTxt: {
-    fontSize: 12.5,
-    flexShrink: 1,
-  },
 
-  tabBadge: {
-    paddingHorizontal: 5.5,
-    paddingVertical: 1,
-    borderRadius: 999,
-    minWidth: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as ViewStyle,
 
-  tabBadgeTxt: {
-    fontSize: 10.5,
-  },
 
   // Search Bar
   searchBar: {
@@ -1040,9 +963,6 @@ const styles = StyleSheet.create({
 
   // Scroll and list
   scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
-  list: { gap: 10 } as ViewStyle,
-
-  // Card
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1070,91 +990,22 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   cardBody: { flex: 1, minWidth: 0 } as ViewStyle,
 
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  } as ViewStyle,
-  cardEyebrow: {
-    fontSize: 11,
-    flex: 1,
-  } as any,
-  officialBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  } as ViewStyle,
-  officialTxt: {
-    fontSize: 10,
-  } as any,
   starBtn: {
     padding: 3,
   } as ViewStyle,
 
+  metaLine: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  } as TextStyle,
   cardTitle: {
     fontSize: 14,
     lineHeight: 19,
-    marginBottom: 8,
+    marginBottom: 4,
   } as any,
 
   // Card Metadata Bar
-  cardMetaBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  } as ViewStyle,
-  priPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4.5,
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  } as ViewStyle,
-  priDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  } as ViewStyle,
-  priText: {
-    fontSize: 10.5,
-  } as any,
-  catPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    borderWidth: 1,
-  } as ViewStyle,
-  catText: {
-    fontSize: 10.5,
-  } as any,
-  pinnedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3.5,
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  } as ViewStyle,
-  pinnedTxt: {
-    fontSize: 10,
-  } as any,
-  attachBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3.5,
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-  } as ViewStyle,
-  attachTxt: {
-    fontSize: 10,
-  } as any,
 
   // Empty State
   empty: {
