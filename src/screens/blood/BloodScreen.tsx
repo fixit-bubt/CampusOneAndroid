@@ -55,27 +55,40 @@ function urgencyTone(C: any, urgency: string): { fg: string; bg: string } {
   }
 }
 
-function GroupBadge({ group, size = 46 }: { group: string; size?: number }) {
+function GroupBadge({ group, size = 42, isDark = true }: { group: string; size?: number; isDark?: boolean }) {
   return (
-    <View style={[styles.groupBadge, { width: size, height: size, borderRadius: size * 0.28 }]}>
-      <Text style={[styles.groupText, { fontSize: size * 0.34, color: BLOOD_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
+    <View
+      style={[
+        styles.groupBadge,
+        {
+          width: size,
+          height: size,
+          borderRadius: 12,
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f4f4f5',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : '#e4e4e7',
+        },
+      ]}
+    >
+      <Text style={[styles.groupText, { fontSize: size * 0.38, color: BLOOD_COLOR, fontFamily: FontFamily.jakartaExtraBold }]}>
         {group}
       </Text>
     </View>
   );
 }
 
-function RequestBloodBadge({ group, isPlatelet, isDark }: { group: string; isPlatelet?: boolean; isDark?: boolean }) {
-  const tintColor = isPlatelet ? '#eab308' : SectorColors.blood;
-  const bg = isPlatelet
-    ? (isDark ? 'rgba(234, 179, 8, 0.14)' : 'rgba(234, 179, 8, 0.08)')
-    : (isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)');
-  const border = isPlatelet
-    ? (isDark ? 'rgba(234, 179, 8, 0.35)' : 'rgba(234, 179, 8, 0.22)')
-    : (isDark ? 'rgba(199, 52, 74, 0.32)' : 'rgba(199, 52, 74, 0.20)');
+function RequestBloodBadge({ group, isPlatelet, isDark = true }: { group: string; isPlatelet?: boolean; isDark?: boolean }) {
+  const tintColor = isPlatelet ? '#f59e0b' : SectorColors.blood;
 
   return (
-    <View style={[styles.reqBloodBadge, { backgroundColor: bg, borderColor: border }]}>
+    <View
+      style={[
+        styles.reqBloodBadge,
+        {
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f4f4f5',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : '#e4e4e7',
+        },
+      ]}
+    >
       <Text
         style={[
           styles.reqBloodGroupTxt,
@@ -87,19 +100,14 @@ function RequestBloodBadge({ group, isPlatelet, isDark }: { group: string; isPla
       >
         {group}
       </Text>
-      <Text
-        numberOfLines={1}
-        ellipsizeMode="clip"
-        style={[
-          styles.reqBloodTypeLabel,
-          {
-            color: tintColor,
-            fontFamily: FontFamily.jakartaBold,
-          },
-        ]}
-      >
-        {isPlatelet ? 'PLATELETS' : 'BLOOD'}
-      </Text>
+      {isPlatelet ? (
+        <Text
+          numberOfLines={1}
+          style={[styles.reqBloodTypeLabel, { color: '#f59e0b', fontFamily: FontFamily.jakartaBold }]}
+        >
+          PLT
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -825,12 +833,21 @@ export function BloodScreen({ route, navigation }: any) {
                           >
                             {meta.patientName}
                           </Text>
-                          <StatusBadge
-                            variant="urgency"
-                            value={r.urgency}
-                            size="sm"
-                            pulse={r.urgency === 'Urgent'}
-                          />
+                          {r.urgency === 'Urgent' ? (
+                            <View style={[styles.urgencyBadge, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(220, 38, 38, 0.08)', borderColor: isDark ? 'rgba(239, 68, 68, 0.28)' : 'rgba(220, 38, 38, 0.18)' }]}>
+                              <Feather name="alert-circle" size={11} color={C.danger} />
+                              <Text style={[styles.urgencyTxt, { color: C.danger, fontFamily: FontFamily.jakartaBold }]}>
+                                Urgent
+                              </Text>
+                            </View>
+                          ) : r.urgency === 'Today' ? (
+                            <View style={[styles.neutralTimeBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
+                              <Feather name="clock" size={11} color={C.textMuted} />
+                              <Text style={[styles.neutralTimeTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                                Today
+                              </Text>
+                            </View>
+                          ) : null}
                         </View>
 
                         <View style={styles.metaSubRow}>
@@ -848,19 +865,19 @@ export function BloodScreen({ route, navigation }: any) {
                       </View>
                     </View>
 
-                    {/* Interactive Hospital & Area Line (Opens In-App Map + Google Maps) */}
+                    {/* Interactive Hospital & Area Line (Clean unboxed typography) */}
                     <TouchableOpacity
-                      style={[styles.hospitalTouchRow, { backgroundColor: C.surface2, borderColor: C.border }]}
+                      style={styles.hospitalRowClean}
                       onPress={() => {
                         const targetCoords = (r.latitude != null && r.longitude != null && Number.isFinite(r.latitude) && Number.isFinite(r.longitude))
                           ? { latitude: r.latitude, longitude: r.longitude }
                           : resolveHospitalLocation(r.hospital, r.area).coords;
                         setHospitalMapTarget({ hospital: r.hospital, area: r.area, coords: targetCoords });
                       }}
-                      activeOpacity={0.75}
+                      activeOpacity={0.7}
                     >
                       <View style={styles.hospitalRowLeft}>
-                        <AnimatedIcon family="feather" name="map-pin" size={13} color={SectorColors.blood} />
+                        <Feather name="map-pin" size={13} color={C.textMuted} />
                         <Text style={styles.hospitalTxt} numberOfLines={1}>
                           <Text style={{ fontFamily: FontFamily.jakartaBold, color: C.text }}>{r.hospital}</Text>
                           {r.area ? (
@@ -868,48 +885,38 @@ export function BloodScreen({ route, navigation }: any) {
                           ) : null}
                         </Text>
                       </View>
-                      <View style={[styles.mapHintBadge, { backgroundColor: isDark ? 'rgba(199, 52, 74, 0.16)' : 'rgba(199, 52, 74, 0.08)', borderColor: isDark ? 'rgba(199, 52, 74, 0.32)' : 'rgba(199, 52, 74, 0.20)' }]}>
-                        <Text style={[styles.mapHintTxt, { color: SectorColors.blood, fontFamily: FontFamily.jakartaBold }]}>
+                      <View style={[styles.mapLinkBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : C.surface2 }]}>
+                        <Text style={[styles.mapLinkTxt, { color: C.text2, fontFamily: FontFamily.jakartaBold }]}>
                           Map
                         </Text>
-                        <AnimatedIcon family="feather" name="arrow-up-right" size={11} color={SectorColors.blood} />
+                        <Feather name="arrow-up-right" size={11} color={C.textMuted} />
                       </View>
                     </TouchableOpacity>
 
-                    {/* Clinical Details Row: Bags Needed Badge + Medical Case Reason Badge */}
+                    {/* Clinical Details Row: Clean Neutral Zinc Chips */}
                     <View style={styles.clinicalBadgesRow}>
-                      <StatusBadge
-                        variant="bags"
-                        count={meta.unitCount}
-                        size="sm"
-                      />
+                      <View style={[styles.neutralPill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2, borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border }]}>
+                        <Feather name="droplet" size={11} color={C.textMuted} />
+                        <Text style={[styles.neutralPillTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
+                          {meta.unitCount} {meta.unitCount === 1 ? 'Bag Needed' : 'Bags Needed'}
+                        </Text>
+                      </View>
 
                       {meta.medicalReason ? (
-                        <StatusBadge
-                          variant="medical"
-                          value={meta.medicalReason}
-                          size="sm"
-                        />
+                        <View style={[styles.neutralPill, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : C.surface2, borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : C.border }]}>
+                          <Feather name="activity" size={11} color={C.textMuted} />
+                          <Text style={[styles.neutralPillTxt, { color: C.text2, fontFamily: FontFamily.jakartaMedium }]}>
+                            {meta.medicalReason}
+                          </Text>
+                        </View>
                       ) : null}
                     </View>
 
-                    {/* Pledge Progress / Status Strip (De-bloated: Neutral by default, soft emerald when all covered) */}
-                    <View
-                      style={[
-                        styles.pledgeStrip,
-                        {
-                          backgroundColor: pledgeCount > 0 && unitsLeft === 0
-                            ? (isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.08)')
-                            : C.surface2,
-                          borderColor: pledgeCount > 0 && unitsLeft === 0
-                            ? (isDark ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.20)')
-                            : C.border,
-                        },
-                      ]}
-                    >
+                    {/* Pledge Progress / Status Line (Clean, unboxed) */}
+                    <View style={styles.pledgeStatusRow}>
                       <Feather
                         name={pledgeCount > 0 ? (unitsLeft === 0 ? 'check-circle' : 'heart') : 'users'}
-                        size={13}
+                        size={12}
                         color={
                           pledgeCount > 0
                             ? (unitsLeft === 0 ? C.success : SectorColors.blood)
@@ -918,7 +925,7 @@ export function BloodScreen({ route, navigation }: any) {
                       />
                       <Text
                         style={[
-                          styles.pledgeStripTxt,
+                          styles.pledgeStatusTxt,
                           {
                             color: pledgeCount > 0
                               ? (unitsLeft === 0 ? C.success : C.text)
@@ -929,15 +936,15 @@ export function BloodScreen({ route, navigation }: any) {
                       >
                         {pledgeCount > 0
                           ? unitsLeft === 0
-                            ? `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} · All ${meta.unitCount} bags covered!`
-                            : `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} (${pledgeCount}/${meta.unitCount} bags · ${unitsLeft} needed)`
+                            ? `${pledgeCount} ${pledgeCount === 1 ? 'donor offered help' : 'donors offered help'} · All covered`
+                            : `${pledgeCount} offered help (${pledgeCount}/${meta.unitCount} bags · ${unitsLeft} needed)`
                           : meta.unitCount > 1
                             ? `${meta.unitCount} donors needed`
                             : '1 donor needed · Be the first to help'}
                       </Text>
                     </View>
 
-                    {/* High-Visibility Action Button (Universal 58dp Standard) */}
+                    {/* High-Visibility Action Button (Ergonomic 44dp Standard) */}
                     {isOwn ? (
                       <TouchableOpacity
                         style={[
@@ -951,7 +958,7 @@ export function BloodScreen({ route, navigation }: any) {
                         onPress={() => navigation.navigate('BloodRequestDetail', { requestId: r.id })}
                         activeOpacity={0.8}
                       >
-                        <AnimatedIcon family="feather" name="users" size={16} color={C.text} />
+                        <AnimatedIcon family="feather" name="users" size={15} color={C.text} />
                         <Text style={[styles.cardActionBtnTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                           {t.blood2.manageResponses} {pledgeCount > 0 ? `(${pledgeCount})` : ''}
                         </Text>
@@ -963,7 +970,7 @@ export function BloodScreen({ route, navigation }: any) {
                         activeOpacity={0.85}
                         disabled={busyId === r.id}
                       >
-                        <AnimatedIcon family="feather" name="phone-call" size={16} color="#fff" />
+                        <AnimatedIcon family="feather" name="phone-call" size={15} color="#fff" />
                         <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                           {busyId === r.id ? 'Connecting…' : 'Call / WhatsApp Requester'}
                         </Text>
@@ -974,7 +981,7 @@ export function BloodScreen({ route, navigation }: any) {
                         onPress={() => handleHelpPress(r)}
                         activeOpacity={0.85}
                       >
-                        <AnimatedIcon family="feather" name="droplet" size={16} color="#fff" />
+                        <AnimatedIcon family="feather" name="droplet" size={15} color="#fff" />
                         <Text style={[styles.cardActionBtnTxt, { color: '#fff', fontFamily: FontFamily.jakartaBold }]}>
                           {unitsLeft > 0 && meta.unitCount > 1 && pledgeCount > 0
                             ? `I Can Help (${unitsLeft} More Needed)`
@@ -1192,7 +1199,7 @@ export function BloodScreen({ route, navigation }: any) {
                           </Text>
                         </View>
                       </View>
-                      <GroupBadge group={d.blood_group} size={36} />
+                      <GroupBadge group={d.blood_group} size={36} isDark={isDark} />
                       {isMe ? (
                         eligible && d.last_donated !== localToday() ? (
                           <TouchableOpacity
@@ -1317,8 +1324,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    maxWidth: 165,
-    minWidth: 125,
+    maxWidth: 175,
+    minWidth: 130,
   } as ViewStyle,
   areaPickerBtn: {
     flexDirection: 'row',
@@ -1339,8 +1346,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   } as ViewStyle,
   areaMicroLabel: {
-    fontSize: 9,
-    letterSpacing: 0.6,
+    fontSize: 8.5,
+    letterSpacing: 0.3,
   } as TextStyle,
   areaPickerTriggerTxt: {
     fontSize: 12,
@@ -1373,7 +1380,7 @@ const styles = StyleSheet.create({
   eligTxt: { fontSize: 10 } as any,
   scroll: { paddingTop: 4, paddingBottom: 20 } as ViewStyle,
   list: { gap: 11 } as ViewStyle,
-  groupBadge: { backgroundColor: BLOOD_BG, alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
+  groupBadge: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 } as ViewStyle,
   groupText: {} as any,
   reqCard: {
     padding: 14,
@@ -1394,23 +1401,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
   } as TextStyle,
   reqBloodBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    paddingHorizontal: 2,
   } as ViewStyle,
   reqBloodGroupTxt: {
-    fontSize: 17,
-    lineHeight: 20,
+    fontSize: 18,
+    lineHeight: 22,
   } as TextStyle,
   reqBloodTypeLabel: {
-    fontSize: 7.2,
-    letterSpacing: 0.2,
-    marginTop: 1,
+    fontSize: 7.5,
+    letterSpacing: 0.3,
+    marginTop: 0.5,
   } as TextStyle,
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1431,12 +1437,43 @@ const styles = StyleSheet.create({
     fontSize: 15.5,
     flex: 1,
   } as TextStyle,
+  urgencyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+  } as ViewStyle,
+  urgencyTxt: {
+    fontSize: 11,
+  } as TextStyle,
+  neutralTimeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  } as ViewStyle,
+  neutralTimeTxt: {
+    fontSize: 11,
+  } as TextStyle,
   metaSubRow: {
     marginTop: 2,
   } as ViewStyle,
   metaSubTxt: {
     fontSize: 11.5,
   } as TextStyle,
+  hospitalRowClean: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 7,
+    marginTop: 6,
+    gap: 8,
+  } as ViewStyle,
   hospitalTouchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1464,6 +1501,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
   } as TextStyle,
+  mapLinkBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  } as ViewStyle,
+  mapLinkTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
   mapHintBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1483,6 +1531,28 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 8,
   } as ViewStyle,
+  neutralPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4.5,
+    borderRadius: 7,
+    borderWidth: 1,
+  } as ViewStyle,
+  neutralPillTxt: {
+    fontSize: 11.5,
+  } as TextStyle,
+  pledgeStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 1,
+  } as ViewStyle,
+  pledgeStatusTxt: {
+    fontSize: 12,
+  } as TextStyle,
   pledgeStrip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1501,13 +1571,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 9,
-    height: 58,
-    borderRadius: 16,
-    marginTop: 12,
+    gap: 8,
+    height: 44,
+    borderRadius: 12,
+    marginTop: 10,
   } as ViewStyle,
   cardActionBtnTxt: {
-    fontSize: 14.5,
+    fontSize: 14,
   } as TextStyle,
   compactGridCard: {
     padding: 10,

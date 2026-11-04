@@ -4291,3 +4291,26 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 
 
 
+
+---
+
+### 114. Admin Explore Command Center & Natural Domain Organization (`ExploreScreen.tsx`) (/zero-slop, /performance-optimization, /code-review-and-quality)
+- **Scattered Layout & Redundancy Eradication:**
+  - Resolved structural fragmentation where 8 mixed admin features (reports, users, create staff/admin, faculty, study hub moderation, clubs, announcements, banners) were piled into a generic "Administration" collapsible section at the top, while other administrative tools (Events, Marketplace) remained scattered across domain sections.
+  - Eliminated duplicate entries where Study Hub was listed twice for administrators (once in "Administration" as "Study Hub Moderation" and again in "Academics" as "Study Hub").
+  - Fixed accordion toggle defect where `openSection === 'administration' || openSection === null` prevented administrators from collapsing the Administration section. Initialized `openSection` state to `isAdmin ? 'administration' : null` for silky smooth single-accordion toggling.
+- **Natural Domain-Based Information Architecture:**
+  - Restructured `ExploreScreen.tsx` so all university features live strictly within their natural domain categories, automatically routing administrators to their respective management command centers:
+    1. **Community:** Clubs & Communities (`ManageClubs`), Student Marketplace (`ManageMarket`), Blood Donation (`Blood`).
+    2. **Academics:** Study Hub (`ManageStudyHub`), Faculty Directory (`ManageFaculty`), Academic Calendar (`ManageAcademicCalendar`).
+    3. **Campus Life:** Events (`ManageEvents`), Announcements & Circulars (`ManageAnnouncements`), Jobs & Internships (`JobsBrowse`), Prayer Times (`Prayer`).
+    4. **Campus Services:** Issue Reports (`AllReports`), Bus Schedule (`Bus`), Medical Center (`Medical`).
+    5. **System Administration:** Streamlined from 8 scattered bars to the 3 true core platform administration tools: User Directory (`ManageUsers`), Create Staff / Admin Account (`CreateStaffAdmin`), Dashboard Banner Slides (`ManageBanner`).
+- **Clean Routing & Zero Bloat:**
+  - `renderSectorRow` updated to route `reports` -> `AllReports`, `faculty` -> `ManageFaculty`, `clubs` -> `ManageClubs`, `study` -> `ManageStudyHub`, `market` -> `ManageMarket`, `events` -> `ManageEvents`, `announce` -> `ManageAnnouncements`, and `calendar` -> `ManageAcademicCalendar`.
+  - Dynamic `title` resolution: Displays localized "All Reports" (`t.dash.manageAllReports`) for administrators on the reports row, while preserving student-facing labels for standard accounts.
+  - Purged 108 lines of hardcoded, duplicated JSX in `ExploreScreen.tsx`.
+- **Verification Evidence:**
+  - Strict TypeScript Compilation: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Native Local Release Build: Compiled via Gradle (`assembleRelease`) with release keystore (`BUILD SUCCESSFUL in 43s`).
+  - Physical Device Deployment: Installed and verified on physical USB Android phone (`8734b5da`).

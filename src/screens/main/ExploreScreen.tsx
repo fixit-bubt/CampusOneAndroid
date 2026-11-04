@@ -69,10 +69,10 @@ const STAFF_SECTORS: SectorKey[] = STAFF_EXPLORE_SECTORS;
 // list - mirrors the web app's sidebar grouping (Academics / Campus Life /
 // Services / Community). A group that ends up with zero visible items for
 // the current role (e.g. Academics for staff) simply isn't rendered.
-const GROUP_ACADEMICS: SectorKey[] = ['study', 'routines', 'calendar', 'faculty', 'coverpage'];
-const GROUP_CAMPUS_LIFE: SectorKey[] = ['clubs', 'events', 'announce', 'prayer', 'jobs'];
+const GROUP_ACADEMICS: SectorKey[] = ['study', 'faculty', 'calendar', 'routines', 'coverpage'];
+const GROUP_CAMPUS_LIFE: SectorKey[] = ['events', 'announce', 'jobs', 'prayer'];
 const GROUP_SERVICES: SectorKey[] = ['reports', 'medical', 'bus', 'lostfound'];
-const GROUP_COMMUNITY: SectorKey[] = ['market', 'ride', 'blood', 'directory'];
+const GROUP_COMMUNITY: SectorKey[] = ['clubs', 'market', 'ride', 'blood', 'directory'];
 
 export function ExploreScreen({ navigation }: any) {
   const { C, isDark } = useTheme();
@@ -87,8 +87,9 @@ export function ExploreScreen({ navigation }: any) {
   // Admin excluded sectors: Student Directory (security-definer gated to students),
   // Lost & Found (student claiming with proof), Cover Page generator (student assignment covers),
   // Class Routines (student class lecture schedules), and Ride Share (student peer-to-peer carpool).
-  // Reports, Faculty, Clubs, and Announcements are elevated to the dedicated Administration section below.
-  const ADMIN_EXCLUDED: SectorKey[] = ['directory', 'lostfound', 'coverpage', 'routines', 'ride', 'reports', 'faculty', 'clubs', 'announce'];
+  // Reports, Faculty, Study Hub, Clubs, Announcements, Events, Marketplace, and Calendar
+  // are organized directly within their natural domain categories with role-aware admin routing.
+  const ADMIN_EXCLUDED: SectorKey[] = ['directory', 'lostfound', 'coverpage', 'routines', 'ride'];
 
   const sectors = isStaff
     ? SECTORS.filter((s) => STAFF_SECTORS.includes(s.id))
@@ -102,7 +103,10 @@ export function ExploreScreen({ navigation }: any) {
   const pick = (ids: SectorKey[]) => ids.map((id) => sectors.find((s) => s.id === id)).filter((s): s is typeof sectors[number] => !!s);
 
   function renderSectorRow(s: { id: SectorKey; en: string; dEn: string }, accentColor: string, index: number = 0, flatBorder: boolean = false) {
-    const title = t.sectorTitles?.[s.id] ?? s.en;
+    const title =
+      isAdmin && s.id === 'reports'
+        ? (t.dash.manageAllReports ?? 'All Reports')
+        : (t.sectorTitles?.[s.id] ?? s.en);
     const targetRoute =
       s.id === 'reports' && isAdmin ? 'AllReports' :
       s.id === 'faculty' && isAdmin ? 'ManageFaculty' :
@@ -110,6 +114,8 @@ export function ExploreScreen({ navigation }: any) {
       s.id === 'study' && isAdmin ? 'ManageStudyHub' :
       s.id === 'market' && isAdmin ? 'ManageMarket' :
       s.id === 'events' && isAdmin ? 'ManageEvents' :
+      s.id === 'announce' && isAdmin ? 'ManageAnnouncements' :
+      s.id === 'calendar' && isAdmin ? 'ManageAcademicCalendar' :
       SECTOR_ROUTE[s.id];
     return (
       <TouchableOpacity
@@ -143,7 +149,7 @@ export function ExploreScreen({ navigation }: any) {
   const communitySectors = pick(GROUP_COMMUNITY);
   const showAcademics = !isStaff;
   const academicsCount = academicsSectors.length + (isStudent ? 3 : 0);
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>(() => (isAdmin ? 'administration' : null));
   const toggleSection = (id: string) => setOpenSection((prev) => (prev === id ? null : id));
 
   // Staff Explore: flat, direct 72dp bars for university facilities (no dropdown accordions).
@@ -243,32 +249,11 @@ export function ExploreScreen({ navigation }: any) {
             title={t.dash.manage ?? 'ADMINISTRATION'}
             icon="shield"
             accentColor={C.brand}
-            count={8}
+            count={3}
             countLabel={t.exploreGroups.toolsLabel}
-            open={openSection === 'administration' || openSection === null}
+            open={openSection === 'administration'}
             onToggle={() => toggleSection('administration')}
           >
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: C.brand,
-                },
-              ]}
-              onPress={() => navigation.navigate('AllReports')}
-              activeOpacity={0.7}
-            >
-              <SectorIcon sector="reports" size="md" dark={isDark} />
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageAllReports ?? 'All Reports'}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={[
                 styles.childBar,
@@ -306,90 +291,6 @@ export function ExploreScreen({ navigation }: any) {
               <View style={{ flex: 1, justifyContent: 'center' }}>
                 <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
                   Create Staff / Admin Account
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: C.brand,
-                },
-              ]}
-              onPress={() => navigation.navigate('ManageFaculty')}
-              activeOpacity={0.7}
-            >
-              <SectorIcon sector="faculty" size="md" dark={isDark} />
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageFaculty ?? 'Faculty Directory'}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: C.brand,
-                },
-              ]}
-              onPress={() => navigation.navigate('ManageStudyHub')}
-              activeOpacity={0.7}
-            >
-              <SectorIcon sector="study" size="md" dark={isDark} />
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageStudyHub ?? 'Study Hub Moderation'}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: C.brand,
-                },
-              ]}
-              onPress={() => navigation.navigate('ManageClubs')}
-              activeOpacity={0.7}
-            >
-              <SectorIcon sector="clubs" size="md" dark={isDark} />
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageClubs ?? 'Clubs & Communities'}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={18} color={C.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.childBar,
-                {
-                  backgroundColor: C.surface,
-                  borderColor: C.border,
-                  borderLeftColor: C.brand,
-                },
-              ]}
-              onPress={() => navigation.navigate('ManageAnnouncements')}
-              activeOpacity={0.7}
-            >
-              <SectorIcon sector="announce" size="md" dark={isDark} />
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Text style={[styles.childTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                  {t.dash.manageAnnouncements ?? 'Announcements & Circulars'}
                 </Text>
               </View>
               <Feather name="chevron-right" size={18} color={C.textMuted} />
