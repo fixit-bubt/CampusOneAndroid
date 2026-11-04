@@ -82,7 +82,7 @@ export function RootNavigator() {
       }
     };
     return addNotificationTapHandler(async (data) => {
-      const target = await resolveNotifTarget(data.reference_type, data.reference_id)
+      const target = await resolveNotifTarget(data.reference_type, data.reference_id, data.sector)
         .catch(() => null);
       if (target) go(target.screen, target.params);
       else go('Notifications', undefined);

@@ -117,7 +117,7 @@ export function NotificationsScreen({ navigation }: any) {
   const t = useT();
   const toast = useToast();
   const { reload: reloadMessages } = useMessages();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const cacheKey = CacheKeys.NOTIFICATIONS(user?.id ?? 'anon');
   const [notifs, setNotifs]     = useState<Notification[]>(
     () => getCacheSync<Notification[]>(cacheKey) ?? []
@@ -226,6 +226,7 @@ export function NotificationsScreen({ navigation }: any) {
   // button that would fail - the Directory screen stays the fallback path.
   function connUiFor(n: Notification): ConnUi {
     if (n.reference_type !== 'connection_request') return 'none';
+    if (profile?.role === 'admin' || profile?.role === 'staff') return 'none';
     const local = handled[n.id];
     if (local) return local;
     const st = n.reference_id ? connStates[n.reference_id] : undefined;
@@ -252,7 +253,7 @@ export function NotificationsScreen({ navigation }: any) {
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
       {/* SubBar with mark-all + settings buttons */}
       <SubBar
-        title="Alerts"
+        title={t.mainx?.notificationsTitle ?? 'Notifications'}
         onBack={() => navigation.goBack()}
         right={
           <View style={styles.subRight}>
@@ -338,8 +339,6 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,

@@ -12,6 +12,7 @@ import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { resolveNotifTarget } from '../../utils/notifTarget';
 import { useToast } from '../../components/ui/Toast';
+import { getCache, setCache, CacheKeys } from '../../services/cacheService';
 
 const SECTOR_LABELS: Record<string, string> = {
   reports: 'Reports', lostfound: 'Lost & Found', clubs: 'Clubs', events: 'Events',
@@ -36,11 +37,18 @@ export function NotifDetailScreen({ route, navigation }: any) {
   const toast = useToast();
   const n = route.params?.notification;
   if (!n) return null;
-  const sectorLabel = SECTOR_LABELS[n.sector] ?? n.sector;
+  const sectorLabel = t.sectorTitles?.[n.sector] ?? (t.notif?.sectorLabel ? t.notif.sectorLabel(n.sector) : (SECTOR_LABELS[n.sector] ?? n.sector));
 
   async function markUnread() {
     const { error } = await supabase.from('notifications').update({ read: false }).eq('id', n.id);
     if (error) { toast({ type: 'error', title: t.common.error, message: error.message }); return; }
+    if (user?.id) {
+      const cacheKey = CacheKeys.NOTIFICATIONS(user.id);
+      const cached = await getCache<any[]>(cacheKey);
+      if (cached) {
+        setCache(cacheKey, cached.map(x => x.id === n.id ? { ...x, read: false } : x));
+      }
+    }
     navigation.goBack();
   }
 
@@ -52,8 +60,16 @@ export function NotifDetailScreen({ route, navigation }: any) {
   }
 
   async function openRelated() {
-    const target = await resolveNotifTarget(n.reference_type, n.reference_id);
-    if (target) navigation.navigate(target.screen as any, target.params as any);
+    const target = await resolveNotifTarget(n.reference_type, n.reference_id, n.sector);
+    if (target) {
+      navigation.navigate(target.screen as any, target.params as any);
+    } else {
+      toast({
+        type: 'info',
+        title: sectorLabel,
+        message: 'The referenced item is no longer available.',
+      });
+    }
   }
 
   return (

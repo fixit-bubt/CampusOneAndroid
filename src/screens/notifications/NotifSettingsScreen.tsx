@@ -42,7 +42,7 @@ const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
 ];
 
 const STAFF_NOTIF_SECTORS: SectorKey[] = ['reports', 'announce', 'blood', 'bus'];
-const ADMIN_NOTIF_SECTORS: SectorKey[] = ['reports', 'announce', 'events', 'clubs', 'jobs', 'blood', 'bus'];
+const ADMIN_NOTIF_SECTORS: SectorKey[] = ['reports', 'announce', 'events', 'clubs', 'jobs', 'study', 'market', 'blood', 'bus'];
 
 type SectorPref = { enabled: boolean; push: boolean; email: boolean; inapp: boolean };
 type ChanKey = 'push' | 'email' | 'inapp';
