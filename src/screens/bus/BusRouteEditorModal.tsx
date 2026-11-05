@@ -217,7 +217,7 @@ export function BusRouteEditorModal({
     toast({
       type: 'success',
       title: isBn ? 'স্টপ যোগ সম্পন্ন' : 'Stops Applied',
-      message: `${parsed.length} ${isBn ? 'টি স্টপ যোগ হয়েছে।' : 'stops updated.'}`,
+      message: `${parsed.length} ${isBn ? 'টি স্টপ যোগ হয়েছে।' : 'stops updated.'}`,
     });
   }, [bulkStopsInput, isBn, toast]);
 
@@ -237,8 +237,8 @@ export function BusRouteEditorModal({
       if (h < 0 || h > 23 || m < 0 || m > 59) {
         toast({
           type: 'error',
-          title: isBn ? 'ভুল সময়' : 'Invalid Time',
-          message: isBn ? 'সময় ০:০০ থেকে ২৩:৫৯ হতে হবে।' : 'Time must be between 00:00 and 23:59',
+          title: isBn ? 'ভুল সময়' : 'Invalid Time',
+          message: isBn ? 'সময় ০:০০ থেকে ২৩:৫৯ হতে হবে।' : 'Time must be between 00:00 and 23:59',
         });
         return;
       }
@@ -294,7 +294,7 @@ export function BusRouteEditorModal({
     if (!trimmedName) {
       toast({
         type: 'error',
-        title: isBn ? 'নাম প্রয়োজন' : 'Name Required',
+        title: isBn ? 'নাম প্রয়োজন' : 'Name Required',
         message: isBn ? 'অনুগ্রহ করে রুটের একটি নাম লিখুন।' : 'Please enter a name for the route.',
       });
       return;
@@ -373,8 +373,8 @@ export function BusRouteEditorModal({
 
       toast({
         type: 'success',
-        title: isBn ? 'সংরক্ষিত হয়েছে' : 'Route Saved',
-        message: `${trimmedName} ${isBn ? 'সফলভাবে সংরক্ষিত হয়েছে।' : 'schedule has been updated.'}`,
+        title: isBn ? 'সংরক্ষিত হয়েছে' : 'Route Saved',
+        message: `${trimmedName} ${isBn ? 'সফলভাবে সংরক্ষিত হয়েছে।' : 'schedule has been updated.'}`,
       });
 
       onSaveSuccess(savedRecord as BusRoute);
@@ -382,8 +382,8 @@ export function BusRouteEditorModal({
     } catch (err: any) {
       toast({
         type: 'error',
-        title: isBn ? 'ব্যর্থ হয়েছে' : 'Save Failed',
-        message: err.message || (isBn ? 'সংরক্ষণ করার সময় ত্রুটি হয়েছে।' : 'An error occurred while saving.'),
+        title: isBn ? 'ব্যর্থ হয়েছে' : 'Save Failed',
+        message: err.message || (isBn ? 'সংরক্ষণ করার সময় ত্রুটি হয়েছে।' : 'An error occurred while saving.'),
       });
     } finally {
       setSaving(false);
@@ -413,8 +413,8 @@ export function BusRouteEditorModal({
 
               toast({
                 type: 'success',
-                title: isBn ? 'মুছে ফেলা হয়েছে' : 'Route Deleted',
-                message: `${route.name} ${isBn ? 'মুছে ফেলা হয়েছে।' : 'has been removed.'}`,
+                title: isBn ? 'মুছে ফেলা হয়েছে' : 'Route Deleted',
+                message: `${route.name} ${isBn ? 'মুছে ফেলা হয়েছে।' : 'has been removed.'}`,
               });
 
               onDeleteSuccess?.(route.id);
@@ -515,7 +515,7 @@ export function BusRouteEditorModal({
               </View>
               <View style={[styles.statusPill, { borderColor: C.border }]}>
                 <Text style={[styles.statusPillTxt, { color: C.textMuted, fontFamily: FontFamily.jakartaBold }]}>
-                  {isActive ? (isBn ? 'সক্রিয়' : 'Active') : (isBn ? 'স্থগিত' : 'Paused')}
+                  {isActive ? (isBn ? 'সক্রিয়' : 'Active') : (isBn ? 'স্থগিত' : 'Paused')}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -1068,7 +1068,7 @@ export function BusRouteEditorModal({
                   ))}
                   {toDepartures.length === 0 && (
                     <Text style={[styles.emptyPrompt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
+                      {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
                     </Text>
                   )}
                 </View>
@@ -1136,7 +1136,7 @@ export function BusRouteEditorModal({
                   ))}
                   {fromDepartures.length === 0 && (
                     <Text style={[styles.emptyPrompt, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-                      {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
+                      {isBn ? 'কোনো সময় যোগ করা হয়নি' : 'No times configured'}
                     </Text>
                   )}
                 </View>

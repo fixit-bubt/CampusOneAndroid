@@ -28,7 +28,7 @@ export const ALL_COMMUTE_HUBS: CommuteAreaItem[] = [
   // 1. Mirpur & Campus Vicinity (14)
   { name: 'Mirpur 10', nameBn: 'মিরপুর-১০', zone: 'Mirpur & Campus', desc: 'Metro Rail station · Main Mirpur roundabout', icon: 'navigation' },
   { name: 'Mirpur 2 (BUBT)', nameBn: 'মিরপুর-২', zone: 'Mirpur & Campus', desc: 'Sony Square · Commerce College road · BUBT campus', icon: 'map-pin' },
-  { name: 'Sony Cinema', nameBn: 'সনি স্কয়ার', zone: 'Mirpur & Campus', desc: 'Sony Square roundabout & food corridor', icon: 'film' },
+  { name: 'Sony Cinema', nameBn: 'সনি স্কয়ার', zone: 'Mirpur & Campus', desc: 'Sony Square roundabout & food corridor', icon: 'film' },
   { name: 'Rainkhola', nameBn: 'রাইনখোলা', zone: 'Mirpur & Campus', desc: 'Zoo road entrance · Close to campus', icon: 'compass' },
   { name: 'Mirpur 1', nameBn: 'মিরপুর-১', zone: 'Mirpur & Campus', desc: 'Muktodhara roundabout · Darussalam link', icon: 'map-pin' },
   { name: 'Mirpur 6', nameBn: 'মিরপুর-৬', zone: 'Mirpur & Campus', desc: 'Mirpur 6 roundabout & stadium corridor', icon: 'map-pin' },
@@ -51,7 +51,7 @@ export const ALL_COMMUTE_HUBS: CommuteAreaItem[] = [
   { name: 'Mohakhali', nameBn: 'মহাখালী', zone: 'North Dhaka', desc: 'Flyover · Wireless Gate · Inter-district terminal', icon: 'navigation' },
   { name: 'Cantonment', nameBn: 'সেনানিবাস', zone: 'North Dhaka', desc: 'Sena Kunja · Adamjee / Jahangir Gate', icon: 'shield' },
   { name: 'Airport / Dakshinkhan', nameBn: 'বিমানবন্দর', zone: 'North Dhaka', desc: 'Hazrat Shahjalal Airport · Railway Station', icon: 'send' },
-  { name: 'Kuril Flyover', nameBn: 'কুড়িল বিশ্বরোড', zone: 'North Dhaka', desc: 'Kuril Chowrasta · Purbachal 300 Feet link', icon: 'compass' },
+  { name: 'Kuril Flyover', nameBn: 'কুড়িল বিশ্বরোড', zone: 'North Dhaka', desc: 'Kuril Chowrasta · Purbachal 300 Feet link', icon: 'compass' },
   { name: 'Nikunja', nameBn: 'নিকুঞ্জ', zone: 'North Dhaka', desc: 'Nikunja 1 & 2 · Citycell link', icon: 'home' },
 
   // 3. Central & West Dhaka (11)
@@ -81,18 +81,18 @@ export const ALL_COMMUTE_HUBS: CommuteAreaItem[] = [
   { name: 'Motijheel', nameBn: 'মতিঝিল', zone: 'South & Old', desc: 'Shapla Chattar · Commercial Hub · Metro', icon: 'briefcase' },
   { name: 'Paltan / Press Club', nameBn: 'পল্টন', zone: 'South & Old', desc: 'National Press Club · Baitul Mukarram', icon: 'map-pin' },
   { name: 'Kakrail', nameBn: 'কাকরাইল', zone: 'South & Old', desc: 'St. Marys Cathedral · Circuit House road', icon: 'map-pin' },
-  { name: 'Wari', nameBn: 'ওয়ারী', zone: 'South & Old', desc: 'Rankin Street · Baldha Garden', icon: 'home' },
+  { name: 'Wari', nameBn: 'ওয়ারী', zone: 'South & Old', desc: 'Rankin Street · Baldha Garden', icon: 'home' },
   { name: 'Sadarghat', nameBn: 'সদরঘাট', zone: 'South & Old', desc: 'Launch Terminal · Victoria Park / Jagannath Univ', icon: 'anchor' },
   { name: 'Lalbagh', nameBn: 'লালবাগ', zone: 'South & Old', desc: 'Lalbagh Fort · Azimpur bus stand', icon: 'shield' },
   { name: 'Chawkbazar', nameBn: 'চকবাজার', zone: 'South & Old', desc: 'Shahi Masjid · Old Dhaka central market', icon: 'map-pin' },
-  { name: 'Jatrabari', nameBn: 'যাত্রাবাড়ী', zone: 'South & Old', desc: 'Flyover entrance · Sayedabad highway terminal', icon: 'navigation' },
-  { name: 'Sayedabad', nameBn: 'সায়েদাবাদ', zone: 'South & Old', desc: 'Inter-district bus terminal · Janapath', icon: 'navigation' },
+  { name: 'Jatrabari', nameBn: 'যাত্রাবাড়ী', zone: 'South & Old', desc: 'Flyover entrance · Sayedabad highway terminal', icon: 'navigation' },
+  { name: 'Sayedabad', nameBn: 'সায়েদাবাদ', zone: 'South & Old', desc: 'Inter-district bus terminal · Janapath', icon: 'navigation' },
   { name: 'Shahbagh / DMCH', nameBn: 'শাহবাগ / ঢামেক', zone: 'South & Old', desc: 'Shahbagh intersection · Dhaka Medical College', icon: 'plus-circle' },
 
   // 6. Suburbs & Corridors (4)
-  { name: 'Savar / Ashulia', nameBn: 'সাভার / আশুলিয়া', zone: 'Suburbs', desc: 'Savar Bazar · Baipail · Highway corridor', icon: 'map' },
+  { name: 'Savar / Ashulia', nameBn: 'সাভার / আশুলিয়া', zone: 'Suburbs', desc: 'Savar Bazar · Baipail · Highway corridor', icon: 'map' },
   { name: 'Gabtoli', nameBn: 'গাবতলী', zone: 'Suburbs', desc: 'Gabtoli inter-district terminal · Mazar Road', icon: 'navigation' },
-  { name: 'Hemayetpur', nameBn: 'হেমায়েতপুর', zone: 'Suburbs', desc: 'Dhaka-Aricha highway · Tannery road link', icon: 'compass' },
+  { name: 'Hemayetpur', nameBn: 'হেমায়েতপুর', zone: 'Suburbs', desc: 'Dhaka-Aricha highway · Tannery road link', icon: 'compass' },
   { name: 'Gazipur Chowrasta', nameBn: 'গাজীপুর', zone: 'Suburbs', desc: 'Chowrasta intersection · Highway transit', icon: 'navigation' },
 ];
 

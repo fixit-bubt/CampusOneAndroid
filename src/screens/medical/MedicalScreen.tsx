@@ -387,7 +387,7 @@ export function MedicalScreen({ navigation }: any) {
       {
         id: 'doctors' as FilterType,
         label: t.medical2.filterDoctors,
-        sub: isBn ? 'জ্বর, ঠাণ্ডা ও সাধারণ চিকিৎসার এমবিবিএস ডাক্তার' : 'General physicians for consultations and primary care',
+        sub: isBn ? 'জ্বর, ঠান্ডা ও সাধারণ চিকিৎসার এমবিবিএস ডাক্তার' : 'General physicians for consultations and primary care',
         icon: 'stethoscope',
         iconFamily: 'mci' as IconFamily,
         color: MED_COLOR,
@@ -396,7 +396,7 @@ export function MedicalScreen({ navigation }: any) {
       {
         id: 'psychologist' as FilterType,
         label: t.medical2.filterCounseling,
-        sub: isBn ? 'মানসিক স্বাস্থ্য সহায়তা ও গোপনীয় কাউন্সেলিং' : 'Confidential psychological support and counseling',
+        sub: isBn ? 'মানসিক স্বাস্থ্য সহায়তা ও গোপনীয় কাউন্সেলিং' : 'Confidential psychological support and counseling',
         icon: 'heart',
         iconFamily: 'feather' as IconFamily,
         color: MED_COLOR,
@@ -405,7 +405,7 @@ export function MedicalScreen({ navigation }: any) {
       {
         id: 'today' as FilterType,
         label: t.medical2.filterOnDuty,
-        sub: isBn ? 'আজ যাদের নির্ধারিত ডিউটি ও পরামর্শের সময় রয়েছে' : 'Staff members with active consultation hours today',
+        sub: isBn ? 'আজ যাদের নির্ধারিত ডিউটি ও পরামর্শের সময় রয়েছে' : 'Staff members with active consultation hours today',
         icon: 'clock',
         iconFamily: 'feather' as IconFamily,
         color: MED_COLOR,
@@ -613,7 +613,7 @@ export function MedicalScreen({ navigation }: any) {
                     { color: C.textMuted, fontFamily: FontFamily.jakartaBold },
                   ]}
                 >
-                  {isBn ? 'সাপ্তাহিক সময়সূচি' : 'CLINIC HOURS'}
+                  {isBn ? 'সাপ্তাহিক সময়সূচি' : 'CLINIC HOURS'}
                 </Text>
                 <Text
                   style={[
@@ -1313,7 +1313,7 @@ export function MedicalScreen({ navigation }: any) {
                   ]}
                   numberOfLines={1}
                 >
-                  {isBn ? 'রোগীর জন্য জরুরি রক্ত প্রয়োজন?' : 'Need Emergency Blood for Patient?'}
+                  {isBn ? 'রোগীর জন্য জরুরি রক্ত প্রয়োজন?' : 'Need Emergency Blood for Patient?'}
                 </Text>
                 <Text
                   style={[

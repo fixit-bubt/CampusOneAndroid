@@ -45,8 +45,8 @@ const MEDICAL_REASONS: MedicalReasonOption[] = [
   { id: 'Emergency Surgery',      label: 'Emergency Surgery',      labelBn: 'জরুরি সার্জারি',     icon: 'activity',       color: '#c7344a' },
   { id: 'Dengue / Low Platelets', label: 'Dengue / Low Platelets', labelBn: 'ডেঙ্গু / প্লাটিলেট', icon: 'zap',            color: '#eab308' },
   { id: 'Road Accident / Trauma',  label: 'Road Accident / Trauma',  labelBn: 'দুর্ঘটনা / ট্রমা',    icon: 'alert-triangle', color: '#f87171' },
-  { id: 'Childbirth / C-Section', label: 'Childbirth / C-Section', labelBn: 'প্রসব / সিজারিয়ান',  icon: 'heart',          color: '#ec4899' },
-  { id: 'Thalassemia',           label: 'Thalassemia Regular',    labelBn: 'থ্যালাসেমিয়া রক্তদান', icon: 'droplet',        color: '#c7344a' },
+  { id: 'Childbirth / C-Section', label: 'Childbirth / C-Section', labelBn: 'প্রসব / সিজারিয়ান',  icon: 'heart',          color: '#ec4899' },
+  { id: 'Thalassemia',           label: 'Thalassemia Regular',    labelBn: 'থ্যালাসেমিয়া রক্তদান', icon: 'droplet',        color: '#c7344a' },
   { id: 'ICU Critical Care',     label: 'ICU Critical Care',      labelBn: 'আইসিইউ ক্রিটিক্যাল',   icon: 'shield',         color: '#8b5cf6' },
   { id: 'Routine / Other Case',  label: 'Routine / Other Case',   labelBn: 'অন্যান্য চিকিৎসা',    icon: 'plus-circle',    color: '#3b82f6' },
 ];

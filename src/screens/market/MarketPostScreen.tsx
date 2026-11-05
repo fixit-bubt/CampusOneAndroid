@@ -57,13 +57,13 @@ const CATEGORIES: CategoryOption[] = [
 ];
 
 export const CAMPUS_SPECIFIC_SPOTS = [
-  { name: 'BUBT Building 1 Cafeteria', nameBn: 'বিল্ডিং ১ ক্যাফেটেরিয়া', desc: 'Ground floor canteen & hangout area', icon: 'coffee' as const },
+  { name: 'BUBT Building 1 Cafeteria', nameBn: 'বিল্ডিং ১ ক্যাফেটেরিয়া', desc: 'Ground floor canteen & hangout area', icon: 'coffee' as const },
   { name: 'BUBT Building 2 Main Lobby', nameBn: 'বিল্ডিং ২ মেইন লবি', desc: 'Central atrium near elevator & reception', icon: 'home' as const },
   { name: 'BUBT Central Library', nameBn: 'সেন্ট্রাল লাইব্রেরি', desc: 'Building 2 · 4th Floor entrance corridor', icon: 'book' as const },
   { name: 'BUBT Campus 1 Front Gate', nameBn: 'ক্যাম্পাস ১ মেইন গেট', desc: 'Main entrance gate on Commerce College road', icon: 'map-pin' as const },
   { name: 'BUBT Playground / Field', nameBn: 'প্লেগ্রাউন্ড', desc: 'Open grounds between buildings', icon: 'compass' as const },
   { name: 'BUBT Building 3 Lobby', nameBn: 'বিল্ডিং ৩ লবি', desc: 'Academic building 3 ground floor', icon: 'map-pin' as const },
-  { name: 'Mirpur-2 Sony Square', nameBn: 'সনি স্কয়ার', desc: 'Sony Square food court & pedestrian zone', icon: 'film' as const },
+  { name: 'Mirpur-2 Sony Square', nameBn: 'সনি স্কয়ার', desc: 'Sony Square food court & pedestrian zone', icon: 'film' as const },
   { name: 'Mirpur-10 Metro Station', nameBn: 'মিরপুর-১০ মেট্রো', desc: 'MRT Line 6 station entrance / roundabout', icon: 'navigation' as const },
   { name: 'Mirpur-1 Muktodhara', nameBn: 'মিরপুর-১', desc: 'Muktodhara roundabout & Darussalam link', icon: 'map-pin' as const },
   { name: 'Rupnagar R/A Gate', nameBn: 'রূপনগর আবাসিক', desc: 'Rupnagar residential gate & Commerce College link', icon: 'home' as const },

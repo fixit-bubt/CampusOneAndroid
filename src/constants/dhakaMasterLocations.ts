@@ -37,7 +37,7 @@ export const DHAKA_ZONE_METAS = [
   {
     id: 'shahbagh',
     name: 'Shahbagh & Central',
-    nameBn: 'শাহবাগ ও কেন্দ্রীয় ঢাকা',
+    nameBn: 'শাহবাগ ও কেন্দ্রীয় ঢাকা',
     subtitle: 'Agargaon, Farmgate, Tejgaon, Dhaka University, New Market',
   },
   {
@@ -259,7 +259,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "camp_sony_square",
     "name": "Sony Square (Star Cineplex)",
-    "nameBn": "সনি স্কয়ার (স্টার সিনেপ্লেক্স)",
+    "nameBn": "সনি স্কয়ার (স্টার সিনেপ্লেক্স)",
     "category": "landmark",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -274,14 +274,14 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "sony cinema",
       "cineplex",
       "mirpur 2",
-      "সনি স্কয়ার",
+      "সনি স্কয়ার",
       "সনি সিনেমা"
     ]
   },
   {
     "id": "camp_mirpur_stadium",
     "name": "Sher-e-Bangla National Cricket Stadium",
-    "nameBn": "মিরপুর জাতীয় ক্রিকেট স্টেডিয়াম",
+    "nameBn": "মিরপুর জাতীয় ক্রিকেট স্টেডিয়াম",
     "category": "landmark",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -295,13 +295,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "mirpur stadium",
       "cricket stadium",
       "sher-e-bangla stadium",
-      "মিরপুর স্টেডিয়াম"
+      "মিরপুর স্টেডিয়াম"
     ]
   },
   {
     "id": "camp_national_zoo",
     "name": "Bangladesh National Zoo Gate",
-    "nameBn": "জাতীয় চিড়িয়াখানা গেট",
+    "nameBn": "জাতীয় চিড়িয়াখানা গেট",
     "category": "landmark",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -315,13 +315,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "zoo",
       "national zoo",
       "mirpur 1",
-      "চিড়িয়াখানা"
+      "চিড়িয়াখানা"
     ]
   },
   {
     "id": "camp_botanical_garden",
     "name": "National Botanical Garden Gate",
-    "nameBn": "জাতীয় উদ্ভিদ উদ্যান গেট",
+    "nameBn": "জাতীয় উদ্ভিদ উদ্যান গেট",
     "category": "landmark",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -341,7 +341,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "camp_rainkhola",
     "name": "Rainkhola Mor",
-    "nameBn": "রাইনখোলা মোড়",
+    "nameBn": "রাইনখোলা মোড়",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -361,7 +361,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "camp_shialbari",
     "name": "Shialbari Mor (Rupnagar Link)",
-    "nameBn": "শিয়ালবাড়ি মোড়",
+    "nameBn": "শিয়ালবাড়ি মোড়",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -374,7 +374,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "shialbari",
       "rupnagar",
-      "শিয়ালবাড়ি"
+      "শিয়ালবাড়ি"
     ]
   },
   {
@@ -418,7 +418,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "camp_kalshi_flyover",
     "name": "Kalshi Flyover Junction",
-    "nameBn": "কালশী ফ্লাইওভার মোড়",
+    "nameBn": "কালশী ফ্লাইওভার মোড়",
     "category": "transit",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -480,7 +480,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "camp_mazar_road",
     "name": "Mazar Road Intersection (Mirpur 1)",
-    "nameBn": "মাজার রোড মোড় (মিরপুর ১)",
+    "nameBn": "মাজার রোড মোড় (মিরপুর ১)",
     "category": "transit",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -538,7 +538,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "camp_paikpara_colony",
     "name": "Paikpara Government Colony",
-    "nameBn": "পাইকপাড়া সরকারি কলোনি",
+    "nameBn": "পাইকপাড়া সরকারি কলোনি",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -551,13 +551,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "paikpara",
       "government colony",
-      "পাইকপাড়া"
+      "পাইকপাড়া"
     ]
   },
   {
     "id": "camp_pirerbagh_mor",
     "name": "Pirerbagh Mor (60 Feet Link)",
-    "nameBn": "পীরেরবাগ মোড়",
+    "nameBn": "পীরেরবাগ মোড়",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -694,7 +694,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "mrt_uttara_north",
     "name": "Uttara North Metro Station (Diabari)",
-    "nameBn": "উত্তরা উত্তর মেট্রো স্টেশন (দিয়াবাড়ি)",
+    "nameBn": "উত্তরা উত্তর মেট্রো স্টেশন (দিয়াবাড়ি)",
     "category": "transit",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -709,7 +709,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "metro",
       "mrt-6",
       "উত্তরা উত্তর",
-      "দিয়াবাড়ি",
+      "দিয়াবাড়ি",
       "মেট্রো"
     ]
   },
@@ -823,7 +823,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "mrt_kazipara",
     "name": "Kazipara Metro Station",
-    "nameBn": "কাজীপাড়া মেট্রো স্টেশন",
+    "nameBn": "কাজীপাড়া মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -837,14 +837,14 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "metro",
       "mrt-6",
       "rokeya sarani",
-      "কাজীপাড়া",
+      "কাজীপাড়া",
       "মেট্রো"
     ]
   },
   {
     "id": "mrt_shewrapara",
     "name": "Shewrapara Metro Station",
-    "nameBn": "শেওড়াপাড়া মেট্রো স্টেশন",
+    "nameBn": "শেওড়াপাড়া মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -858,7 +858,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "metro",
       "mrt-6",
       "rokeya sarani",
-      "শেওড়াপাড়া",
+      "শেওড়াপাড়া",
       "শেওড়াপাড়া",
       "মেট্রো"
     ]
@@ -869,7 +869,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "আগারগাঁও মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Passport Office Link",
     "coords": {
       "latitude": 23.7785,
@@ -887,10 +887,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "mrt_bijoy_sarani",
     "name": "Bijoy Sarani Metro Station",
-    "nameBn": "বিজয় সরণি মেট্রো স্টেশন",
+    "nameBn": "বিজয় সরণি মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Military Museum Link",
     "coords": {
       "latitude": 23.7665,
@@ -901,7 +901,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "military museum",
       "metro",
       "mrt-6",
-      "বিজয় সরণি",
+      "বিজয় সরণি",
       "মেট্রো"
     ]
   },
@@ -911,7 +911,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ফার্মগেট মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Ananda Cinema / Khamarbari",
     "coords": {
       "latitude": 23.757,
@@ -933,7 +933,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "কাওরান বাজার মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "CA Bhaban / WASA Link",
     "coords": {
       "latitude": 23.7515,
@@ -945,7 +945,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "metro",
       "mrt-6",
       "কাওরান বাজার",
-      "কারওয়ান বাজার",
+      "কারওয়ান বাজার",
       "মেট্রো"
     ]
   },
@@ -955,7 +955,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শাহবাগ মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "BSMMU / National Museum",
     "coords": {
       "latitude": 23.7385,
@@ -974,10 +974,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "mrt_dhaka_university",
     "name": "Dhaka University Metro Station (TSC)",
-    "nameBn": "ঢাকা বিশ্ববিদ্যালয় মেট্রো স্টেশন (টিএসসি)",
+    "nameBn": "ঢাকা বিশ্ববিদ্যালয় মেট্রো স্টেশন (টিএসসি)",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "TSC, Dhaka University",
     "coords": {
       "latitude": 23.7328,
@@ -998,10 +998,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "mrt_secretariat",
     "name": "Bangladesh Secretariat Metro Station",
-    "nameBn": "বাংলাদেশ সচিবালয় মেট্রো স্টেশন",
+    "nameBn": "বাংলাদেশ সচিবালয় মেট্রো স্টেশন",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Press Club / Secretariat",
     "coords": {
       "latitude": 23.7292,
@@ -1013,7 +1013,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "high court",
       "curzon",
       "metro",
-      "সচিবালয়",
+      "সচিবালয়",
       "প্রেস ক্লাব",
       "মেট্রো"
     ]
@@ -1044,10 +1044,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_du_tsc",
     "name": "Dhaka University (TSC & Central Campus)",
-    "nameBn": "ঢাকা বিশ্ববিদ্যালয় (টিএসসি)",
+    "nameBn": "ঢাকা বিশ্ববিদ্যালয় (টিএসসি)",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Nilkhet / Shahbagh Link",
     "coords": {
       "latitude": 23.7328,
@@ -1060,7 +1060,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "tsc",
       "arts building",
       "ঢাবি",
-      "ঢাকা বিশ্ববিদ্যালয়",
+      "ঢাকা বিশ্ববিদ্যালয়",
       "টিএসসি"
     ]
   },
@@ -1070,7 +1070,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "কার্জন হল (ঢাবি বিজ্ঞান অনুষদ)",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "High Court Link",
     "coords": {
       "latitude": 23.7275,
@@ -1087,10 +1087,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_du_kala_bhaban",
     "name": "Dhaka University Arts Building (Kala Bhaban)",
-    "nameBn": "কলা ভবন (ঢাকা বিশ্ববিদ্যালয়)",
+    "nameBn": "কলা ভবন (ঢাকা বিশ্ববিদ্যালয়)",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Mall Chattar / Arts Faculty",
     "coords": {
       "latitude": 23.7335,
@@ -1107,10 +1107,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_du_fbs",
     "name": "Dhaka University Business Faculty (FBS)",
-    "nameBn": "ব্যবসায় শিক্ষা অনুষদ (ঢাবি)",
+    "nameBn": "ব্যবসায় শিক্ষা অনুষদ (ঢাবি)",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "DU Central Mosque Link",
     "coords": {
       "latitude": 23.732,
@@ -1121,16 +1121,16 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "fbs",
       "business faculty",
       "du",
-      "ব্যবসায় শিক্ষা অনুষদ"
+      "ব্যবসায় শিক্ষা অনুষদ"
     ]
   },
   {
     "id": "univ_du_iba",
     "name": "Institute of Business Administration (IBA DU)",
-    "nameBn": "আইবিএ (ঢাকা বিশ্ববিদ্যালয়)",
+    "nameBn": "আইবিএ (ঢাকা বিশ্ববিদ্যালয়)",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahbagh / TSC Link",
     "coords": {
       "latitude": 23.7345,
@@ -1147,10 +1147,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_du_rokeya_hall",
     "name": "Dhaka University Rokeya Hall Gate",
-    "nameBn": "রোকেয়া হল গেট (ঢাবি)",
+    "nameBn": "রোকেয়া হল গেট (ঢাবি)",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Fuller Road / Shamsun Nahar Link",
     "coords": {
       "latitude": 23.7315,
@@ -1161,16 +1161,16 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "rokeya hall",
       "female hall",
       "du",
-      "রোকেয়া হল"
+      "রোকেয়া হল"
     ]
   },
   {
     "id": "univ_buet_main",
     "name": "BUET Main Campus & EEE Building",
-    "nameBn": "বুয়েট মেইন ক্যাম্পাস",
+    "nameBn": "বুয়েট মেইন ক্যাম্পাস",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Palashi Link",
     "coords": {
       "latitude": 23.7262,
@@ -1181,16 +1181,16 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "buet",
       "engineering university",
       "palashi",
-      "বুয়েট"
+      "বুয়েট"
     ]
   },
   {
     "id": "univ_buet_auditorium",
     "name": "BUET Central Auditorium & Cafe",
-    "nameBn": "বুয়েট অডিটোরিয়াম ও ক্যাফেটেরিয়া",
+    "nameBn": "বুয়েট অডিটোরিয়াম ও ক্যাফেটেরিয়া",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "BUET Central Campus",
     "coords": {
       "latitude": 23.726,
@@ -1200,13 +1200,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "buet auditorium",
       "buet cafe",
-      "বুয়েট অডিটোরিয়াম"
+      "বুয়েট অডিটোরিয়াম"
     ]
   },
   {
     "id": "univ_nsu_bashundhara",
     "name": "North South University (NSU)",
-    "nameBn": "নর্থ সাউথ বিশ্ববিদ্যালয়",
+    "nameBn": "নর্থ সাউথ বিশ্ববিদ্যালয়",
     "category": "university",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -1226,7 +1226,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_iub_bashundhara",
     "name": "Independent University, Bangladesh (IUB)",
-    "nameBn": "ইন্ডিপেন্ডেন্ট বিশ্ববিদ্যালয় (আইইউবি)",
+    "nameBn": "ইন্ডিপেন্ডেন্ট বিশ্ববিদ্যালয় (আইইউবি)",
     "category": "university",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -1246,7 +1246,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_aiub_kuratoli",
     "name": "AIUB Permanent Campus",
-    "nameBn": "এআইইউবি স্থায়ী ক্যাম্পাস",
+    "nameBn": "এআইইউবি স্থায়ী ক্যাম্পাস",
     "category": "university",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -1267,7 +1267,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_brac_merul",
     "name": "BRAC University (New Permanent Campus)",
-    "nameBn": "ব্র্যাক বিশ্ববিদ্যালয় (মেরুল বাড্ডা)",
+    "nameBn": "ব্র্যাক বিশ্ববিদ্যালয় (মেরুল বাড্ডা)",
     "category": "university",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -1309,7 +1309,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_ewu_aftabnagar",
     "name": "East West University (EWU)",
-    "nameBn": "ইস্ট ওয়েস্ট বিশ্ববিদ্যালয়",
+    "nameBn": "ইস্ট ওয়েস্ট বিশ্ববিদ্যালয়",
     "category": "university",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -1324,13 +1324,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "east west",
       "aftabnagar",
       "rampura",
-      "ইস্ট ওয়েস্ট"
+      "ইস্ট ওয়েস্ট"
     ]
   },
   {
     "id": "univ_diu_smart_city",
     "name": "Daffodil International University (Smart City)",
-    "nameBn": "ড্যাফোডিল বিশ্ববিদ্যালয় (স্মার্ট সিটি)",
+    "nameBn": "ড্যাফোডিল বিশ্ববিদ্যালয় (স্মার্ট সিটি)",
     "category": "university",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -1352,7 +1352,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_diu_dhanmondi",
     "name": "Daffodil International University (Dhanmondi)",
-    "nameBn": "ড্যাফোডিল বিশ্ববিদ্যালয় (ধানমন্ডি)",
+    "nameBn": "ড্যাফোডিল বিশ্ববিদ্যালয় (ধানমন্ডি)",
     "category": "university",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -1371,10 +1371,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_aust_tejgaon",
     "name": "AUST (Ahsanullah University of Science & Tech)",
-    "nameBn": "আহসানউল্লাহ প্রযুক্তি বিশ্ববিদ্যালয়",
+    "nameBn": "আহসানউল্লাহ প্রযুক্তি বিশ্ববিদ্যালয়",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "141-142 Love Road, Tejgaon I/A",
     "coords": {
       "latitude": 23.7635,
@@ -1392,7 +1392,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_ulab_beribadh",
     "name": "ULAB Permanent Campus",
-    "nameBn": "ইউল্যাব স্থায়ী ক্যাম্পাস",
+    "nameBn": "ইউল্যাব স্থায়ী ক্যাম্পাস",
     "category": "university",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -1433,7 +1433,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_jnu_sadarghat",
     "name": "Jagannath University (JnU)",
-    "nameBn": "জগন্নাথ বিশ্ববিদ্যালয়",
+    "nameBn": "জগন্নাথ বিশ্ববিদ্যালয়",
     "category": "university",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -1447,13 +1447,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "jnu",
       "jagannath university",
       "sadarghat",
-      "জগন্নাথ বিশ্ববিদ্যালয়"
+      "জগন্নাথ বিশ্ববিদ্যালয়"
     ]
   },
   {
     "id": "univ_ju_savar",
     "name": "Jahangirnagar University (JU Dairy Gate)",
-    "nameBn": "জাহাঙ্গীরনগর বিশ্ববিদ্যালয় (ডেইরি গেট)",
+    "nameBn": "জাহাঙ্গীরনগর বিশ্ববিদ্যালয় (ডেইরি গেট)",
     "category": "university",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -1498,7 +1498,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ইডেন মহিলা কলেজ গেট",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Azimpur Road, Azimpur",
     "coords": {
       "latitude": 23.7295,
@@ -1553,10 +1553,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_sau_agargaon",
     "name": "Sher-e-Bangla Agricultural University (SAU)",
-    "nameBn": "শেরেবাংলা কৃষি বিশ্ববিদ্যালয়",
+    "nameBn": "শেরেবাংলা কৃষি বিশ্ববিদ্যালয়",
     "category": "university",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar, Agargaon",
     "coords": {
       "latitude": 23.7705,
@@ -1568,13 +1568,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "agricultural university",
       "agargaon",
       "শেকৃবি",
-      "কৃষি বিশ্ববিদ্যালয়"
+      "কৃষি বিশ্ববিদ্যালয়"
     ]
   },
   {
     "id": "univ_iut_gazipur",
     "name": "Islamic University of Technology (IUT)",
-    "nameBn": "আইইউটি (ইসলামিক প্রযুক্তি বিশ্ববিদ্যালয়)",
+    "nameBn": "আইইউটি (ইসলামিক প্রযুক্তি বিশ্ববিদ্যালয়)",
     "category": "university",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -1615,7 +1615,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "univ_kendriya_college",
     "name": "Mohammadpur Kendriya College",
-    "nameBn": "মোহাম্মদপুর কেন্দ্রীয় কলেজ",
+    "nameBn": "মোহাম্মদপুর কেন্দ্রীয় কলেজ",
     "category": "university",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -1628,7 +1628,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "kendriya college",
       "mohammadpur",
-      "কেন্দ্রীয় কলেজ"
+      "কেন্দ্রীয় কলেজ"
     ]
   },
   {
@@ -1674,7 +1674,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "tr_sayedabad_terminal",
     "name": "Sayedabad Inter-District Bus Terminal",
-    "nameBn": "সায়েদাবাদ বাস টার্মিনাল",
+    "nameBn": "সায়েদাবাদ বাস টার্মিনাল",
     "category": "transit",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -1688,13 +1688,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "sayedabad",
       "bus terminal",
       "jatrabari",
-      "সায়েদাবাদ"
+      "সায়েদাবাদ"
     ]
   },
   {
     "id": "tr_kamalapur_railway",
     "name": "Kamalapur Railway Station",
-    "nameBn": "কমলাপুর রেলওয়ে স্টেশন",
+    "nameBn": "কমলাপুর রেলওয়ে স্টেশন",
     "category": "transit",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -1708,13 +1708,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "kamalapur",
       "railway station",
       "train",
-      "কমলাপুর রেলওয়ে স্টেশন"
+      "কমলাপুর রেলওয়ে স্টেশন"
     ]
   },
   {
     "id": "tr_airport_railway",
     "name": "Dhaka Airport Railway Station",
-    "nameBn": "ঢাকা বিমানবন্দর রেলওয়ে স্টেশন",
+    "nameBn": "ঢাকা বিমানবন্দর রেলওয়ে স্টেশন",
     "category": "transit",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -1728,7 +1728,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "airport railway",
       "train station",
       "kawla",
-      "বিমানবন্দর রেলওয়ে স্টেশন"
+      "বিমানবন্দর রেলওয়ে স্টেশন"
     ]
   },
   {
@@ -1838,7 +1838,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "tr_technical_mor",
     "name": "Technical Intersection (Technical Mor)",
-    "nameBn": "টেকনিক্যাল মোড়",
+    "nameBn": "টেকনিক্যাল মোড়",
     "category": "transit",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -1937,7 +1937,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "tr_house_building_mor",
     "name": "House Building Mor (Uttara)",
-    "nameBn": "হাউজ বিল্ডিং মোড় (উত্তরা)",
+    "nameBn": "হাউজ বিল্ডিং মোড় (উত্তরা)",
     "category": "transit",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -1977,7 +1977,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "tr_jatrabari_bus_stop",
     "name": "Jatrabari Bus Stop",
-    "nameBn": "যাত্রাবাড়ী বাস স্টপ",
+    "nameBn": "যাত্রাবাড়ী বাস স্টপ",
     "category": "transit",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -1991,13 +1991,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "jatrabari bus stop",
       "jatrabari",
       "bus stop",
-      "যাত্রাবাড়ী বাস স্টপ"
+      "যাত্রাবাড়ী বাস স্টপ"
     ]
   },
   {
     "id": "tr_jatrabari_flyover",
     "name": "Jatrabari Flyover",
-    "nameBn": "যাত্রাবাড়ী ফ্লাইওভার",
+    "nameBn": "যাত্রাবাড়ী ফ্লাইওভার",
     "category": "transit",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -2010,13 +2010,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "jatrabari flyover",
       "hanif flyover",
-      "যাত্রাবাড়ী ফ্লাইওভার"
+      "যাত্রাবাড়ী ফ্লাইওভার"
     ]
   },
   {
     "id": "tr_kuril_flyover",
     "name": "Kuril Flyover Junction",
-    "nameBn": "কুড়িল ফ্লাইওভার মোড়",
+    "nameBn": "কুড়িল ফ্লাইওভার মোড়",
     "category": "transit",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -2030,13 +2030,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "kuril flyover",
       "kuril",
       "300ft link",
-      "কুড়িল ফ্লাইওভার"
+      "কুড়িল ফ্লাইওভার"
     ]
   },
   {
     "id": "tr_mohakhali_amtoli",
     "name": "Amtoli Junction (Mohakhali)",
-    "nameBn": "আমতলী মোড় (মহাখালী)",
+    "nameBn": "আমতলী মোড় (মহাখালী)",
     "category": "transit",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -2055,7 +2055,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "tr_science_lab_mor",
     "name": "Science Laboratory Intersection",
-    "nameBn": "সায়েন্স ল্যাব মোড়",
+    "nameBn": "সায়েন্স ল্যাব মোড়",
     "category": "transit",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -2069,13 +2069,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "science lab",
       "mirpur road",
       "elephant road",
-      "সায়েন্স ল্যাব"
+      "সায়েন্স ল্যাব"
     ]
   },
   {
     "id": "tr_mouchak_mor",
     "name": "Mouchak Intersection (Flyover Center)",
-    "nameBn": "মৌচাক মোড় (ফ্লাইওভার)",
+    "nameBn": "মৌচাক মোড় (ফ্লাইওভার)",
     "category": "transit",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -2120,7 +2120,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বসুন্ধরা সিটি শপিং মল",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Panthapath · Karwan Bazar Link",
     "coords": {
       "latitude": 23.7512,
@@ -2138,7 +2138,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_shimanto_square",
     "name": "Shimanto Square (Peelkhana Gate)",
-    "nameBn": "সীমান্ত স্কয়ার",
+    "nameBn": "সীমান্ত স্কয়ার",
     "category": "landmark",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -2152,7 +2152,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "shimanto square",
       "rifle square",
       "dhanmondi",
-      "সীমান্ত স্কয়ার"
+      "সীমান্ত স্কয়ার"
     ]
   },
   {
@@ -2198,7 +2198,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_tokyo_square",
     "name": "Tokyo Square (Japan Garden City)",
-    "nameBn": "টোকিও স্কয়ার",
+    "nameBn": "টোকিও স্কয়ার",
     "category": "landmark",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -2212,7 +2212,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "tokyo square",
       "japan garden city",
       "ring road",
-      "টোকিও স্কয়ার"
+      "টোকিও স্কয়ার"
     ]
   },
   {
@@ -2241,7 +2241,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "নিউ মার্কেট মেইন গেট",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Mirpur Road, Nilkhet",
     "coords": {
       "latitude": 23.7335,
@@ -2262,7 +2262,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "আইডিবি ভবন (বিসিএস কম্পিউটার সিটি)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Rokeya Sarani, Agargaon",
     "coords": {
       "latitude": 23.7745,
@@ -2299,10 +2299,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_hatirjheel_fdc",
     "name": "Hatirjheel (FDC Mor Entry)",
-    "nameBn": "হাতিরঝিল (এফডিসি মোড় গেট)",
+    "nameBn": "হাতিরঝিল (এফডিসি মোড় গেট)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tejgaon / Karwan Bazar Link",
     "coords": {
       "latitude": 23.755,
@@ -2360,10 +2360,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_military_museum",
     "name": "Bangabandhu Military Museum",
-    "nameBn": "সামরিক জাদুঘর (বিজয় সরণি)",
+    "nameBn": "সামরিক জাদুঘর (বিজয় সরণি)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Bijoy Sarani Link",
     "coords": {
       "latitude": 23.765,
@@ -2374,7 +2374,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "military museum",
       "bijoy sarani",
       "planetarium",
-      "নভোথিয়েটার",
+      "নভোথিয়েটার",
       "সামরিক জাদুঘর"
     ]
   },
@@ -2384,7 +2384,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "মুক্তিযুদ্ধ জাদুঘর",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar, Agargaon",
     "coords": {
       "latitude": 23.774,
@@ -2401,7 +2401,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_national_memorial",
     "name": "National Martyrs Memorial (Jatiya Smriti Soudho)",
-    "nameBn": "জাতীয় স্মৃতিসৌধ (সাভার)",
+    "nameBn": "জাতীয় স্মৃতিসৌধ (সাভার)",
     "category": "landmark",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -2422,7 +2422,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_purbachal_300ft",
     "name": "Purbachal 300 Feet Express Highway (Neelganj)",
-    "nameBn": "পূর্বাচল ৩০০ ফিট এক্সপ্রেসওয়ে",
+    "nameBn": "পূর্বাচল ৩০০ ফিট এক্সপ্রেসওয়ে",
     "category": "landmark",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -2444,10 +2444,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_shahid_minar",
     "name": "Central Shahid Minar",
-    "nameBn": "কেন্দ্রীয় শহীদ মিনার",
+    "nameBn": "কেন্দ্রীয় শহীদ মিনার",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Dhaka Medical College Link",
     "coords": {
       "latitude": 23.7275,
@@ -2464,10 +2464,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_national_parliament",
     "name": "National Parliament House (Jatiya Sangsad)",
-    "nameBn": "জাতীয় সংসদ ভবন",
+    "nameBn": "জাতীয় সংসদ ভবন",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Manik Mia Avenue, Sher-e-Bangla Nagar",
     "coords": {
       "latitude": 23.7625,
@@ -2478,7 +2478,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "parliament",
       "jatiya sangsad",
       "manik mia",
-      "জাতীয় সংসদ"
+      "জাতীয় সংসদ"
     ]
   },
   {
@@ -2487,7 +2487,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "চন্দ্রিমা উদ্যান (ক্রিসেন্ট লেক)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Crescent Lake, Agargaon Link",
     "coords": {
       "latitude": 23.766,
@@ -2507,7 +2507,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বঙ্গবন্ধু আন্তর্জাতিক সম্মেলন কেন্দ্র (বিআইসিসি)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Agargaon Link",
     "coords": {
       "latitude": 23.7725,
@@ -2524,7 +2524,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_baitul_mukarram",
     "name": "Baitul Mukarram National Mosque",
-    "nameBn": "বায়তুল মোকাররম জাতীয় মসজিদ",
+    "nameBn": "বায়তুল মোকাররম জাতীয় মসজিদ",
     "category": "landmark",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -2538,7 +2538,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "baitul mukarram",
       "national mosque",
       "paltan",
-      "বায়তুল মোকাররম"
+      "বায়তুল মোকাররম"
     ]
   },
   {
@@ -2625,7 +2625,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_bahadur_shah_park",
     "name": "Bahadur Shah Park (Victoria Park)",
-    "nameBn": "বাহাদুর শাহ পার্ক (ভিক্টোরিয়া পার্ক)",
+    "nameBn": "বাহাদুর শাহ পার্ক (ভিক্টোরিয়া পার্ক)",
     "category": "landmark",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -2645,7 +2645,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_baldha_garden",
     "name": "Baldha Garden (Wari)",
-    "nameBn": "বলধা গার্ডেন (ওয়ারী)",
+    "nameBn": "বলধা গার্ডেন (ওয়ারী)",
     "category": "landmark",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -2668,7 +2668,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "রমনা পার্ক মেইন গেট",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Kakrail / Matsya Bhaban Link",
     "coords": {
       "latitude": 23.733,
@@ -2685,10 +2685,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_suhrawardy_udyan",
     "name": "Suhrawardy Udyan (Shikha Chirantan)",
-    "nameBn": "সোহরাওয়ার্দী উদ্যান (শিখা চিরন্তন)",
+    "nameBn": "সোহরাওয়ার্দী উদ্যান (শিখা চিরন্তন)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahbagh / TSC Link",
     "coords": {
       "latitude": 23.734,
@@ -2699,16 +2699,16 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "suhrawardy udyan",
       "shikha chirantan",
       "7th march",
-      "সোহরাওয়ার্দী উদ্যান"
+      "সোহরাওয়ার্দী উদ্যান"
     ]
   },
   {
     "id": "lm_national_museum",
     "name": "Bangladesh National Museum Gate",
-    "nameBn": "জাতীয় জাদুঘর (শাহবাগ)",
+    "nameBn": "জাতীয় জাদুঘর (শাহবাগ)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahbagh Roundabout Link",
     "coords": {
       "latitude": 23.7375,
@@ -2718,7 +2718,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "national museum",
       "shahbagh",
-      "জাতীয় জাদুঘর"
+      "জাতীয় জাদুঘর"
     ]
   },
   {
@@ -2727,7 +2727,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "মাল্টিপ্ল্যান সেন্টার (কম্পিউটার মল)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Elephant Road / Bata Signal Link",
     "coords": {
       "latitude": 23.7405,
@@ -2747,7 +2747,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ইস্টার্ন প্লাজা (হাতিরপুল)",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Hatirpool Circular Road Link",
     "coords": {
       "latitude": 23.743,
@@ -2764,7 +2764,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "lm_bangabandhu_stadium",
     "name": "Bangabandhu National Stadium Gate",
-    "nameBn": "বঙ্গবন্ধু জাতীয় স্টেডিয়াম",
+    "nameBn": "বঙ্গবন্ধু জাতীয় স্টেডিয়াম",
     "category": "landmark",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -2778,16 +2778,16 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "bangabandhu stadium",
       "national stadium",
       "paltan",
-      "বঙ্গবন্ধু স্টেডিয়াম"
+      "বঙ্গবন্ধু স্টেডিয়াম"
     ]
   },
   {
     "id": "lm_gpo_zero_point",
     "name": "GPO Zero Point (Center of Dhaka)",
-    "nameBn": "জিপিও জিরো পয়েন্ট",
+    "nameBn": "জিপিও জিরো পয়েন্ট",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "General Post Office / Secretariat Link",
     "coords": {
       "latitude": 23.728,
@@ -2798,16 +2798,16 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "gpo",
       "zero point",
       "post office",
-      "জিরো পয়েন্ট"
+      "জিরো পয়েন্ট"
     ]
   },
   {
     "id": "lm_doel_chattar",
     "name": "Doel Chattar (National Monument)",
-    "nameBn": "দোয়েল চত্বর",
+    "nameBn": "দোয়েল চত্বর",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Curzon Hall & High Court Link",
     "coords": {
       "latitude": 23.728,
@@ -2817,13 +2817,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "doel chattar",
       "curzon link",
-      "দোয়েল চত্বর"
+      "দোয়েল চত্বর"
     ]
   },
   {
     "id": "lm_radisson_blu",
     "name": "Radisson Blu Water Garden Gate",
-    "nameBn": "রেডিসন ব্লু ওয়াটার গার্ডেন",
+    "nameBn": "রেডিসন ব্লু ওয়াটার গার্ডেন",
     "category": "landmark",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -3042,7 +3042,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_uttara_sec_11",
     "name": "Uttara Sector 11 (Gareeb-e-Nawaz)",
-    "nameBn": "উত্তরা সেক্টর ১১ (গরীব-ই-নেওয়াজ)",
+    "nameBn": "উত্তরা সেক্টর ১১ (গরীব-ই-নেওয়াজ)",
     "category": "area",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -3113,7 +3113,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_uttara_sec_15",
     "name": "Uttara Sector 15 (Diabari Link)",
-    "nameBn": "উত্তরা সেক্টর ১৫ (দিয়াবাড়ি)",
+    "nameBn": "উত্তরা সেক্টর ১৫ (দিয়াবাড়ি)",
     "category": "area",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -3240,7 +3240,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_bashundhara_blk_d",
     "name": "Bashundhara R/A Block D (Evercare)",
-    "nameBn": "বসুন্ধরা আ/এ ব্লক ডি (এভারকেয়ার)",
+    "nameBn": "বসুন্ধরা আ/এ ব্লক ডি (এভারকেয়ার)",
     "category": "area",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -3553,7 +3553,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_dhanmondi_2",
     "name": "Dhanmondi 2 (Shimanto Square)",
-    "nameBn": "ধানমন্ডি ২ (সীমান্ত স্কয়ার)",
+    "nameBn": "ধানমন্ডি ২ (সীমান্ত স্কয়ার)",
     "category": "area",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3572,7 +3572,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_dhanmondi_lake",
     "name": "Dhanmondi Lake Amphitheatre",
-    "nameBn": "ধানমন্ডি লেক অ্যাম্ফিথিয়েটার",
+    "nameBn": "ধানমন্ডি লেক অ্যাম্ফিথিয়েটার",
     "category": "landmark",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3629,7 +3629,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_sukrabad_mor",
     "name": "Sukrabad Mor",
-    "nameBn": "শুক্রাবাদ মোড়",
+    "nameBn": "শুক্রাবাদ মোড়",
     "category": "area",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3684,7 +3684,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mdpur_shia_masjid",
     "name": "Shia Masjid Mor (Mohammadpur)",
-    "nameBn": "শিয়া মসজিদ মোড়",
+    "nameBn": "শিয়া মসজিদ মোড়",
     "category": "area",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3697,13 +3697,13 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "shia masjid",
       "shia mor",
       "taj mahal road",
-      "শিয়া মসজিদ"
+      "শিয়া মসজিদ"
     ]
   },
   {
     "id": "area_mdpur_japan_garden",
     "name": "Japan Garden City (Tokyo Square)",
-    "nameBn": "জাপান গার্ডেন সিটি (টোকিও স্কয়ার)",
+    "nameBn": "জাপান গার্ডেন সিটি (টোকিও স্কয়ার)",
     "category": "area",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3722,7 +3722,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mdpur_asad_gate",
     "name": "Asad Gate Intersection",
-    "nameBn": "আসাদ গেট মোড়",
+    "nameBn": "আসাদ গেট মোড়",
     "category": "transit",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3759,7 +3759,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mdpur_bosila_bridge",
     "name": "Bosila Bridge (Buriganga 3rd Bridge)",
-    "nameBn": "বসিলা ব্রিজ (৩য় বুড়িগঙ্গা সেতু)",
+    "nameBn": "বসিলা ব্রিজ (৩য় বুড়িগঙ্গা সেতু)",
     "category": "transit",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3813,7 +3813,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mdpur_rayerbazar_memorial",
     "name": "Rayerbazar Martyred Intellectuals Memorial",
-    "nameBn": "রায়েরবাজার বধ্যভূমি স্মৃতিসৌধ",
+    "nameBn": "রায়েরবাজার বধ্যভূমি স্মৃতিসৌধ",
     "category": "landmark",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -3826,7 +3826,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "rayerbazar",
       "boddhobhumi",
       "martyred memorial",
-      "রায়েরবাজার বধ্যভূমি"
+      "রায়েরবাজার বধ্যভূমি"
     ]
   },
   {
@@ -3889,7 +3889,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mirpur_60ft_paka_masjid",
     "name": "Paka Masjid Mor (60 Feet Road)",
-    "nameBn": "পাকা মসজিদ মোড় (৬০ ফিট)",
+    "nameBn": "পাকা মসজিদ মোড় (৬০ ফিট)",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -3907,7 +3907,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mirpur_60ft_agnishikha",
     "name": "Agnishikha Mor (60 Feet Road)",
-    "nameBn": "অগ্নিশিখা মোড় (৬০ ফিট)",
+    "nameBn": "অগ্নিশিখা মোড় (৬০ ফিট)",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -4016,7 +4016,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mirpur_ceramic_mor",
     "name": "Ceramic Mor (Mirpur 12)",
-    "nameBn": "সিরামিক মোড় (মিরপুর ১২)",
+    "nameBn": "সিরামিক মোড় (মিরপুর ১২)",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -4028,7 +4028,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "ceramic mor",
       "mirpur 12",
-      "সিরামিক মোড়"
+      "সিরামিক মোড়"
     ]
   },
   {
@@ -4052,7 +4052,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mirpur_milk_vita",
     "name": "Milk Vita Mor (Mirpur 7)",
-    "nameBn": "দুগ্ধ ভিটা মোড় (মিরপুর ৭)",
+    "nameBn": "দুগ্ধ ভিটা মোড় (মিরপুর ৭)",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -4070,7 +4070,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mirpur_chalantika",
     "name": "Chalantika Mor (Mirpur 7)",
-    "nameBn": "চলন্তিকা মোড় (মিরপুর ৭)",
+    "nameBn": "চলন্তিকা মোড় (মিরপুর ৭)",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -4089,7 +4089,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_mirpur_bauniabadh",
     "name": "Bauniabadh (Mirpur-11)",
-    "nameBn": "বাউনিয়াবাদ (মিরপুর-১১)",
+    "nameBn": "বাউনিয়াবাদ (মিরপুর-১১)",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -4102,14 +4102,14 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "bauniabadh",
       "mirpur 11",
       "মিরপুর ১১",
-      "বাউনিয়াবাদ",
+      "বাউনিয়াবাদ",
       "badh"
     ]
   },
   {
     "id": "area_mirpur_vashantek",
     "name": "Vashantek Mor (Cantonment Link)",
-    "nameBn": "ভাষানটেক মোড়",
+    "nameBn": "ভাষানটেক মোড়",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -4183,7 +4183,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_banani_chairman_bari",
     "name": "Chairman Bari Mor (Banani)",
-    "nameBn": "চেয়ারম্যান বাড়ি মোড়",
+    "nameBn": "চেয়ারম্যান বাড়ি মোড়",
     "category": "transit",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -4195,7 +4195,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "chairman bari",
       "banani",
-      "চেয়ারম্যান বাড়ি"
+      "চেয়ারম্যান বাড়ি"
     ]
   },
   {
@@ -4347,7 +4347,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_merul_badda_brac",
     "name": "Merul Badda (BRAC University Link)",
-    "nameBn": "মেরুল বাড্ডা (ব্র্যাক বিশ্ববিদ্যালয়)",
+    "nameBn": "মেরুল বাড্ডা (ব্র্যাক বিশ্ববিদ্যালয়)",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -4423,7 +4423,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "চ্যানেল আই গেট (তেজগাঁও)",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahid Tajuddin Ahmed Sarani",
     "coords": {
       "latitude": 23.766,
@@ -4438,10 +4438,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_tejgaon_nabisco",
     "name": "Nabisco Mor (Tejgaon)",
-    "nameBn": "নাবিস্কো মোড় (তেজগাঁও)",
+    "nameBn": "নাবিস্কো মোড় (তেজগাঁও)",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tejgaon Industrial Area Link",
     "coords": {
       "latitude": 23.768,
@@ -4456,10 +4456,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_tejgaon_satrasta",
     "name": "Satrasta Mor (Tejgaon Flyover)",
-    "nameBn": "সাতরাস্তা মোড় (ফ্লাইওভার)",
+    "nameBn": "সাতরাস্তা মোড় (ফ্লাইওভার)",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Moghbazar-Tejgaon Flyover Junction",
     "coords": {
       "latitude": 23.758,
@@ -4475,7 +4475,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_wari_rankin",
     "name": "Rankin Street (Wari)",
-    "nameBn": "র‌্যাংকিন স্ট্রিট (ওয়ারী)",
+    "nameBn": "র‌্যাংকিন স্ট্রিট (ওয়ারী)",
     "category": "area",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -4512,7 +4512,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_tantibazar",
     "name": "Tantibazar Mor",
-    "nameBn": "তাঁতীবাজার মোড়",
+    "nameBn": "তাঁতীবাজার মোড়",
     "category": "area",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -4530,7 +4530,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_armanitola",
     "name": "Armanitola Mor",
-    "nameBn": "আরমানিটোলা মোড়",
+    "nameBn": "আরমানিটোলা মোড়",
     "category": "area",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -4548,7 +4548,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_islampur_market",
     "name": "Islampur Cloth Wholesale Market",
-    "nameBn": "ইসলামপুর কাপড়ের বাজার",
+    "nameBn": "ইসলামপুর কাপড়ের বাজার",
     "category": "landmark",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -4567,10 +4567,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_nilkhet_book_market",
     "name": "Nilkhet Book Market & Mor",
-    "nameBn": "নীলক্ষেত বই মার্কেট ও মোড়",
+    "nameBn": "নীলক্ষেত বই মার্কেট ও মোড়",
     "category": "landmark",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Mirpur Road & DU Link",
     "coords": {
       "latitude": 23.733,
@@ -4586,10 +4586,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_palashi_intersection",
     "name": "Palashi Intersection (BUET Link)",
-    "nameBn": "পলাশী মোড় (বুয়েট গেট)",
+    "nameBn": "পলাশী মোড় (বুয়েট গেট)",
     "category": "transit",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Palashi Bazar / BUET Gate",
     "coords": {
       "latitude": 23.7255,
@@ -4604,10 +4604,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_katabon_masjid",
     "name": "Katabon Masjid & Animal Market Mor",
-    "nameBn": "কাটাবন মোড়",
+    "nameBn": "কাটাবন মোড়",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Elephant Road & Shahbagh Link",
     "coords": {
       "latitude": 23.74,
@@ -4622,7 +4622,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_laxmibazar_mor",
     "name": "Laxmibazar Mor (Old Dhaka)",
-    "nameBn": "লক্ষ্মীবাজার মোড়",
+    "nameBn": "লক্ষ্মীবাজার মোড়",
     "category": "area",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -4641,7 +4641,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_bangshal_cycle",
     "name": "Bangshal Bicycle Market Mor",
-    "nameBn": "বংশাল সাইকেল মার্কেট মোড়",
+    "nameBn": "বংশাল সাইকেল মার্কেট মোড়",
     "category": "area",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -4678,7 +4678,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_baipail_ashulia",
     "name": "Baipail Intersection (EPZ Link)",
-    "nameBn": "বাইপাইল মোড় (ইপিজেড সংযোগ)",
+    "nameBn": "বাইপাইল মোড় (ইপিজেড সংযোগ)",
     "category": "transit",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -4697,7 +4697,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_fantasy_kingdom",
     "name": "Fantasy Kingdom (Ashulia)",
-    "nameBn": "ফ্যান্টাসি কিংডম (আশুলিয়া)",
+    "nameBn": "ফ্যান্টাসি কিংডম (আশুলিয়া)",
     "category": "landmark",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -4734,7 +4734,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_kanchan_bridge",
     "name": "Kanchan Bridge (Purbachal Expressway End)",
-    "nameBn": "কাঞ্চন ব্রিজ (পূর্বাচল এক্সপ্রেসওয়ে)",
+    "nameBn": "কাঞ্চন ব্রিজ (পূর্বাচল এক্সপ্রেসওয়ে)",
     "category": "transit",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -4770,7 +4770,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_chasara_narayanganj",
     "name": "Chasara Roundabout (Narayanganj)",
-    "nameBn": "চাষাঢ়া গোলচত্বর (নারায়ণগঞ্জ)",
+    "nameBn": "চাষাঢ়া গোলচত্বর (নারায়ণগঞ্জ)",
     "category": "transit",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -4782,7 +4782,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "chasara",
       "narayanganj",
-      "চাষাঢ়া"
+      "চাষাঢ়া"
     ]
   },
   {
@@ -4791,7 +4791,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ঢাকা মেডিকেল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahbagh",
     "coords": {
       "latitude": 23.7257,
@@ -4816,7 +4816,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বিএসএমএমইউ / পিজি",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahbagh",
     "coords": {
       "latitude": 23.7389,
@@ -4842,7 +4842,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বারডেম হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahbagh",
     "coords": {
       "latitude": 23.7397,
@@ -4866,7 +4866,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বারডেম-২ (মহিলা ও শিশু)",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Segunbagicha",
     "coords": {
       "latitude": 23.7342,
@@ -4887,10 +4887,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_suhrawardy_hospital",
     "name": "Suhrawardy Hospital",
-    "nameBn": "সোহরাওয়ার্দী হাসপাতাল",
+    "nameBn": "সোহরাওয়ার্দী হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar",
     "coords": {
       "latitude": 23.7699,
@@ -4901,8 +4901,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "shohid",
       "agargaon",
       "sher-e-bangla",
-      "সোহরাওয়ার্দী",
-      "সোহরাওয়ার্দী হাসপাতাল",
+      "সোহরাওয়ার্দী",
+      "সোহরাওয়ার্দী হাসপাতাল",
       "suhrawardy hospital",
       "sher-e-bangla nagar",
       "hospital",
@@ -4913,7 +4913,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_national_heart_foundation",
     "name": "National Heart Foundation",
-    "nameBn": "জাতীয় হৃদরোগ ফাউন্ডেশন",
+    "nameBn": "জাতীয় হৃদরোগ ফাউন্ডেশন",
     "category": "hospital",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -4928,7 +4928,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "mirpur-2",
       "cardiac",
       "হৃদরোগ ফাউন্ডেশন",
-      "জাতীয় হৃদরোগ ফাউন্ডেশন",
+      "জাতীয় হৃদরোগ ফাউন্ডেশন",
       "national heart foundation",
       "hospital",
       "হাসপাতাল",
@@ -4938,10 +4938,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nicvd_heart_institute",
     "name": "NICVD (Heart Institute)",
-    "nameBn": "জাতীয় হৃদরোগ ইনস্টিটিউট",
+    "nameBn": "জাতীয় হৃদরোগ ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar",
     "coords": {
       "latitude": 23.7713,
@@ -4951,8 +4951,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "nicvd",
       "heart institute",
       "sher-e-bangla nagar",
-      "জাতীয় হৃদরোগ",
-      "জাতীয় হৃদরোগ ইনস্টিটিউট",
+      "জাতীয় হৃদরোগ",
+      "জাতীয় হৃদরোগ ইনস্টিটিউট",
       "nicvd (heart institute)",
       "hospital",
       "হাসপাতাল",
@@ -4962,10 +4962,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nins_neurosciences_hospital",
     "name": "NINS (Neurosciences Hospital)",
-    "nameBn": "জাতীয় নিউরোসায়েন্সেস",
+    "nameBn": "জাতীয় নিউরোসায়েন্সেস",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Agargaon",
     "coords": {
       "latitude": 23.7725,
@@ -4976,8 +4976,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "neuro",
       "agargaon",
       "brain",
-      "নিউরোসায়েন্সেস",
-      "জাতীয় নিউরোসায়েন্সেস",
+      "নিউরোসায়েন্সেস",
+      "জাতীয় নিউরোসায়েন্সেস",
       "nins (neurosciences hospital)",
       "hospital",
       "হাসপাতাল",
@@ -4990,7 +4990,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "পঙ্গু হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar",
     "coords": {
       "latitude": 23.7715,
@@ -5013,10 +5013,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nikdu_kidney_institute",
     "name": "NIKDU (Kidney Institute)",
-    "nameBn": "জাতীয় কিডনি ইনস্টিটিউট",
+    "nameBn": "জাতীয় কিডনি ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar",
     "coords": {
       "latitude": 23.7733,
@@ -5026,8 +5026,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "nikdu",
       "kidney institute",
       "dialysis",
-      "জাতীয় কিডনি",
-      "জাতীয় কিডনি ইনস্টিটিউট",
+      "জাতীয় কিডনি",
+      "জাতীয় কিডনি ইনস্টিটিউট",
       "nikdu (kidney institute)",
       "sher-e-bangla nagar",
       "hospital",
@@ -5038,10 +5038,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nioh_national_eye_hospital",
     "name": "NIOH (National Eye Hospital)",
-    "nameBn": "জাতীয় চক্ষু বিজ্ঞান ইনস্টিটিউট",
+    "nameBn": "জাতীয় চক্ষু বিজ্ঞান ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar",
     "coords": {
       "latitude": 23.7725,
@@ -5051,8 +5051,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "nioh",
       "eye hospital",
       "chokkhu",
-      "জাতীয় চক্ষু",
-      "জাতীয় চক্ষু বিজ্ঞান",
+      "জাতীয় চক্ষু",
+      "জাতীয় চক্ষু বিজ্ঞান",
       "nioh (national eye hospital)",
       "sher-e-bangla nagar",
       "hospital",
@@ -5063,7 +5063,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nicrh_cancer_hospital",
     "name": "NICRH (Cancer Hospital)",
-    "nameBn": "জাতীয় ক্যান্সার ইনস্টিটিউট",
+    "nameBn": "জাতীয় ক্যান্সার ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -5078,7 +5078,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "mohakhali",
       "oncology",
       "ক্যান্সার",
-      "জাতীয় ক্যান্সার",
+      "জাতীয় ক্যান্সার",
       "nicrh (cancer hospital)",
       "hospital",
       "হাসপাতাল",
@@ -5088,7 +5088,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nidch_chest_hospital",
     "name": "NIDCH (Chest Hospital)",
-    "nameBn": "জাতীয় বক্ষব্যাধি ইনস্টিটিউট",
+    "nameBn": "জাতীয় বক্ষব্যাধি ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -5103,7 +5103,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "tb",
       "বক্ষব্যাধি",
       "mohakhali",
-      "জাতীয় বক্ষব্যাধি",
+      "জাতীয় বক্ষব্যাধি",
       "nidch (chest hospital)",
       "hospital",
       "হাসপাতাল",
@@ -5113,10 +5113,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nimh_mental_health_institute",
     "name": "NIMH (Mental Health Institute)",
-    "nameBn": "জাতীয় মানসিক স্বাস্থ্য ইনস্টিটিউট",
+    "nameBn": "জাতীয় মানসিক স্বাস্থ্য ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher-e-Bangla Nagar",
     "coords": {
       "latitude": 23.7735,
@@ -5127,7 +5127,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "mental health",
       "sher-e-bangla nagar",
       "মানসিক স্বাস্থ্য",
-      "জাতীয় মানসিক স্বাস্থ্য",
+      "জাতীয় মানসিক স্বাস্থ্য",
       "nimh (mental health institute)",
       "hospital",
       "হাসপাতাল",
@@ -5137,10 +5137,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_nient_national_ent_institute",
     "name": "NIENT (National ENT Institute)",
-    "nameBn": "জাতীয় নাক কান গলা ইনস্টিটিউট",
+    "nameBn": "জাতীয় নাক কান গলা ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tejgaon",
     "coords": {
       "latitude": 23.765,
@@ -5152,7 +5152,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "nak kan gola",
       "tejgaon",
       "নাক কান গলা",
-      "জাতীয় নাক কান গলা",
+      "জাতীয় নাক কান গলা",
       "nient (national ent institute)",
       "hospital",
       "হাসপাতাল",
@@ -5315,7 +5315,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শিশু হাসপাতাল ও ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Agargaon",
     "coords": {
       "latitude": 23.773,
@@ -5336,7 +5336,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_kuwait_bangladesh_friendship_hospital",
     "name": "Kuwait Bangladesh Friendship Hospital",
-    "nameBn": "কুয়েত বাংলাদেশ মৈত্রী হাসপাতাল",
+    "nameBn": "কুয়েত বাংলাদেশ মৈত্রী হাসপাতাল",
     "category": "hospital",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -5349,8 +5349,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "kuwait maitree",
       "uttara",
       "govt hospital",
-      "কুয়েত মৈত্রী",
-      "কুয়েত বাংলাদেশ মৈত্রী হাসপাতাল",
+      "কুয়েত মৈত্রী",
+      "কুয়েত বাংলাদেশ মৈত্রী হাসপাতাল",
       "kuwait bangladesh friendship hospital",
       "hospital",
       "হাসপাতাল",
@@ -5389,7 +5389,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "সরকারি কর্মচারী হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Fulbaria",
     "coords": {
       "latitude": 23.722,
@@ -5410,7 +5410,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_central_police_hospital",
     "name": "Central Police Hospital",
-    "nameBn": "কেন্দ্রীয় পুলিশ হাসপাতাল",
+    "nameBn": "কেন্দ্রীয় পুলিশ হাসপাতাল",
     "category": "hospital",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -5424,7 +5424,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "rajarbagh",
       "shantinagar",
       "পুলিশ হাসপাতাল",
-      "কেন্দ্রীয় পুলিশ হাসপাতাল",
+      "কেন্দ্রীয় পুলিশ হাসপাতাল",
       "central police hospital",
       "hospital",
       "হাসপাতাল",
@@ -5434,7 +5434,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_railway_general_hospital",
     "name": "Railway General Hospital",
-    "nameBn": "রেলওয়ে হাসপাতাল",
+    "nameBn": "রেলওয়ে হাসপাতাল",
     "category": "hospital",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -5447,7 +5447,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "railway hospital",
       "kamalapur",
       "motijheel",
-      "রেলওয়ে হাসপাতাল",
+      "রেলওয়ে হাসপাতাল",
       "railway general hospital",
       "hospital",
       "হাসপাতাল",
@@ -5457,7 +5457,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_matuail_icmh_child_mother",
     "name": "Matuail ICMH (Child & Mother)",
-    "nameBn": "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য ইনস্টিটিউট",
+    "nameBn": "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -5471,8 +5471,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "icmh",
       "maternity",
       "shishu",
-      "মাতুয়াইল",
-      "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য",
+      "মাতুয়াইল",
+      "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য",
       "matuail icmh (child & mother)",
       "hospital",
       "হাসপাতাল",
@@ -5554,10 +5554,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_lions_eye_institute_hospital",
     "name": "Lions Eye Institute & Hospital",
-    "nameBn": "লায়ন্স চক্ষু হাসপাতাল",
+    "nameBn": "লায়ন্স চক্ষু হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Agargaon",
     "coords": {
       "latitude": 23.774,
@@ -5567,8 +5567,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "lions eye",
       "agargaon",
       "eye hospital",
-      "লায়ন্স চক্ষু",
-      "লায়ন্স চক্ষু হাসপাতাল",
+      "লায়ন্স চক্ষু",
+      "লায়ন্স চক্ষু হাসপাতাল",
       "lions eye institute & hospital",
       "hospital",
       "হাসপাতাল",
@@ -5578,10 +5578,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_ispahani_islamia_eye_institute",
     "name": "Ispahani Islamia Eye Institute",
-    "nameBn": "ইস্পাহানী ইসলামিয়া চক্ষু ইনস্টিটিউট",
+    "nameBn": "ইস্পাহানী ইসলামিয়া চক্ষু ইনস্টিটিউট",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Farmgate",
     "coords": {
       "latitude": 23.757,
@@ -5591,8 +5591,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "islamia eye",
       "farmgate",
       "eye hospital",
-      "ইসলামিয়া চক্ষু",
-      "ইস্পাহানী ইসলামিয়া",
+      "ইসলামিয়া চক্ষু",
+      "ইস্পাহানী ইসলামিয়া",
       "ispahani islamia eye institute",
       "hospital",
       "হাসপাতাল",
@@ -5602,7 +5602,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_ahsania_mission_cancer_hospital",
     "name": "Ahsania Mission Cancer Hospital",
-    "nameBn": "আহছানিয়া মিশন ক্যান্সার হাসপাতাল",
+    "nameBn": "আহছানিয়া মিশন ক্যান্সার হাসপাতাল",
     "category": "hospital",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -5615,8 +5615,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "ahsania mission",
       "cancer hospital",
       "uttara",
-      "আহছানিয়া মিশন",
-      "আহছানিয়া মিশন ক্যান্সার",
+      "আহছানিয়া মিশন",
+      "আহছানিয়া মিশন ক্যান্সার",
       "ahsania mission cancer hospital",
       "uttara sector 10",
       "hospital",
@@ -5651,7 +5651,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_ibn_sina_center_mirpur_10",
     "name": "Ibn Sina Center (Mirpur-10)",
-    "nameBn": "ইবনে সিনা ডায়াগনস্টিক",
+    "nameBn": "ইবনে সিনা ডায়াগনস্টিক",
     "category": "hospital",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -5671,7 +5671,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "commerce college",
       "haji road",
       "ইবনে সিনা মিরপুর",
-      "ইবনে সিনা ডায়াগনস্টিক",
+      "ইবনে সিনা ডায়াগনস্টিক",
       "ibn sina center (mirpur-10)",
       "mirpur-2 (commerce college road)",
       "hospital",
@@ -5826,7 +5826,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_al_razi_islamia_hospital",
     "name": "Al-Razi Islamia Hospital",
-    "nameBn": "আল-রাজি ইসলামিয়া হাসপাতাল",
+    "nameBn": "আল-রাজি ইসলামিয়া হাসপাতাল",
     "category": "hospital",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -5840,7 +5840,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "al-razi",
       "mirpur-10",
       "আল-রাজি",
-      "আল-রাজি ইসলামিয়া",
+      "আল-রাজি ইসলামিয়া",
       "al-razi islamia hospital",
       "hospital",
       "হাসপাতাল",
@@ -5850,7 +5850,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_asian_specialized_hospital",
     "name": "Asian Specialized Hospital",
-    "nameBn": "এশিয়ান স্পেশালাইজড হাসপাতাল",
+    "nameBn": "এশিয়ান স্পেশালাইজড হাসপাতাল",
     "category": "hospital",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -5862,8 +5862,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "asian specialized",
       "mirpur-2",
-      "এশিয়ান স্পেশালাইজড",
-      "এশিয়ান স্পেশালাইজড হাসপাতাল",
+      "এশিয়ান স্পেশালাইজড",
+      "এশিয়ান স্পেশালাইজড হাসপাতাল",
       "asian specialized hospital",
       "hospital",
       "হাসপাতাল",
@@ -5989,7 +5989,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_square_hospital",
     "name": "Square Hospital",
-    "nameBn": "স্কয়ার হাসপাতাল",
+    "nameBn": "স্কয়ার হাসপাতাল",
     "category": "hospital",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -6002,8 +6002,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "square hospital",
       "panthapath",
       "square",
-      "স্কয়ার",
-      "স্কয়ার হাসপাতাল",
+      "স্কয়ার",
+      "স্কয়ার হাসপাতাল",
       "hospital",
       "হাসপাতাল",
       "চিকিৎসা"
@@ -6061,7 +6061,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_labaid_cardiac_hospital",
     "name": "Labaid Cardiac Hospital",
-    "nameBn": "ল্যাবএইড কার্ডিয়াক হাসপাতাল",
+    "nameBn": "ল্যাবএইড কার্ডিয়াক হাসপাতাল",
     "category": "hospital",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -6073,8 +6073,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "labaid cardiac",
       "cardiac dhanmondi",
-      "ল্যাবএইড কার্ডিয়াক",
-      "ল্যাবএইড কার্ডিয়াক হাসপাতাল",
+      "ল্যাবএইড কার্ডিয়াক",
+      "ল্যাবএইড কার্ডিয়াক হাসপাতাল",
       "labaid cardiac hospital",
       "dhanmondi road 4",
       "hospital",
@@ -6108,7 +6108,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_anwer_khan_modern_hospital",
     "name": "Anwer Khan Modern Hospital",
-    "nameBn": "আনোয়ার খান মডার্ন",
+    "nameBn": "আনোয়ার খান মডার্ন",
     "category": "hospital",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -6120,7 +6120,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "anwer khan",
       "dhanmondi road 8",
-      "আনোয়ার খান মডার্ন",
+      "আনোয়ার খান মডার্ন",
       "anwer khan modern hospital",
       "hospital",
       "হাসপাতাল",
@@ -6478,7 +6478,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_care_medical_college_hospital",
     "name": "Care Medical College Hospital",
-    "nameBn": "কেয়ার মেডিকেল কলেজ",
+    "nameBn": "কেয়ার মেডিকেল কলেজ",
     "category": "hospital",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -6490,8 +6490,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "care medical",
       "mohammadpur",
-      "কেয়ার মেডিকেল",
-      "কেয়ার মেডিকেল কলেজ",
+      "কেয়ার মেডিকেল",
+      "কেয়ার মেডিকেল কলেজ",
       "care medical college hospital",
       "hospital",
       "হাসপাতাল",
@@ -6549,7 +6549,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_evercare_hospital",
     "name": "Evercare Hospital",
-    "nameBn": "এভারকেয়ার হাসপাতাল",
+    "nameBn": "এভারকেয়ার হাসপাতাল",
     "category": "hospital",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -6562,8 +6562,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "evercare",
       "apollo",
       "bashundhara",
-      "এভারকেয়ার",
-      "এভারকেয়ার হাসপাতাল",
+      "এভারকেয়ার",
+      "এভারকেয়ার হাসপাতাল",
       "evercare hospital",
       "bashundhara r/a",
       "hospital",
@@ -6618,7 +6618,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_universal_medical_college_hospital_aysha_memorial",
     "name": "Universal Medical College Hospital (Aysha Memorial)",
-    "nameBn": "ইউনিভার্সাল মেডিকেল কলেজ (আয়েশা মেমোরিয়াল)",
+    "nameBn": "ইউনিভার্সাল মেডিকেল কলেজ (আয়েশা মেমোরিয়াল)",
     "category": "hospital",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -6631,7 +6631,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
       "universal medical",
       "aysha memorial",
       "mohakhali",
-      "আয়েশা মেমোরিয়াল",
+      "আয়েশা মেমোরিয়াল",
       "ইউনিভার্সাল মেডিকেল",
       "universal medical college hospital (aysha memorial)",
       "hospital",
@@ -6853,7 +6853,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_radium_general_hospital",
     "name": "Radium General Hospital",
-    "nameBn": "রেডিয়াম জেনারেল হাসপাতাল",
+    "nameBn": "রেডিয়াম জেনারেল হাসপাতাল",
     "category": "hospital",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -6865,8 +6865,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "radium general",
       "uttara sector 3",
-      "রেডিয়াম",
-      "রেডিয়াম জেনারেল",
+      "রেডিয়াম",
+      "রেডিয়াম জেনারেল",
       "radium general hospital",
       "hospital",
       "হাসপাতাল",
@@ -6876,7 +6876,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_ahsania_mission_general_hospital",
     "name": "Ahsania Mission General Hospital",
-    "nameBn": "আহছানিয়া মিশন জেনারেল হাসপাতাল",
+    "nameBn": "আহছানিয়া মিশন জেনারেল হাসপাতাল",
     "category": "hospital",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -6888,7 +6888,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "ahsania general",
       "uttara 10",
-      "আহছানিয়া মিশন জেনারেল",
+      "আহছানিয়া মিশন জেনারেল",
       "ahsania mission general hospital",
       "uttara sector 10",
       "hospital",
@@ -6899,7 +6899,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "hosp_east_west_medical_college_hospital",
     "name": "East West Medical College Hospital",
-    "nameBn": "ইস্ট ওয়েস্ট মেডিকেল",
+    "nameBn": "ইস্ট ওয়েস্ট মেডিকেল",
     "category": "hospital",
     "zone": "Uttara & North",
     "zoneBn": "উত্তরা ও উত্তর ঢাকা",
@@ -6911,8 +6911,8 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "east west medical",
       "turag",
-      "ইস্ট ওয়েস্ট",
-      "ইস্ট ওয়েস্ট মেডিকেল",
+      "ইস্ট ওয়েস্ট",
+      "ইস্ট ওয়েস্ট মেডিকেল",
       "east west medical college hospital",
       "hospital",
       "হাসপাতাল",
@@ -6925,7 +6925,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "হলি ফ্যামিলি হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Eskaton",
     "coords": {
       "latitude": 23.746,
@@ -6949,7 +6949,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "আদ-দ্বীন হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Moghbazar",
     "coords": {
       "latitude": 23.7475,
@@ -6973,7 +6973,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ইনসাফ বারাকাহ হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Moghbazar",
     "coords": {
       "latitude": 23.7485,
@@ -6996,7 +6996,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ঢাকা কমিউনিটি মেডিকেল কলেজ",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Moghbazar",
     "coords": {
       "latitude": 23.746,
@@ -7019,7 +7019,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "সিটি ডেন্টাল কলেজ হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Moghbazar",
     "coords": {
       "latitude": 23.747,
@@ -7042,7 +7042,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "সিরাজুল ইসলাম মেডিকেল কলেজ",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Malibagh",
     "coords": {
       "latitude": 23.751,
@@ -7111,7 +7111,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "আল-হারামাইন হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shantinagar",
     "coords": {
       "latitude": 23.7405,
@@ -7158,7 +7158,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ইম্পালস হাসপাতাল",
     "category": "hospital",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tejgaon Industrial Area",
     "coords": {
       "latitude": 23.766,
@@ -7550,7 +7550,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "মিরপুর-১১.৫ (পুরবী)",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Purobi, Dhaka",
     "coords": {
       "latitude": 23.821,
@@ -7707,7 +7707,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_paikpara",
     "name": "Paikpara",
-    "nameBn": "পাইকপাড়া",
+    "nameBn": "পাইকপাড়া",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -7719,7 +7719,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "paikpara",
       "paikpara",
-      "পাইকপাড়া",
+      "পাইকপাড়া",
       "area",
       "এলাকা"
     ]
@@ -7767,7 +7767,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_kazipara",
     "name": "Kazipara",
-    "nameBn": "কাজীপাড়া",
+    "nameBn": "কাজীপাড়া",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -7779,7 +7779,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "kazipara",
       "kazipara",
-      "কাজীপাড়া",
+      "কাজীপাড়া",
       "area",
       "এলাকা"
     ]
@@ -7787,7 +7787,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_shewrapara",
     "name": "Shewrapara",
-    "nameBn": "শেওড়াপাড়া",
+    "nameBn": "শেওড়াপাড়া",
     "category": "area",
     "zone": "Mirpur & Campus",
     "zoneBn": "মিরপুর ও ক্যাম্পাস এলাকা",
@@ -7799,7 +7799,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "shewrapara",
       "shewrapara",
-      "শেওড়াপাড়া",
+      "শেওড়াপাড়া",
       "area",
       "এলাকা"
     ]
@@ -7847,10 +7847,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_senpara_parbata",
     "name": "Senpara Parbata",
-    "nameBn": "সেনপাড়া পর্বতা",
+    "nameBn": "সেনপাড়া পর্বতা",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Senpara Parbata, Dhaka",
     "coords": {
       "latitude": 23.801,
@@ -7859,7 +7859,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "senpara parbata",
       "senpara parbata",
-      "সেনপাড়া পর্বতা",
+      "সেনপাড়া পর্বতা",
       "area",
       "এলাকা"
     ]
@@ -7990,7 +7990,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "আগারগাঁও",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Agargaon, Dhaka",
     "coords": {
       "latitude": 23.7779,
@@ -8010,7 +8010,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শেরেবাংলা নগর",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sher E Bangla Nagar, Dhaka",
     "coords": {
       "latitude": 23.77,
@@ -8047,7 +8047,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_lalmatia",
     "name": "Lalmatia",
-    "nameBn": "লালমাটিয়া",
+    "nameBn": "লালমাটিয়া",
     "category": "area",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -8059,7 +8059,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "lalmatia",
       "lalmatia",
-      "লালমাটিয়া",
+      "লালমাটিয়া",
       "area",
       "এলাকা"
     ]
@@ -8090,7 +8090,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "জাপান গার্ডেন সিটি",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Japan Garden City, Dhaka",
     "coords": {
       "latitude": 23.768,
@@ -8150,7 +8150,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "টাউন হল ও তাজমহল রোড",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Town Hall, Dhaka",
     "coords": {
       "latitude": 23.761,
@@ -8170,7 +8170,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "টাউন হল ও তাজমহল রোড",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tajmahal Road, Dhaka",
     "coords": {
       "latitude": 23.762,
@@ -8190,7 +8190,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "Salimullah Road",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Salimullah Road, Dhaka",
     "coords": {
       "latitude": 23.76,
@@ -8210,7 +8210,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "সলিমুল্লাহ ও নুরজাহান রোড",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Noorjahan Road, Dhaka",
     "coords": {
       "latitude": 23.759,
@@ -8227,10 +8227,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_shia_masjid",
     "name": "Shia Masjid",
-    "nameBn": "শিয়া মসজিদ ও রিং রোড",
+    "nameBn": "শিয়া মসজিদ ও রিং রোড",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shia Masjid, Dhaka",
     "coords": {
       "latitude": 23.768,
@@ -8239,7 +8239,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "shia masjid",
       "shia masjid",
-      "শিয়া মসজিদ ও রিং রোড",
+      "শিয়া মসজিদ ও রিং রোড",
       "area",
       "এলাকা"
     ]
@@ -8247,10 +8247,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_ring_road",
     "name": "Ring Road",
-    "nameBn": "শিয়া মসজিদ ও রিং রোড",
+    "nameBn": "শিয়া মসজিদ ও রিং রোড",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Ring Road, Dhaka",
     "coords": {
       "latitude": 23.771,
@@ -8259,7 +8259,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "ring road",
       "ring road",
-      "শিয়া মসজিদ ও রিং রোড",
+      "শিয়া মসজিদ ও রিং রোড",
       "area",
       "এলাকা"
     ]
@@ -8270,7 +8270,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "চন্দ্রিমা উদ্যান হাউজিং",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Chandrima Udyan, Dhaka",
     "coords": {
       "latitude": 23.766,
@@ -8290,7 +8290,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শেখেরটেক ও মনসুরাবাদ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shekhertek, Dhaka",
     "coords": {
       "latitude": 23.768,
@@ -8310,7 +8310,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শেখেরটেক ও মনসুরাবাদ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Monsurabad, Dhaka",
     "coords": {
       "latitude": 23.766,
@@ -8327,10 +8327,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_baitul_aman",
     "name": "Baitul Aman",
-    "nameBn": "বায়তুল আমান ও নবোদয় হাউজিং",
+    "nameBn": "বায়তুল আমান ও নবোদয় হাউজিং",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Baitul Aman, Dhaka",
     "coords": {
       "latitude": 23.767,
@@ -8339,7 +8339,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "baitul aman",
       "baitul aman",
-      "বায়তুল আমান ও নবোদয় হাউজিং",
+      "বায়তুল আমান ও নবোদয় হাউজিং",
       "area",
       "এলাকা"
     ]
@@ -8347,10 +8347,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_nobodoy",
     "name": "Nobodoy",
-    "nameBn": "বায়তুল আমান ও নবোদয় হাউজিং",
+    "nameBn": "বায়তুল আমান ও নবোদয় হাউজিং",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Nobodoy, Dhaka",
     "coords": {
       "latitude": 23.765,
@@ -8359,7 +8359,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "nobodoy",
       "nobodoy",
-      "বায়তুল আমান ও নবোদয় হাউজিং",
+      "বায়তুল আমান ও নবোদয় হাউজিং",
       "area",
       "এলাকা"
     ]
@@ -8410,7 +8410,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শংকর ও সাতমসজিদ রোড",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Satmasjid Road, Dhaka",
     "coords": {
       "latitude": 23.748,
@@ -8570,7 +8570,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ইন্দিরা রোড / তেজতুরী বাজার",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Indira Road, Dhaka",
     "coords": {
       "latitude": 23.758,
@@ -8590,7 +8590,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ইন্দিরা রোড / তেজতুরী বাজার",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tejturi Bazar, Dhaka",
     "coords": {
       "latitude": 23.756,
@@ -8607,10 +8607,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_bijoy_sarani",
     "name": "Bijoy Sarani",
-    "nameBn": "বিজয় সরণি",
+    "nameBn": "বিজয় সরণি",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Bijoy Sarani, Dhaka",
     "coords": {
       "latitude": 23.766,
@@ -8619,7 +8619,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "bijoy sarani",
       "bijoy sarani",
-      "বিজয় সরণি",
+      "বিজয় সরণি",
       "area",
       "এলাকা"
     ]
@@ -8650,7 +8650,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বাংলামোটর",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Banglamotor, Dhaka",
     "coords": {
       "latitude": 23.746,
@@ -8670,7 +8670,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "হাতিরপুল",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Hatirpool, Dhaka",
     "coords": {
       "latitude": 23.744,
@@ -8690,7 +8690,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "কাটাবন",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Katabon, Dhaka",
     "coords": {
       "latitude": 23.74,
@@ -8710,7 +8710,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শাহবাগ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahbagh, Dhaka",
     "coords": {
       "latitude": 23.738,
@@ -8730,7 +8730,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ইস্কাটন",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Eskaton, Dhaka",
     "coords": {
       "latitude": 23.746,
@@ -8750,7 +8750,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বেইলি রোড ও অফিসার্স কলোনি",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Bailey Road, Dhaka",
     "coords": {
       "latitude": 23.741,
@@ -8770,7 +8770,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বেইলি রোড ও অফিসার্স কলোনি",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Officers Colony, Dhaka",
     "coords": {
       "latitude": 23.742,
@@ -8790,7 +8790,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "মগবাজার",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Moghbazar, Dhaka",
     "coords": {
       "latitude": 23.7475,
@@ -8810,7 +8810,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "মালিবাগ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Malibagh, Dhaka",
     "coords": {
       "latitude": 23.751,
@@ -8830,7 +8830,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "মৌচাক",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Mouchak, Dhaka",
     "coords": {
       "latitude": 23.747,
@@ -8850,7 +8850,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শান্তিনগর",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shantinagar, Dhaka",
     "coords": {
       "latitude": 23.741,
@@ -8870,7 +8870,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "Rajarbagh",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Rajarbagh, Dhaka",
     "coords": {
       "latitude": 23.74,
@@ -8890,7 +8890,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "কাকরাইল",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Kakrail, Dhaka",
     "coords": {
       "latitude": 23.738,
@@ -8970,7 +8970,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "Fulbaria",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Fulbaria, Dhaka",
     "coords": {
       "latitude": 23.722,
@@ -8990,7 +8990,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "সেগুনবাগিচা",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Segunbagicha, Dhaka",
     "coords": {
       "latitude": 23.734,
@@ -9007,10 +9007,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_buet_campus",
     "name": "Buet Campus",
-    "nameBn": "বুয়েট ক্যাম্পাস",
+    "nameBn": "বুয়েট ক্যাম্পাস",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Buet Campus, Dhaka",
     "coords": {
       "latitude": 23.726,
@@ -9019,7 +9019,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "buet campus",
       "buet campus",
-      "বুয়েট ক্যাম্পাস",
+      "বুয়েট ক্যাম্পাস",
       "area",
       "এলাকা"
     ]
@@ -9030,7 +9030,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "চাঁনখারপুল / বকশীবাজার",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Chankharpul, Dhaka",
     "coords": {
       "latitude": 23.723,
@@ -9050,7 +9050,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "চাঁনখারপুল / বকশীবাজার",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Bakshibazar, Dhaka",
     "coords": {
       "latitude": 23.721,
@@ -9070,7 +9070,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "আজিমপুর মাতৃসদন",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Azimpur, Dhaka",
     "coords": {
       "latitude": 23.728,
@@ -9210,7 +9210,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "টিকাটুলী",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tikatuli, Dhaka",
     "coords": {
       "latitude": 23.722,
@@ -9227,7 +9227,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_sayedabad",
     "name": "Sayedabad",
-    "nameBn": "সায়েদাবাদ",
+    "nameBn": "সায়েদাবাদ",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -9239,7 +9239,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "sayedabad",
       "sayedabad",
-      "সায়েদাবাদ",
+      "সায়েদাবাদ",
       "area",
       "এলাকা"
     ]
@@ -9327,10 +9327,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_dayaganj",
     "name": "Dayaganj",
-    "nameBn": "দয়াগঞ্জ ও ধোলাইখাল",
+    "nameBn": "দয়াগঞ্জ ও ধোলাইখাল",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Dayaganj, Dhaka",
     "coords": {
       "latitude": 23.712,
@@ -9339,7 +9339,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "dayaganj",
       "dayaganj",
-      "দয়াগঞ্জ ও ধোলাইখাল",
+      "দয়াগঞ্জ ও ধোলাইখাল",
       "area",
       "এলাকা"
     ]
@@ -9347,10 +9347,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_dholairkhal",
     "name": "Dholairkhal",
-    "nameBn": "দয়াগঞ্জ ও ধোলাইখাল",
+    "nameBn": "দয়াগঞ্জ ও ধোলাইখাল",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Dholairkhal, Dhaka",
     "coords": {
       "latitude": 23.714,
@@ -9359,7 +9359,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "dholairkhal",
       "dholairkhal",
-      "দয়াগঞ্জ ও ধোলাইখাল",
+      "দয়াগঞ্জ ও ধোলাইখাল",
       "area",
       "এলাকা"
     ]
@@ -9370,7 +9370,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ফরাশগঞ্জ ও শ্যামবাজার",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Farashganj, Dhaka",
     "coords": {
       "latitude": 23.704,
@@ -9390,7 +9390,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ফরাশগঞ্জ ও শ্যামবাজার",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shyambazar, Dhaka",
     "coords": {
       "latitude": 23.702,
@@ -9427,7 +9427,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_gandaria",
     "name": "Gandaria",
-    "nameBn": "নারিন্দা / গেন্ডারিয়া",
+    "nameBn": "নারিন্দা / গেন্ডারিয়া",
     "category": "area",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -9439,7 +9439,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "gandaria",
       "gandaria",
-      "নারিন্দা / গেন্ডারিয়া",
+      "নারিন্দা / গেন্ডারিয়া",
       "area",
       "এলাকা"
     ]
@@ -9447,7 +9447,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_wari",
     "name": "Wari",
-    "nameBn": "ওয়ারী",
+    "nameBn": "ওয়ারী",
     "category": "area",
     "zone": "Old Dhaka & Sadarghat",
     "zoneBn": "পুরান ঢাকা ও সদরঘাট",
@@ -9459,7 +9459,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "wari",
       "wari",
-      "ওয়ারী",
+      "ওয়ারী",
       "area",
       "এলাকা"
     ]
@@ -9507,7 +9507,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_hazaribagh",
     "name": "Hazaribagh",
-    "nameBn": "হাজারীবাগ / রায়ের বাজার",
+    "nameBn": "হাজারীবাগ / রায়ের বাজার",
     "category": "area",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -9519,7 +9519,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "hazaribagh",
       "hazaribagh",
-      "হাজারীবাগ / রায়ের বাজার",
+      "হাজারীবাগ / রায়ের বাজার",
       "area",
       "এলাকা"
     ]
@@ -9527,7 +9527,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_rayer_bazar",
     "name": "Rayer Bazar",
-    "nameBn": "হাজারীবাগ / রায়ের বাজার",
+    "nameBn": "হাজারীবাগ / রায়ের বাজার",
     "category": "area",
     "zone": "Dhanmondi & West",
     "zoneBn": "ধানমন্ডি ও পশ্চিম ঢাকা",
@@ -9539,7 +9539,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "rayer bazar",
       "rayer bazar",
-      "হাজারীবাগ / রায়ের বাজার",
+      "হাজারীবাগ / রায়ের বাজার",
       "area",
       "এলাকা"
     ]
@@ -9607,7 +9607,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_goran",
     "name": "Goran",
-    "nameBn": "গোড়ান ও সিপাহীবাগ",
+    "nameBn": "গোড়ান ও সিপাহীবাগ",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -9619,7 +9619,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "goran",
       "goran",
-      "গোড়ান ও সিপাহীবাগ",
+      "গোড়ান ও সিপাহীবাগ",
       "area",
       "এলাকা"
     ]
@@ -9627,10 +9627,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_sipahibagh",
     "name": "Sipahibagh",
-    "nameBn": "গোড়ান ও সিপাহীবাগ",
+    "nameBn": "গোড়ান ও সিপাহীবাগ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Sipahibagh, Dhaka",
     "coords": {
       "latitude": 23.754,
@@ -9639,7 +9639,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "sipahibagh",
       "sipahibagh",
-      "গোড়ান ও সিপাহীবাগ",
+      "গোড়ান ও সিপাহীবাগ",
       "area",
       "এলাকা"
     ]
@@ -9670,7 +9670,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "বাসাবো / মাদারটেক",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Madartek, Dhaka",
     "coords": {
       "latitude": 23.742,
@@ -9690,7 +9690,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "শাহজাহানপুর",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Shahjahanpur, Dhaka",
     "coords": {
       "latitude": 23.742,
@@ -9830,7 +9830,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "প্রগতি সরণি",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Pragati Sarani, Dhaka",
     "coords": {
       "latitude": 23.792,
@@ -9850,7 +9850,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "নতুন বাজার ও মাদানী এভিনিউ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Natun Bazar, Dhaka",
     "coords": {
       "latitude": 23.795,
@@ -9870,7 +9870,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "নতুন বাজার ও মাদানী এভিনিউ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Madani Avenue, Dhaka",
     "coords": {
       "latitude": 23.796,
@@ -9887,10 +9887,10 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_matuail",
     "name": "Matuail",
-    "nameBn": "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য ইনস্টিটিউট",
+    "nameBn": "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য ইনস্টিটিউট",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Matuail, Dhaka",
     "coords": {
       "latitude": 23.705,
@@ -9899,7 +9899,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "matuail",
       "matuail",
-      "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য ইনস্টিটিউট",
+      "মাতুয়াইল শিশু ও মাতৃস্বাস্থ্য ইনস্টিটিউট",
       "area",
       "এলাকা"
     ]
@@ -9907,7 +9907,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_shanir_akhra",
     "name": "Shanir Akhra",
-    "nameBn": "শনির আখড়া / রায়েরবাগ",
+    "nameBn": "শনির আখড়া / রায়েরবাগ",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -9919,7 +9919,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "shanir akhra",
       "shanir akhra",
-      "শনির আখড়া / রায়েরবাগ",
+      "শনির আখড়া / রায়েরবাগ",
       "area",
       "এলাকা"
     ]
@@ -9927,7 +9927,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_rayerbag",
     "name": "Rayerbag",
-    "nameBn": "শনির আখড়া / রায়েরবাগ",
+    "nameBn": "শনির আখড়া / রায়েরবাগ",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -9939,7 +9939,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "rayerbag",
       "rayerbag",
-      "শনির আখড়া / রায়েরবাগ",
+      "শনির আখড়া / রায়েরবাগ",
       "area",
       "এলাকা"
     ]
@@ -9947,7 +9947,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_dania",
     "name": "Dania",
-    "nameBn": "দনিয়া ও শনির আখড়া",
+    "nameBn": "দনিয়া ও শনির আখড়া",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -9959,7 +9959,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "dania",
       "dania",
-      "দনিয়া ও শনির আখড়া",
+      "দনিয়া ও শনির আখড়া",
       "area",
       "এলাকা"
     ]
@@ -9990,7 +9990,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "ধলপুর ও গোলাপবাগ",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Golapbagh, Dhaka",
     "coords": {
       "latitude": 23.717,
@@ -10007,7 +10007,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_jatrabari",
     "name": "Jatrabari",
-    "nameBn": "যাত্রাবাড়ী",
+    "nameBn": "যাত্রাবাড়ী",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -10019,7 +10019,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "jatrabari",
       "jatrabari",
-      "যাত্রাবাড়ী",
+      "যাত্রাবাড়ী",
       "area",
       "এলাকা"
     ]
@@ -10027,7 +10027,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_demra",
     "name": "Demra",
-    "nameBn": "ডেমরা ও স্টাফ কোয়ার্টার",
+    "nameBn": "ডেমরা ও স্টাফ কোয়ার্টার",
     "category": "area",
     "zone": "Motijheel & East",
     "zoneBn": "মতিঝিল ও পূর্ব ঢাকা",
@@ -10039,7 +10039,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "demra",
       "demra",
-      "ডেমরা ও স্টাফ কোয়ার্টার",
+      "ডেমরা ও স্টাফ কোয়ার্টার",
       "area",
       "এলাকা"
     ]
@@ -10050,7 +10050,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "পোস্তগোলা / জুরাইন",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Postogola, Dhaka",
     "coords": {
       "latitude": 23.695,
@@ -10070,7 +10070,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "পোস্তগোলা / জুরাইন",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Jurain, Dhaka",
     "coords": {
       "latitude": 23.698,
@@ -10087,7 +10087,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_signboard",
     "name": "Signboard",
-    "nameBn": "নারায়ণগঞ্জ / সাইনবোর্ড",
+    "nameBn": "নারায়ণগঞ্জ / সাইনবোর্ড",
     "category": "area",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -10099,7 +10099,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "signboard",
       "signboard",
-      "নারায়ণগঞ্জ / সাইনবোর্ড",
+      "নারায়ণগঞ্জ / সাইনবোর্ড",
       "area",
       "এলাকা"
     ]
@@ -10107,7 +10107,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_narayanganj",
     "name": "Narayanganj",
-    "nameBn": "নারায়ণগঞ্জ / সাইনবোর্ড",
+    "nameBn": "নারায়ণগঞ্জ / সাইনবোর্ড",
     "category": "area",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -10119,7 +10119,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "narayanganj",
       "narayanganj",
-      "নারায়ণগঞ্জ / সাইনবোর্ড",
+      "নারায়ণগঞ্জ / সাইনবোর্ড",
       "area",
       "এলাকা"
     ]
@@ -10130,7 +10130,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "nameBn": "তেজগাঁও শিল্পাঞ্চল",
     "category": "area",
     "zone": "Shahbagh & Central",
-    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
+    "zoneBn": "শাহবাগ ও কেন্দ্রীয় ঢাকা",
     "subLocation": "Tejgaon, Dhaka",
     "coords": {
       "latitude": 23.766,
@@ -10307,7 +10307,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_kuril",
     "name": "Kuril",
-    "nameBn": "কুড়িল বিশ্বরোড",
+    "nameBn": "কুড়িল বিশ্বরোড",
     "category": "area",
     "zone": "Mohakhali & Gulshan",
     "zoneBn": "মহাখালী ও গুলশান",
@@ -10319,7 +10319,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "kuril",
       "kuril",
-      "কুড়িল বিশ্বরোড",
+      "কুড়িল বিশ্বরোড",
       "area",
       "এলাকা"
     ]
@@ -10647,7 +10647,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_ashulia",
     "name": "Ashulia",
-    "nameBn": "আশুলিয়া",
+    "nameBn": "আশুলিয়া",
     "category": "area",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -10659,7 +10659,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "ashulia",
       "ashulia",
-      "আশুলিয়া",
+      "আশুলিয়া",
       "area",
       "এলাকা"
     ]
@@ -10667,7 +10667,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_birulia",
     "name": "Birulia",
-    "nameBn": "বিরুলিয়া",
+    "nameBn": "বিরুলিয়া",
     "category": "area",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -10679,7 +10679,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "birulia",
       "birulia",
-      "বিরুলিয়া",
+      "বিরুলিয়া",
       "area",
       "এলাকা"
     ]
@@ -10707,7 +10707,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_hemayetpur",
     "name": "Hemayetpur",
-    "nameBn": "হেমায়েতপুর / আমিনবাজার",
+    "nameBn": "হেমায়েতপুর / আমিনবাজার",
     "category": "area",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -10719,7 +10719,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "hemayetpur",
       "hemayetpur",
-      "হেমায়েতপুর / আমিনবাজার",
+      "হেমায়েতপুর / আমিনবাজার",
       "area",
       "এলাকা"
     ]
@@ -10727,7 +10727,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
   {
     "id": "area_aminbazar",
     "name": "Aminbazar",
-    "nameBn": "হেমায়েতপুর / আমিনবাজার",
+    "nameBn": "হেমায়েতপুর / আমিনবাজার",
     "category": "area",
     "zone": "Greater Dhaka & Suburbs",
     "zoneBn": "বৃহত্তর ঢাকা ও শহরতলি",
@@ -10739,7 +10739,7 @@ export const DHAKA_MASTER_LOCATIONS: MasterLocation[] = [
     "keywords": [
       "aminbazar",
       "aminbazar",
-      "হেমায়েতপুর / আমিনবাজার",
+      "হেমায়েতপুর / আমিনবাজার",
       "area",
       "এলাকা"
     ]

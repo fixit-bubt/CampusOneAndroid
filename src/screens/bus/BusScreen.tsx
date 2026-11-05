@@ -215,7 +215,7 @@ export function BusScreen({ navigation }: any) {
             <TouchableOpacity
               style={[styles.pdfBtn, { borderColor: C.border }]}
               onPress={() => pdfViewer.open(busPdfUrl, 'Bus Schedule', 'Bus Schedule')}
-              accessibilityLabel={isBn ? 'অফিসিয়াল বাস রুট শিডিউল পিডিএফ' : 'Official Bus Schedule PDF'}
+              accessibilityLabel={isBn ? 'অফিসিয়াল বাস রুট শিডিউল পিডিএফ' : 'Official Bus Schedule PDF'}
               activeOpacity={0.7}
             >
               <Feather name="file-text" size={13} color={C.text2} />
@@ -291,7 +291,7 @@ export function BusScreen({ navigation }: any) {
             <Icon name="alert-triangle" size={16} color={C.warn} />
             <Text style={[styles.noticeText, { color: C.text, fontFamily: FontFamily.jakartaMedium }]}>
               {isBn
-                ? 'শুক্রবার নিয়মিত ক্লাসের শাটল বাস বন্ধ থাকে। বিশেষ পরীক্ষা বা ইভেন্টের বাস চলতে পারে।'
+                ? 'শুক্রবার নিয়মিত ক্লাসের শাটল বাস বন্ধ থাকে। বিশেষ পরীক্ষা বা ইভেন্টের বাস চলতে পারে।'
                 : 'Friday service is suspended for regular classes. Special exam or event shuttles may operate.'}
             </Text>
           </View>
@@ -309,7 +309,7 @@ export function BusScreen({ navigation }: any) {
                 <Feather name="clock" size={13} color={C.text} />
                 <Text style={[styles.heroBadgeTxt, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                   {direction === 'to'
-                    ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next shuttle to campus')
+                    ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next shuttle to campus')
                     : (isBn ? 'ক্যাম্পাস থেকে ফেরার পরবর্তী বাস' : 'Next shuttle from campus')}
                 </Text>
               </View>
@@ -338,7 +338,7 @@ export function BusScreen({ navigation }: any) {
                 {hero.route.bus_no ? `${hero.route.bus_no} · ` : ''}
                 {direction === 'to'
                   ? (isBn ? `শুরু: ${hero.route.stops?.[0] ?? hero.route.area}` : `Starts from ${hero.route.stops?.[0] ?? hero.route.area}`)
-                  : (isBn ? 'বিইউবিটি মেইন ক্যাম্পাস থেকে ছাড়বে' : 'Departs from BUBT Main Campus')}
+                  : (isBn ? 'বিইউবিটি মেইন ক্যাম্পাস থেকে ছাড়বে' : 'Departs from BUBT Main Campus')}
               </Text>
               <Feather name="chevron-right" size={16} color={C.textMuted} />
             </View>
@@ -485,7 +485,7 @@ export function BusScreen({ navigation }: any) {
               </Text>
               <Text style={[styles.transitSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                 {isBn
-                  ? 'ওয়ান স্টপ সার্ভিস হটলাইন: 01810033740 · বিইউবিটি আইডি কার্ডে ফ্রি'
+                  ? 'ওয়ান স্টপ সার্ভিস হটলাইন: 01810033740 · বিইউবিটি আইডি কার্ডে ফ্রি'
                   : 'One Stop Service Hotline: 01810033740 · Free with BUBT ID'}
               </Text>
             </View>

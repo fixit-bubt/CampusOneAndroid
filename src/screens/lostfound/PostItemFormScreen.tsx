@@ -47,7 +47,7 @@ const LF_CATS: CategoryOption[] = [
     label: 'Personal Items',
     labelBn: 'ব্যক্তিগত সামগ্রী',
     sub: 'Wallets, keys, bags, watch, bottle',
-    subBn: 'মানিব্যাগ, চাবি, ব্যাগ, ঘড়ি, বোতল',
+    subBn: 'মানিব্যাগ, চাবি, ব্যাগ, ঘড়ি, বোতল',
   },
   {
     id: 'Electronics',
@@ -96,7 +96,7 @@ const BUBT_CAMPUS_HUBS: CampusHub[] = [
   {
     id: 'cafeteria',
     name: 'Campus Cafeteria',
-    nameBn: 'ক্যাম্পাস ক্যাফেটেরিয়া',
+    nameBn: 'ক্যাম্পাস ক্যাফেটেরিয়া',
     sub: 'Building 1, Ground Floor',
     subBn: 'ভবন ১, নিচতলা',
     icon: 'coffee',
@@ -122,7 +122,7 @@ const BUBT_CAMPUS_HUBS: CampusHub[] = [
     name: 'Building 3 / Annex',
     nameBn: 'ভবন ৩ / অ্যানেক্স',
     sub: 'Department offices & classes',
-    subBn: 'বিভাগীয় অফিস ও ক্লাস',
+    subBn: 'বিভাগীয় অফিস ও ক্লাস',
     icon: 'home',
   },
   {
@@ -144,7 +144,7 @@ const BUBT_CAMPUS_HUBS: CampusHub[] = [
   {
     id: 'exam_hall',
     name: 'Examination Hall & Auditorium',
-    nameBn: 'পরীক্ষা হল ও অডিটোরিয়াম',
+    nameBn: 'পরীক্ষা হল ও অডিটোরিয়াম',
     sub: 'Building 1, Top Floor',
     subBn: 'ভবন ১, শীর্ষ তলা',
     icon: 'file-text',
@@ -541,8 +541,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
                   numberOfLines={1}
                 >
                   {loc || (type === 'Lost'
-                    ? (isBn ? 'কোথায় হারিয়ে গেছে?' : 'Where was it lost?')
-                    : (isBn ? 'কোথায় পাওয়া গেছে?' : 'Where was it found?'))}
+                    ? (isBn ? 'কোথায় হারিয়ে গেছে?' : 'Where was it lost?')
+                    : (isBn ? 'কোথায় পাওয়া গেছে?' : 'Where was it found?'))}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -747,7 +747,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
                     {isBn ? 'ক্যাটাগরি নির্বাচন করুন' : 'Select Category'}
                   </Text>
                   <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
-                    {isBn ? 'আইটেম অনুযায়ী সঠিক ক্যাটাগরি বেছে নিন' : 'Choose the best matching category'}
+                    {isBn ? 'আইটেম অনুযায়ী সঠিক ক্যাটাগরি বেছে নিন' : 'Choose the best matching category'}
                   </Text>
                 </View>
               </View>
@@ -855,8 +855,8 @@ export function PostItemFormScreen({ route, navigation }: any) {
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.sheetTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
                     {type === 'Lost'
-                      ? (isBn ? 'কোথায় হারিয়ে গেছে?' : 'Where was it lost?')
-                      : (isBn ? 'কোথায় পাওয়া গেছে?' : 'Where was it found?')}
+                      ? (isBn ? 'কোথায় হারিয়ে গেছে?' : 'Where was it lost?')
+                      : (isBn ? 'কোথায় পাওয়া গেছে?' : 'Where was it found?')}
                   </Text>
                   <Text style={[styles.sheetSub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]}>
                     {isBn ? 'রুম নম্বর, ম্যাপ বা BUBT স্পট নির্বাচন করুন' : 'Select room, map pin, or campus building'}
@@ -917,7 +917,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
                 >
                   <Feather name="check" size={16} color="#ffffff" />
                   <Text style={[styles.locSetBtnTxt, { fontFamily: FontFamily.jakartaBold }]}>
-                    {isBn ? 'প্রয়োগ' : 'Set'}
+                    {isBn ? 'প্রয়োগ' : 'Set'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1055,7 +1055,7 @@ export function PostItemFormScreen({ route, navigation }: any) {
         visible={mapModalVisible}
         onClose={() => setMapModalVisible(false)}
         accentColor={SectorColors.lostfound}
-        title={type === 'Lost' ? (isBn ? 'হারানোর স্থান নির্বাচন করুন' : 'Pick Lost Location') : (isBn ? 'পাওয়ার স্থান নির্বাচন করুন' : 'Pick Found Location')}
+        title={type === 'Lost' ? (isBn ? 'হারানোর স্থান নির্বাচন করুন' : 'Pick Lost Location') : (isBn ? 'পাওয়ার স্থান নির্বাচন করুন' : 'Pick Found Location')}
         initialPlaceName={loc}
         initialCoords={locCoords || undefined}
         onSelectLocation={(place) => {

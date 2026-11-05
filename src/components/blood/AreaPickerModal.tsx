@@ -60,7 +60,7 @@ const ZONE_METAS = [
   {
     id: 'shahbagh',
     name: 'Shahbagh & Central',
-    nameBn: 'শাহবাগ ও কেন্দ্রীয় ঢাকা',
+    nameBn: 'শাহবাগ ও কেন্দ্রীয় ঢাকা',
     subtitle: 'Agargaon, Farmgate, Tejgaon, Moghbazar',
   },
   {

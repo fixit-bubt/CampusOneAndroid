@@ -150,7 +150,7 @@ export function BusDetailScreen({ route, navigation }: any) {
   });
 
   const cleanPhone = cleanWhatsAppPhone(busRoute.helper_phone);
-  const cleanFridayNote = (busRoute.friday_note || (isBn ? 'শুক্রবার ও সরকারি ছুটির দিনে নিয়মিত বাস সার্ভিস বন্ধ থাকে।' : 'No regular service on Friday & government holidays.')).replace(/–/g, '-');
+  const cleanFridayNote = (busRoute.friday_note || (isBn ? 'শুক্রবার ও সরকারি ছুটির দিনে নিয়মিত বাস সার্ভিস বন্ধ থাকে।' : 'No regular service on Friday & government holidays.')).replace(/–/g, '-');
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -200,7 +200,7 @@ export function BusDetailScreen({ route, navigation }: any) {
             <View style={styles.heroRow}>
               <Text style={[styles.nextLabel, { fontFamily: FontFamily.jakartaMedium }]}>
                 {direction === 'to'
-                  ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next Departure to Campus')
+                  ? (isBn ? 'ক্যাম্পাসে যাওয়ার পরবর্তী বাস' : 'Next Departure to Campus')
                   : (isBn ? 'ক্যাম্পাস থেকে ফেরার পরবর্তী বাস' : 'Next Departure from Campus')}
               </Text>
               {nextDep && (
@@ -225,7 +225,7 @@ export function BusDetailScreen({ route, navigation }: any) {
         {departures.length > 0 && (
           <View style={styles.tripsSection}>
             <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-              {isBn ? 'ট্রিপের সময়সূচি নির্বাচন করুন' : 'SELECT TRIP TIMETABLE'}
+              {isBn ? 'ট্রিপের সময়সূচি নির্বাচন করুন' : 'SELECT TRIP TIMETABLE'}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tripsRow}>
               {departures.map((dep, idx) => {
@@ -275,10 +275,10 @@ export function BusDetailScreen({ route, navigation }: any) {
         {/* Timetable Section */}
         <View style={styles.timetableHeader}>
           <Text style={[styles.sectionLabel, { color: C.textMuted, fontFamily: FontFamily.jakartaExtraBold }]}>
-            {isBn ? 'স্টপেজ ও পৌঁছানোর সময়' : 'ROUTE STOPS & ARRIVAL TIMES'}
+            {isBn ? 'স্টপেজ ও পৌঁছানোর সময়' : 'ROUTE STOPS & ARRIVAL TIMES'}
           </Text>
           <Text style={[styles.timetableTripHint, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-            {isBn ? `${formatTime12(selectedTimeStr)} ছাড়ার সময় অনুযায়ী` : `Based on ${formatTime12(selectedTimeStr)} departure`}
+            {isBn ? `${formatTime12(selectedTimeStr)} ছাড়ার সময় অনুযায়ী` : `Based on ${formatTime12(selectedTimeStr)} departure`}
           </Text>
         </View>
 
@@ -381,7 +381,7 @@ export function BusDetailScreen({ route, navigation }: any) {
         {/* Campus Transport Policies & Rules */}
         <View style={[styles.policyCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <Text style={[styles.policyHeader, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-            {isBn ? 'ক্যাম্পাস শাটল বাসের নিয়মাবলি' : 'Campus Shuttle Guidelines'}
+            {isBn ? 'ক্যাম্পাস শাটল বাসের নিয়মাবলি' : 'Campus Shuttle Guidelines'}
           </Text>
 
           <View style={styles.policyRow}>
@@ -397,7 +397,7 @@ export function BusDetailScreen({ route, navigation }: any) {
             <Feather name="credit-card" size={15} color={C.warn} />
             <Text style={[styles.policyTxt, { color: C.text2, fontFamily: FontFamily.jakartaRegular }]}>
               {isBn
-                ? 'বাসে ওঠার সময় অবশ্যই বিইউবিটি স্টুডেন্ট আইডি কার্ড প্রদর্শন করতে হবে।'
+                ? 'বাসে ওঠার সময় অবশ্যই বিইউবিটি স্টুডেন্ট আইডি কার্ড প্রদর্শন করতে হবে।'
                 : 'Must show your physical BUBT Student ID card when boarding.'}
             </Text>
           </View>
@@ -427,7 +427,7 @@ export function BusDetailScreen({ route, navigation }: any) {
                 {isBn ? 'বাস মিস করেছেন?' : 'Missed the Bus?'}
               </Text>
               <Text style={[styles.synergySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
-                {isBn ? 'সহপাঠীদের ক্যাম্পাস রাইড শেয়ার দেখুন' : 'Check student campus rides'}
+                {isBn ? 'সহপাঠীদের ক্যাম্পাস রাইড শেয়ার দেখুন' : 'Check student campus rides'}
               </Text>
             </View>
             <Feather name="chevron-right" size={16} color={C.textMuted} />
@@ -443,7 +443,7 @@ export function BusDetailScreen({ route, navigation }: any) {
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={[styles.synergyTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]} numberOfLines={1}>
-                {isBn ? 'বাসে কিছু হারিয়েছেন?' : 'Lost Item on Bus?'}
+                {isBn ? 'বাসে কিছু হারিয়েছেন?' : 'Lost Item on Bus?'}
               </Text>
               <Text style={[styles.synergySub, { color: C.textMuted, fontFamily: FontFamily.jakartaRegular }]} numberOfLines={1}>
                 {isBn ? 'লস্ট অ্যান্ড ফাউন্ডে পোস্ট করুন' : 'Report in Lost & Found'}
