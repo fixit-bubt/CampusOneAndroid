@@ -30,7 +30,7 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent, SectorColors, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { fetchPeople, type Person } from '../../services/peopleService';
 import { getSavedListingIds, toggleSavedListing } from '../../services/marketService';
 import { useAuth } from '../../store/authStore';
@@ -112,31 +112,43 @@ export function MarketScreen({ navigation }: any) {
 
     await loadSavedIds();
 
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*')
-      .order('status', { ascending: true })
-      .order('created_at', { ascending: false })
-      .limit(100);
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('listings')
+          .select('*')
+          .order('status', { ascending: true })
+          .order('created_at', { ascending: false })
+          .limit(100),
+        5000
+      );
 
-    if (error || !data) {
+      if (error || !data) {
+        if (cached && cached.length > 0) {
+          setIsOffline(true);
+        }
+        setLoading(false);
+        return;
+      }
+
+      setIsOffline(false);
+      const freshList = data as Listing[];
+      setListings(freshList);
+      setCache(CacheKeys.MARKET_LISTINGS, freshList);
+      setLoading(false);
+
+      const sellerIds = Array.from(new Set(freshList.map(l => l.seller_id)));
+      if (sellerIds.length > 0) {
+        try {
+          const people = await withTimeout(fetchPeople(sellerIds), 5000);
+          setPeopleMap(prev => ({ ...prev, ...people }));
+        } catch {}
+      }
+    } catch {
       if (cached && cached.length > 0) {
         setIsOffline(true);
       }
       setLoading(false);
-      return;
-    }
-
-    setIsOffline(false);
-    const freshList = data as Listing[];
-    setListings(freshList);
-    setCache(CacheKeys.MARKET_LISTINGS, freshList);
-    setLoading(false);
-
-    const sellerIds = Array.from(new Set(freshList.map(l => l.seller_id)));
-    if (sellerIds.length > 0) {
-      const people = await fetchPeople(sellerIds);
-      setPeopleMap(prev => ({ ...prev, ...people }));
     }
   }, [loadSavedIds]);
 

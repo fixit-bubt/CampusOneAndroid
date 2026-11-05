@@ -17,7 +17,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { formatRelativeTime } from '../../utils/format';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
@@ -150,14 +150,17 @@ export function LostFoundBrowseScreen({ navigation }: any) {
       setLoadState('ready');
     }
 
-    // 2. Network sync
+    // 2. Network sync with 5s timeout
     try {
-      const { data, error } = await supabase
-        .from('lost_found_items')
-        .select('*')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(60);
+      const { data, error } = await withTimeout(
+        supabase
+          .from('lost_found_items')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(60),
+        5000
+      );
       if (error) {
         if (!cached || cached.length === 0) setLoadState('error');
         setIsOffline(true);

@@ -13,7 +13,7 @@ import { Icon } from '../../components/ui/Icon';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 
@@ -65,19 +65,22 @@ export function ClubsScreen({ navigation }: any) {
     }
 
     try {
-      // 2. Fetch fresh from Supabase
-      const [clubsRes, myRolesRes, countsRes] = await Promise.all([
-        supabase
-          .from('clubs')
-          .select('id, name, tagline, category, is_active')
-          .eq('is_active', true)
-          .order('name')
-          .limit(60),
-        user?.id
-          ? supabase.from('club_members').select('club_id, role').eq('user_id', user.id)
-          : Promise.resolve({ data: [] as any[] }),
-        supabase.rpc('club_member_counts'),
-      ]);
+      // 2. Fetch fresh from Supabase with 5s timeout
+      const [clubsRes, myRolesRes, countsRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from('clubs')
+            .select('id, name, tagline, category, is_active')
+            .eq('is_active', true)
+            .order('name')
+            .limit(60),
+          user?.id
+            ? supabase.from('club_members').select('club_id, role').eq('user_id', user.id)
+            : Promise.resolve({ data: [] as any[] }),
+          supabase.rpc('club_member_counts'),
+        ]),
+        5000
+      );
 
       if (clubsRes.error) {
         if (cached && cached.length > 0) {

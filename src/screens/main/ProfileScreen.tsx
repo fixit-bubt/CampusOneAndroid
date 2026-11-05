@@ -28,7 +28,7 @@ import { FontFamily, Layout, Accent } from '../../theme';
 import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
-import { getCacheSync, getCache, setCache } from '../../services/cacheService';
+import { getCacheSync, getCache, setCache, withTimeout } from '../../services/cacheService';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 
@@ -508,15 +508,18 @@ export function ProfileScreen({ navigation }: any) {
     }
     const head = { count: 'exact' as const, head: true };
     try {
-      const [rep, clb, evt, lf, mat, qb, book] = await Promise.all([
-        supabase.from('reports').select('*', head).eq('reporter_id', user.id).is('deleted_at', null),
-        supabase.from('club_members').select('*', head).eq('user_id', user.id),
-        supabase.from('event_rsvps').select('*', head).eq('user_id', user.id),
-        supabase.from('lost_found_items').select('*', head).eq('poster_id', user.id).is('deleted_at', null),
-        supabase.from('study_materials').select('*', head).eq('uploaded_by', user.id),
-        supabase.from('study_question_bank').select('*', head).eq('uploaded_by', user.id),
-        supabase.from('study_books').select('*', head).eq('added_by', user.id),
-      ]);
+      const [rep, clb, evt, lf, mat, qb, book] = await withTimeout(
+        Promise.all([
+          supabase.from('reports').select('*', head).eq('reporter_id', user.id).is('deleted_at', null),
+          supabase.from('club_members').select('*', head).eq('user_id', user.id),
+          supabase.from('event_rsvps').select('*', head).eq('user_id', user.id),
+          supabase.from('lost_found_items').select('*', head).eq('poster_id', user.id).is('deleted_at', null),
+          supabase.from('study_materials').select('*', head).eq('uploaded_by', user.id),
+          supabase.from('study_question_bank').select('*', head).eq('uploaded_by', user.id),
+          supabase.from('study_books').select('*', head).eq('added_by', user.id),
+        ]),
+        5000
+      );
       const counts = {
         reports:   rep.count ?? 0,
         clubs:     clb.count ?? 0,
@@ -536,22 +539,27 @@ export function ProfileScreen({ navigation }: any) {
     if (cached) {
       setAccomplishments(cached);
     }
-    const { data, error } = await supabase
-      .from('accomplishments')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (!error && data) {
-      const mapped = (data as any[]).map(a => ({
-        id: a.id,
-        cat: a.category,
-        title: a.title,
-        org: a.org ?? '',
-        year: a.year ?? '-',
-      }));
-      setAccomplishments(mapped);
-      setCache(cacheKey, mapped);
-    }
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('accomplishments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        5000
+      );
+      if (!error && data) {
+        const mapped = (data as any[]).map(a => ({
+          id: a.id,
+          cat: a.category,
+          title: a.title,
+          org: a.org ?? '',
+          year: a.year ?? '-',
+        }));
+        setAccomplishments(mapped);
+        setCache(cacheKey, mapped);
+      }
+    } catch {}
   }, [user]);
 
   useFocusEffect(

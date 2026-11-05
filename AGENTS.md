@@ -4296,3 +4296,41 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Unit Test Suite: 18 passed, 18 total (140 passed, 140 total).
   - Local Native Release Build: Successfully compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 46s`).
   - Physical Device Verification: Cleanly installed via ADB and verified operational on connected device `8734b5da`.
+
+---
+
+### 122. Comprehensive Page-by-Page Network Timeout & Offline Resilience Audit (`HomeStatusStrips.tsx`, `HomeCommunityUpdates.tsx`, `ProfileScreen.tsx`, `PrayerScreen.tsx`, `bloodService.ts`, `RidesScreen.tsx`, `MarketScreen.tsx`, `LostFoundBrowseScreen.tsx`, `DirectoryScreen.tsx`, `FacultyScreen.tsx`, `jobsService.ts`, `ClubsScreen.tsx`, `EventsBrowseScreen.tsx`, `StudyHubScreen.tsx`) (/performance-optimization, /code-review-and-quality, /zero-slop)
+- **Home Screen Instant Unfreezing (`HomeStatusStrips.tsx`, `HomeCommunityUpdates.tsx`):**
+  - Wrapped the 15-query parallel `Promise.all` fetch in `HomeStatusStrips.tsx` with `withTimeout(..., 5000)`. Prevents homepage hanging on cold starts or weak campus Wi-Fi, immediately serving cached strip states.
+  - Wrapped announcements, events, and club posts `Promise.all` in `HomeCommunityUpdates.tsx` with `withTimeout(..., 5000)`.
+- **User Profile & Accomplishments Protection (`ProfileScreen.tsx`):**
+  - Wrapped the 7-query contributions fetch (`loadContrib`) with `withTimeout(..., 5000)`.
+  - Wrapped `accomplishments` query (`loadAccomplishments`) with `withTimeout(..., 5000)` inside `try/catch`.
+- **Prayer & Musallah Resilience (`PrayerScreen.tsx`):**
+  - Wrapped `prayer_times` and `musallah_locations` parallel queries with `withTimeout(..., 5000)` inside `try/catch`, ensuring cached timings and countdowns remain functional offline.
+- **Blood Donation Feed (`bloodService.ts`):**
+  - Wrapped 6-query `getBloodFeed` with `withTimeout(..., 5000)` with error catch returning `{ ok: false, error: 'Network timeout' }` for instant fallback to cached requests and donors.
+- **Campus Rides Feed (`RidesScreen.tsx`):**
+  - Wrapped rides, user requests, and taken counts `Promise.all` with `withTimeout(..., 5000)` and 3s timeout on expired rides cleanup RPC.
+- **Marketplace Feed (`MarketScreen.tsx`):**
+  - Guarded listings and seller profile queries with `withTimeout(..., 5000)` inside `try/catch`.
+- **Lost & Found Feed (`LostFoundBrowseScreen.tsx`):**
+  - Guarded active items query with `withTimeout(..., 5000)` inside `try/catch`.
+- **Student Directory RPC (`DirectoryScreen.tsx`):**
+  - Guarded `student_directory` RPC query with `withTimeout(..., 5000)`.
+- **Faculty Directory & Bookmarks (`FacultyScreen.tsx`):**
+  - Wrapped departments, faculty roster, and bookmarks parallel queries with `withTimeout(..., 5000)` inside `try/catch`.
+- **Jobs & Internships Cache Hydration (`jobsService.ts`):**
+  - Wrapped `getJobsWithCache` jobs and bookmarks `Promise.all` with `withTimeout(..., 5000)`.
+- **Clubs Directory & Roles (`ClubsScreen.tsx`):**
+  - Wrapped clubs roster, user roles, and member counts `Promise.all` with `withTimeout(..., 5000)`.
+- **Events Roster & Organizer Permissions (`EventsBrowseScreen.tsx`):**
+  - Wrapped organizer permissions and bookmarks with `withTimeout(..., 5000)`.
+  - Guarded active events query with `withTimeout(..., 5000)` inside `try/catch`.
+- **Study Hub Section & Courses Progression (`StudyHubScreen.tsx`):**
+  - Wrapped user section membership and section courses queries with `withTimeout(..., 5000)`.
+- **Verification Evidence:**
+  - TypeScript Type Check: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Unit Test Suite: 18 passed, 18 total (140 passed, 140 total).
+  - Local Native Release Build: Successfully compiled via Gradle `assembleRelease`.
+  - Physical Device Verification: Cleanly installed via ADB and verified operational on connected device `8734b5da`.

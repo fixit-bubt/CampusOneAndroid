@@ -3,7 +3,7 @@
 // caching, and moderation RPCs.
 
 import { supabase } from '../lib/supabase';
-import { getCache, setCache, CacheKeys } from './cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from './cacheService';
 import { localToday, formatDate } from '../utils/format';
 import { BUCKETS } from '../constants/app';
 import { uploadFile } from '../utils/storage';
@@ -80,17 +80,20 @@ export async function getJobsWithCache(userId?: string): Promise<{
   }
 
   try {
-    const [jobsRes, savedRes] = await Promise.all([
-      supabase
-        .from('jobs')
-        .select('*')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-        .limit(100),
-      userId
-        ? supabase.from('job_bookmarks').select('job_id').eq('user_id', userId).limit(200)
-        : Promise.resolve({ data: [] as any[], error: null }),
-    ]);
+    const [jobsRes, savedRes] = await withTimeout(
+      Promise.all([
+        supabase
+          .from('jobs')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        userId
+          ? supabase.from('job_bookmarks').select('job_id').eq('user_id', userId).limit(200)
+          : Promise.resolve({ data: [] as any[], error: null }),
+      ]),
+      5000
+    );
 
     if (jobsRes.error) {
       if (cachedJobs && cachedJobs.length > 0) {

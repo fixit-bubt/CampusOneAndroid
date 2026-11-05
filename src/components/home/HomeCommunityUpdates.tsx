@@ -19,7 +19,7 @@ import { FontFamily, SectorColors } from '../../theme';
 import { SegmentedTabs, type TabItem } from '../ui/SegmentedTabs';
 import { supabase } from '../../lib/supabase';
 import { formatDate } from '../../utils/format';
-import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, hasCacheSync, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { markAnnouncementAsRead } from '../../services/announcementService';
 
 export type CommunityTab = 'Notices' | 'Clubs' | 'Events';
@@ -191,27 +191,30 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
 
     try {
       const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
-      const [annRes, evRes, clubPostsRes] = await Promise.all([
-        supabase
-          .from('announcements')
-          .select('id, title, department, body, created_at, pinned, image_url, attachment_url, priority')
-          .is('deleted_at', null)
-          .gte('created_at', fourMonthsAgo)
-          .order('created_at', { ascending: false })
-          .limit(500),
-        supabase
-          .from('events')
-          .select('id, title, venue, time, date, category, banner_url, description')
-          .is('deleted_at', null)
-          .gte('date', fourMonthsAgo.slice(0, 10))
-          .order('date', { ascending: false })
-          .limit(30),
-        supabase
-          .from('club_posts')
-          .select('id, title, body, created_at, image_url, club_id, clubs(id, name, cover_url)')
-          .order('created_at', { ascending: false })
-          .limit(20),
-      ]);
+      const [annRes, evRes, clubPostsRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from('announcements')
+            .select('id, title, department, body, created_at, pinned, image_url, attachment_url, priority')
+            .is('deleted_at', null)
+            .gte('created_at', fourMonthsAgo)
+            .order('created_at', { ascending: false })
+            .limit(500),
+          supabase
+            .from('events')
+            .select('id, title, venue, time, date, category, banner_url, description')
+            .is('deleted_at', null)
+            .gte('date', fourMonthsAgo.slice(0, 10))
+            .order('date', { ascending: false })
+            .limit(30),
+          supabase
+            .from('club_posts')
+            .select('id, title, body, created_at, image_url, club_id, clubs(id, name, cover_url)')
+            .order('created_at', { ascending: false })
+            .limit(20),
+        ]),
+        5000
+      );
 
       const list: CommunityItem[] = [];
 

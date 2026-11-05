@@ -27,7 +27,7 @@ import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { localToday } from '../../utils/format';
 import { resolveBannerSource } from '../../components/home/HomeHeroBanner';
 import {
@@ -235,14 +235,20 @@ export function EventsBrowseScreen({ navigation }: any) {
 
   useEffect(() => {
     if (!user?.id) return;
-    Promise.all([
-      supabase.from('event_organizers').select('user_id').eq('user_id', user.id).limit(1),
-      supabase.from('club_members').select('role').eq('user_id', user.id).in('role', ['president', 'vp']).limit(1),
-      fetchUserEventBookmarks(user.id),
-    ]).then(([orgRes, clubRes, bookmarksSet]) => {
+    let active = true;
+    withTimeout(
+      Promise.all([
+        supabase.from('event_organizers').select('user_id').eq('user_id', user.id).limit(1),
+        supabase.from('club_members').select('role').eq('user_id', user.id).in('role', ['president', 'vp']).limit(1),
+        fetchUserEventBookmarks(user.id),
+      ]),
+      5000
+    ).then(([orgRes, clubRes, bookmarksSet]) => {
+      if (!active) return;
       setIsEventOrganizer((orgRes.data?.length ?? 0) > 0 || (clubRes.data?.length ?? 0) > 0);
       setSavedIds(bookmarksSet);
-    });
+    }).catch(() => {});
+    return () => { active = false; };
   }, [user?.id]);
 
   type EventTab = 'upcoming' | 'past' | 'saved';
@@ -261,30 +267,41 @@ export function EventsBrowseScreen({ navigation }: any) {
       setLoadState('ready');
     }
 
-    // 2. Fresh fetch
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .is('deleted_at', null)
-      .order('date', { ascending: true })
-      .limit(100);
+    // 2. Fresh fetch with 5s timeout
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('events')
+          .select('*')
+          .is('deleted_at', null)
+          .order('date', { ascending: true })
+          .limit(100),
+        5000
+      );
 
-    if (error) {
-      console.error('events fetch error:', error.message);
+      if (error) {
+        if (cached && cached.length > 0) {
+          setIsOffline(true);
+          setLoadState('ready');
+        } else {
+          setLoadState('error');
+        }
+        return;
+      }
+
+      const fetchedEvents = (data || []) as Event[];
+      setIsOffline(false);
+      setEvents(fetchedEvents);
+      setCache(CacheKeys.EVENTS, fetchedEvents);
+      setLoadState('ready');
+    } catch {
       if (cached && cached.length > 0) {
         setIsOffline(true);
         setLoadState('ready');
       } else {
         setLoadState('error');
       }
-      return;
     }
-
-    const fetchedEvents = (data || []) as Event[];
-    setIsOffline(false);
-    setEvents(fetchedEvents);
-    setCache(CacheKeys.EVENTS, fetchedEvents);
-    setLoadState('ready');
   }, []);
 
   useFocusEffect(

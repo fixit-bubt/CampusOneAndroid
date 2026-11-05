@@ -10,7 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { getMyReports } from '../../services/reportsService';
-import { getCache, getCacheSync, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, getCacheSync, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import type { Report } from '../../types/database';
 import {
   nextDeparture,
@@ -360,23 +360,26 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
         clubsRes,
         docRes,
         facRes,
-      ] = await Promise.all([
-        needed.has('reports') ? getMyReports(user.id) : Promise.resolve({ ok: false, data: [] as Report[] }),
-        needed.has('bus') ? supabase.from('bus_routes').select('id, name, to_departures, from_departures').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('bus') ? supabase.from('saved_bus_routes').select('route_id').eq('user_id', user.id).limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('prayer') ? supabase.from('prayer_times').select('en, azan, key').order('sort').limit(20) : Promise.resolve({ data: null, error: null }),
-        needed.has('blood') ? supabase.from('blood_requests').select('id, urgency').is('fulfilled_at', null).gte('created_at', staleCutoff).limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('blood') ? supabase.from('donors').select('*', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
-        needed.has('rides') ? supabase.from('rides').select('id, post_type, seats_total, seats_available').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('market') ? supabase.from('listings').select('id, status').eq('status', 'Available').limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('lostfound') ? supabase.from('lost_found_items').select('id, type, status').eq('status', 'Open').limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('jobs') ? supabase.from('jobs').select('id, job_type, deadline').gte('deadline', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('study') ? supabase.from('study_materials').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
-        needed.has('events') ? supabase.from('events').select('id, date').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('clubs') ? supabase.from('clubs').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
-        needed.has('medical') ? supabase.from('doctors').select('id, is_on_leave').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
-        needed.has('faculty') ? supabase.from('faculty').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
-      ]);
+      ] = await withTimeout(
+        Promise.all([
+          needed.has('reports') ? getMyReports(user.id) : Promise.resolve({ ok: false, data: [] as Report[] }),
+          needed.has('bus') ? supabase.from('bus_routes').select('id, name, to_departures, from_departures').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('bus') ? supabase.from('saved_bus_routes').select('route_id').eq('user_id', user.id).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('prayer') ? supabase.from('prayer_times').select('en, azan, key').order('sort').limit(20) : Promise.resolve({ data: null, error: null }),
+          needed.has('blood') ? supabase.from('blood_requests').select('id, urgency').is('fulfilled_at', null).gte('created_at', staleCutoff).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('blood') ? supabase.from('donors').select('*', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+          needed.has('rides') ? supabase.from('rides').select('id, post_type, seats_total, seats_available').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('market') ? supabase.from('listings').select('id, status').eq('status', 'Available').limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('lostfound') ? supabase.from('lost_found_items').select('id, type, status').eq('status', 'Open').limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('jobs') ? supabase.from('jobs').select('id, job_type, deadline').gte('deadline', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('study') ? supabase.from('study_materials').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+          needed.has('events') ? supabase.from('events').select('id, date').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('clubs') ? supabase.from('clubs').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+          needed.has('medical') ? supabase.from('doctors').select('id, is_on_leave').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('faculty') ? supabase.from('faculty').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+        ]),
+        5000
+      );
 
       const nextReports = repRes.ok ? repRes.data : (cached?.reports ?? []);
       const nextBusRoutes = busRes.data

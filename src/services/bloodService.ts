@@ -2,6 +2,7 @@
 // queries, RPC result shapes and eligibility rules live in one place.
 import { supabase } from '../lib/supabase';
 import { fetchPeople } from './peopleService';
+import { withTimeout } from './cacheService';
 import { localToday } from '../utils/format';
 import type { ServiceResult } from './authService';
 import type { BloodRequest, Donor } from '../types/database';
@@ -24,23 +25,27 @@ export interface MyDonorData {
 // Feed hides fulfilled requests and ages out anything older than 21 days
 // (nothing auto-expires them server-side).
 export async function getBloodFeed(userId: string | undefined): Promise<ServiceResult<BloodFeed>> {
-  const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
-  const [rRes, dRes, pRes, mRes, countRes, allPledgesRes] = await Promise.all([
-    supabase.from('blood_requests').select('*')
-      .is('fulfilled_at', null)
-      .gte('created_at', staleCutoff)
-      .order('created_at', { ascending: false }).limit(40),
-    supabase.from('donors').select('*').order('created_at', { ascending: false }).limit(100),
-    userId
-      ? supabase.from('blood_pledges').select('request_id').eq('donor_id', userId)
-      : Promise.resolve({ data: [], error: null }),
-    userId ? supabase.from('donors').select('*').eq('user_id', userId).maybeSingle() : Promise.resolve({ data: null, error: null }),
-    userId
-      ? supabase.from('blood_pledges').select('*', { count: 'exact', head: true }).eq('donor_id', userId).not('fulfilled_at', 'is', null)
-      : Promise.resolve({ count: 0, error: null }),
-    supabase.from('blood_pledges').select('request_id').gte('created_at', staleCutoff),
-  ]);
-  if (rRes.error || dRes.error) return { ok: false, error: (rRes.error ?? dRes.error)!.message };
+  try {
+    const staleCutoff = new Date(Date.now() - 21 * 86400000).toISOString();
+    const [rRes, dRes, pRes, mRes, countRes, allPledgesRes] = await withTimeout(
+      Promise.all([
+        supabase.from('blood_requests').select('*')
+          .is('fulfilled_at', null)
+          .gte('created_at', staleCutoff)
+          .order('created_at', { ascending: false }).limit(40),
+        supabase.from('donors').select('*').order('created_at', { ascending: false }).limit(100),
+        userId
+          ? supabase.from('blood_pledges').select('request_id').eq('donor_id', userId)
+          : Promise.resolve({ data: [], error: null }),
+        userId ? supabase.from('donors').select('*').eq('user_id', userId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+        userId
+          ? supabase.from('blood_pledges').select('*', { count: 'exact', head: true }).eq('donor_id', userId).not('fulfilled_at', 'is', null)
+          : Promise.resolve({ count: 0, error: null }),
+        supabase.from('blood_pledges').select('request_id').gte('created_at', staleCutoff),
+      ]),
+      5000
+    );
+    if (rRes.error || dRes.error) return { ok: false, error: (rRes.error ?? dRes.error)!.message };
 
   // Calculate pledge counts per request for parity with web
   const pledgeCounts: Record<string, number> = {};
@@ -70,6 +75,9 @@ export async function getBloodFeed(userId: string | undefined): Promise<ServiceR
       myDonationCount: countRes?.count ?? 0,
     },
   };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || 'Network timeout' };
+  }
 }
 
 export async function getMyDonor(userId: string): Promise<ServiceResult<MyDonorData>> {

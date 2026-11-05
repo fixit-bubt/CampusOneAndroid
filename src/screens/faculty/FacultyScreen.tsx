@@ -32,7 +32,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import {
   FACULTY_ACCENT, BRANCH_ICON, shortDept, sortFaculty, interestsOf,
@@ -122,39 +122,49 @@ export function FacultyScreen({ navigation }: any) {
       setLoading(false);
     }
 
-    // 2. Fetch fresh
-    const [deptRes, facRes, savedRes] = await Promise.all([
-      supabase.from('departments').select('id, name, branch, dept_number, chairman').limit(50),
-      supabase.from('faculty')
-        .select('id, department_id, name, designation, email, phone, cell_phone, personal_email, short_code, room_number, building, floor, counseling_hours, blood_group, scopus_url, is_accepting_research, research_interests, teaching_areas, courses_taught, qualifications, publications, on_leave, is_chairman, photo_url')
-        .order('name')
-        .limit(1000),
-      supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? '').limit(1000),
-    ]);
+    // 2. Fetch fresh with 5s timeout
+    try {
+      const [deptRes, facRes, savedRes] = await withTimeout(
+        Promise.all([
+          supabase.from('departments').select('id, name, branch, dept_number, chairman').limit(50),
+          supabase.from('faculty')
+            .select('id, department_id, name, designation, email, phone, cell_phone, personal_email, short_code, room_number, building, floor, counseling_hours, blood_group, scopus_url, is_accepting_research, research_interests, teaching_areas, courses_taught, qualifications, publications, on_leave, is_chairman, photo_url')
+            .order('name')
+            .limit(1000),
+          supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? '').limit(1000),
+        ]),
+        5000
+      );
 
-    if (deptRes.error || facRes.error) {
+      if (deptRes.error || facRes.error) {
+        if ((cachedDepts && cachedDepts.length > 0) || (cachedFac && cachedFac.length > 0)) {
+          setIsOffline(true);
+        }
+        setLoading(false);
+        return;
+      }
+
+      setIsOffline(false);
+      if (deptRes.data) {
+        setDepartments(deptRes.data as Department[]);
+        setCache(CacheKeys.FACULTY_DEPTS, deptRes.data as Department[]);
+      }
+      if (facRes.data) {
+        setFaculty(facRes.data as FacultyMember[]);
+        setCache(CacheKeys.FACULTY_LIST, facRes.data as FacultyMember[]);
+      }
+      if (savedRes.data) {
+        const ids = savedRes.data.map((s: any) => s.faculty_id);
+        setSavedIds(new Set(ids));
+        if (user?.id) setCache(CacheKeys.FACULTY_BOOKMARKS(user.id), ids);
+      }
+      setLoading(false);
+    } catch {
       if ((cachedDepts && cachedDepts.length > 0) || (cachedFac && cachedFac.length > 0)) {
         setIsOffline(true);
       }
       setLoading(false);
-      return;
     }
-
-    setIsOffline(false);
-    if (deptRes.data) {
-      setDepartments(deptRes.data as Department[]);
-      setCache(CacheKeys.FACULTY_DEPTS, deptRes.data as Department[]);
-    }
-    if (facRes.data) {
-      setFaculty(facRes.data as FacultyMember[]);
-      setCache(CacheKeys.FACULTY_LIST, facRes.data as FacultyMember[]);
-    }
-    if (savedRes.data) {
-      const ids = savedRes.data.map((s: any) => s.faculty_id);
-      setSavedIds(new Set(ids));
-      if (user?.id) setCache(CacheKeys.FACULTY_BOOKMARKS(user.id), ids);
-    }
-    setLoading(false);
   }, [user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

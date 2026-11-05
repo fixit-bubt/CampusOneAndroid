@@ -25,7 +25,7 @@ import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { localToday, nowDhakaMinutes, formatTime, formatPrice, formatDate } from '../../utils/format';
 import { useAuth } from '../../store/authStore';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import type { Ride as RideRow } from '../../types/database';
 
 const RIDE_COLOR = SectorColors.ride;
@@ -93,18 +93,21 @@ export function RidesScreen({ navigation }: any) {
 
     // 2. Network sync
     try {
-      await supabase.rpc('delete_expired_rides').then(() => {}, () => {});
-      const [ridesRes, reqRes, countRes] = await Promise.all([
-        supabase
-          .from('rides')
-          .select('*')
-          .gte('date', localToday())
-          .order('date')
-          .order('time')
-          .limit(60),
-        supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
-        supabase.rpc('ride_request_counts'),
-      ]);
+      withTimeout(supabase.rpc('delete_expired_rides'), 3000).catch(() => {});
+      const [ridesRes, reqRes, countRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from('rides')
+            .select('*')
+            .gte('date', localToday())
+            .order('date')
+            .order('time')
+            .limit(60),
+          supabase.from('ride_requests').select('ride_id').eq('requester_id', user?.id ?? ''),
+          supabase.rpc('ride_request_counts'),
+        ]),
+        5000
+      );
 
       if (ridesRes.error) {
         if (!cachedRides || cachedRides.length === 0) {

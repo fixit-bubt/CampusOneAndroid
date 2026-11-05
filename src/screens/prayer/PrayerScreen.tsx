@@ -26,7 +26,7 @@ import { SkeletonList, LoadError } from '../../components/ui/LoadState';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout , SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { nowDhakaMinutes } from '../../utils/transitPrayer';
 import { localToday } from '../../utils/format';
 
@@ -122,32 +122,44 @@ export function PrayerScreen({ navigation }: any) {
       setMusallah(cachedMus);
     }
 
-    // 2. Fetch fresh
-    const [prayersRes, musRes] = await Promise.all([
-      supabase.from('prayer_times').select('*').order('sort'),
-      supabase.from('musallah_locations').select('*').order('sort'),
-    ]);
+    // 2. Fetch fresh with 5s timeout
+    try {
+      const [prayersRes, musRes] = await withTimeout(
+        Promise.all([
+          supabase.from('prayer_times').select('*').order('sort'),
+          supabase.from('musallah_locations').select('*').order('sort'),
+        ]),
+        5000
+      );
 
-    if (prayersRes.error) {
+      if (prayersRes.error) {
+        if (!cachedPrayers || cachedPrayers.length === 0) {
+          setLoadFailed(true);
+        } else {
+          setIsOffline(true);
+        }
+        setLoading(false);
+        return;
+      }
+
+      setLoadFailed(false);
+      setIsOffline(false);
+      setPrayers(prayersRes.data as PrayerTime[]);
+      setCache(CacheKeys.PRAYER_TIMES, prayersRes.data as PrayerTime[]);
+
+      if (musRes.data) {
+        setMusallah(musRes.data as Musallah[]);
+        setCache(CacheKeys.MUSALLAH_LOCATIONS, musRes.data as Musallah[]);
+      }
+      setLoading(false);
+    } catch {
       if (!cachedPrayers || cachedPrayers.length === 0) {
         setLoadFailed(true);
       } else {
         setIsOffline(true);
       }
       setLoading(false);
-      return;
     }
-
-    setLoadFailed(false);
-    setIsOffline(false);
-    setPrayers(prayersRes.data as PrayerTime[]);
-    setCache(CacheKeys.PRAYER_TIMES, prayersRes.data as PrayerTime[]);
-
-    if (musRes.data) {
-      setMusallah(musRes.data as Musallah[]);
-      setCache(CacheKeys.MUSALLAH_LOCATIONS, musRes.data as Musallah[]);
-    }
-    setLoading(false);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));

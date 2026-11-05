@@ -37,7 +37,7 @@ import { FontFamily, Layout, Accent, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useMessages } from '../../store/messagesStore';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import {
@@ -240,9 +240,12 @@ export function DirectoryScreen({ route, navigation }: any) {
     }
     if (!cached || cached.length === 0) setLoading(true);
 
-    // 2. Network sync
+    // 2. Network sync with 5s timeout
     try {
-      const { data: profiles, error } = await supabase.rpc('student_directory');
+      const { data: profiles, error } = await withTimeout(
+        supabase.rpc('student_directory'),
+        5000
+      );
       if (error) {
         if (cached && cached.length) setIsOffline(true);
         return;

@@ -20,7 +20,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople, loadPeople } from '../../services/peopleService';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 
 const STUDY_COLOR = SectorColors.study;
 
@@ -810,14 +810,17 @@ export function StudyHubScreen({ navigation }: any) {
     }
 
     try {
-      const { data: mems, error: memErr } = await supabase
-        .from('study_section_members')
-        .select('role, study_sections(id, intake_id, number, join_code, is_public, study_intakes(number, is_public, department_id, departments(id, name, dept_number)))')
-        .eq('user_id', user.id)
-        .eq('status', 'approved')
-        .order('role', { ascending: true })
-        .order('created_at', { ascending: true })
-        .limit(1);
+      const { data: mems, error: memErr } = await withTimeout(
+        supabase
+          .from('study_section_members')
+          .select('role, study_sections(id, intake_id, number, join_code, is_public, study_intakes(number, is_public, department_id, departments(id, name, dept_number)))')
+          .eq('user_id', user.id)
+          .eq('status', 'approved')
+          .order('role', { ascending: true })
+          .order('created_at', { ascending: true })
+          .limit(1),
+        5000
+      );
 
       if (memErr) {
         if (cachedStudy) setIsOffline(true);
@@ -837,11 +840,14 @@ export function StudyHubScreen({ navigation }: any) {
           setActiveSemester(semProg.semester ?? 1);
           setArchivedSemesters(semProg.archives ?? []);
         }
-        const { data: coursesData } = await supabase
-          .from('study_courses')
-          .select('*, study_materials(id, type, file_kind), study_question_bank(id), study_books(id)')
-          .eq('section_id', sec.id)
-          .order('code');
+        const { data: coursesData } = await withTimeout(
+          supabase
+            .from('study_courses')
+            .select('*, study_materials(id, type, file_kind), study_question_bank(id), study_books(id)')
+            .eq('section_id', sec.id)
+            .order('code'),
+          5000
+        );
 
         const cList: Course[] = (coursesData ?? []).map((c: any) => {
           const allMaterials = c.study_materials ?? [];
