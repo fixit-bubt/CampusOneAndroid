@@ -18,7 +18,7 @@ import { LoadError } from '../../components/ui/LoadState';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase, supabaseUrl } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { formatRelativeTime } from '../../utils/format';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -137,18 +137,21 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     }
 
     try {
-      const [itemRes, claimsRes] = await Promise.all([
-        supabase
-          .from('lost_found_items')
-          .select('*')
-          .eq('id', id)
-          .single(),
-        supabase
-          .from('claims')
-          .select('*')
-          .eq('item_id', id)
-          .order('created_at', { ascending: false }),
-      ]);
+      const [itemRes, claimsRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from('lost_found_items')
+            .select('*')
+            .eq('id', id)
+            .single(),
+          supabase
+            .from('claims')
+            .select('*')
+            .eq('item_id', id)
+            .order('created_at', { ascending: false }),
+        ]),
+        5000
+      );
 
       if (itemRes.error || !itemRes.data) {
         if (cached) {

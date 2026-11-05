@@ -1,6 +1,6 @@
 import { DeviceEventEmitter } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { getCache, setCache, removeCache, getCacheSync, CacheKeys } from './cacheService';
+import { getCache, setCache, removeCache, getCacheSync, CacheKeys, withTimeout } from './cacheService';
 import type { Announcement } from '../types/database';
 import { BANNERS_MAP } from '../utils/bannerUrl';
 
@@ -105,21 +105,24 @@ export async function fetchAnnouncementsFeed(userId?: string): Promise<{
   try {
     const fourMonthsAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [aRes, rRes, bRes] = await Promise.all([
-      supabase
-        .from('announcements')
-        .select('*')
-        .is('deleted_at', null)
-        .gte('created_at', fourMonthsAgo)
-        .order('created_at', { ascending: false })
-        .limit(500),
-      userId
-        ? supabase.from('announcement_reads').select('announcement_id').eq('user_id', userId).limit(500)
-        : Promise.resolve({ data: [] }),
-      userId
-        ? supabase.from('announcement_bookmarks').select('announcement_id').eq('user_id', userId).limit(500)
-        : Promise.resolve({ data: [] }),
-    ]);
+    const [aRes, rRes, bRes] = await withTimeout(
+      Promise.all([
+        supabase
+          .from('announcements')
+          .select('*')
+          .is('deleted_at', null)
+          .gte('created_at', fourMonthsAgo)
+          .order('created_at', { ascending: false })
+          .limit(500),
+        userId
+          ? supabase.from('announcement_reads').select('announcement_id').eq('user_id', userId).limit(500)
+          : Promise.resolve({ data: [] }),
+        userId
+          ? supabase.from('announcement_bookmarks').select('announcement_id').eq('user_id', userId).limit(500)
+          : Promise.resolve({ data: [] }),
+      ]),
+      5000
+    );
 
     if (aRes.error) throw aRes.error;
 
@@ -134,14 +137,21 @@ export async function fetchAnnouncementsFeed(userId?: string): Promise<{
     const existingIds = new Set(items.map((i) => i.id));
     const missingSavedIds = Array.from(savedIds).filter((id) => !existingIds.has(id));
     if (missingSavedIds.length > 0) {
-      const { data: olderSaved } = await supabase
-        .from('announcements')
-        .select('*')
-        .in('id', missingSavedIds)
-        .is('deleted_at', null);
-      if (olderSaved && olderSaved.length > 0) {
-        items = [...items, ...(olderSaved as Announcement[])];
-        items.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      try {
+        const { data: olderSaved } = await withTimeout(
+          supabase
+            .from('announcements')
+            .select('*')
+            .in('id', missingSavedIds)
+            .is('deleted_at', null),
+          5000
+        );
+        if (olderSaved && olderSaved.length > 0) {
+          items = [...items, ...(olderSaved as Announcement[])];
+          items.sort((a, b) => b.created_at.localeCompare(a.created_at));
+        }
+      } catch {
+        // Fallback silently if offline
       }
     }
 

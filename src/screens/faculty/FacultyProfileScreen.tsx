@@ -20,12 +20,14 @@ import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { Avatar } from '../../components/ui/Avatar';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { useToast } from '../../components/ui/Toast';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
 import { useAuth } from '../../store/authStore';
 import {
@@ -174,6 +176,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
   const [expandLinks, setExpandLinks] = useState(false);
   const [expandCourses, setExpandCourses] = useState(false);
   const [expandActivities, setExpandActivities] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const toggleSection = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -182,53 +185,84 @@ export function FacultyProfileScreen({ route, navigation }: any) {
 
   const load = useCallback(async () => {
     if (!facultyId) { setFailed(true); return; }
-    const [memberRes, saveRes] = await Promise.all([
-      supabase.from('faculty').select('*, departments(id, name, branch, dept_number)').eq('id', facultyId).maybeSingle(),
-      supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', facultyId).eq('user_id', user?.id ?? '').maybeSingle(),
-    ]);
-    if (memberRes.error || !memberRes.data) { setFailed(true); return; }
-    const m = memberRes.data as FacultyFull;
-    setMember(m);
-    setSaved(!!saveRes.data);
 
-    // Live background profile enrichment from official BUBT roster
-    const hasQuals = Array.isArray(m.qualifications) && m.qualifications.length > 0;
-    const hasPubs = Array.isArray(m.publications) && m.publications.length > 0;
-    const pUrl = resolveFacultyProfileUrl(m);
+    // 1. Instant cache load from faculty directory or profile cache
+    const cachedList = await getCache<any[]>(CacheKeys.FACULTY_LIST);
+    const cachedMember = (cachedList || []).find((f: any) => f.id === facultyId) ?? await getCache<any>(CacheKeys.FACULTY_PROFILE(facultyId));
+    if (cachedMember) {
+      setMember(cachedMember as FacultyFull);
+      setFailed(false);
+    }
 
-    if ((!hasQuals || !hasPubs || !m.email || !m.blood_group) && pUrl) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4500);
-      fetch(pUrl, { signal: controller.signal })
-        .then(r => r.text())
-        .then(html => {
-          clearTimeout(timeoutId);
-          const parsed = parseDeepProfileHtml(html);
-          if (parsed.quals.length > 0 || parsed.pubs.length > 0 || parsed.email || parsed.bloodGroup) {
-            setMember(prev => {
-              if (!prev || prev.id !== m.id) return prev;
-              return {
-                ...prev,
-                email: prev.email || parsed.email,
-                blood_group: prev.blood_group || parsed.bloodGroup,
-                qualifications: (prev.qualifications && prev.qualifications.length > 0) ? prev.qualifications : parsed.quals,
-                publications: (prev.publications && prev.publications.length > 0) ? prev.publications : parsed.pubs,
-                academic_activities: (prev.academic_activities && prev.academic_activities.length > 0) ? prev.academic_activities : parsed.activities,
-              };
-            });
+    // 2. Network sync with 5-second timeout
+    try {
+      const [memberRes, saveRes] = await withTimeout(
+        Promise.all([
+          supabase.from('faculty').select('*, departments(id, name, branch, dept_number)').eq('id', facultyId).maybeSingle(),
+          supabase.from('faculty_bookmarks').select('faculty_id').eq('faculty_id', facultyId).eq('user_id', user?.id ?? '').maybeSingle(),
+        ]),
+        5000
+      );
 
-            // Persist back to Supabase in the background
-            supabase.from('faculty').update({
-              email: m.email || parsed.email,
-              blood_group: m.blood_group || parsed.bloodGroup,
-              qualifications: (parsed.quals.length > 0 ? parsed.quals : (m.qualifications || [])) as any,
-              publications: (parsed.pubs.length > 0 ? parsed.pubs : (m.publications || [])) as any,
-              academic_activities: parsed.activities.length > 0 ? parsed.activities : (m.academic_activities || []),
-              last_synced_at: new Date().toISOString(),
-            }).eq('id', m.id).then(() => {});
-          }
-        })
-        .catch(() => clearTimeout(timeoutId));
+      if (memberRes.error || !memberRes.data) {
+        if (cachedMember) {
+          setIsOffline(true);
+        } else {
+          setFailed(true);
+        }
+        return;
+      }
+      setIsOffline(false);
+      const m = memberRes.data as FacultyFull;
+      setMember(m);
+      setSaved(!!saveRes.data);
+      setCache(CacheKeys.FACULTY_PROFILE(facultyId), m);
+
+      // Live background profile enrichment from official BUBT roster
+      const hasQuals = Array.isArray(m.qualifications) && m.qualifications.length > 0;
+      const hasPubs = Array.isArray(m.publications) && m.publications.length > 0;
+      const pUrl = resolveFacultyProfileUrl(m);
+
+      if ((!hasQuals || !hasPubs || !m.email || !m.blood_group) && pUrl) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4500);
+        fetch(pUrl, { signal: controller.signal })
+          .then(r => r.text())
+          .then(html => {
+            clearTimeout(timeoutId);
+            const parsed = parseDeepProfileHtml(html);
+            if (parsed.quals.length > 0 || parsed.pubs.length > 0 || parsed.email || parsed.bloodGroup) {
+              setMember(prev => {
+                if (!prev || prev.id !== m.id) return prev;
+                return {
+                  ...prev,
+                  email: prev.email || parsed.email,
+                  blood_group: prev.blood_group || parsed.bloodGroup,
+                  qualifications: (prev.qualifications && prev.qualifications.length > 0) ? prev.qualifications : parsed.quals,
+                  publications: (prev.publications && prev.publications.length > 0) ? prev.publications : parsed.pubs,
+                  academic_activities: (prev.academic_activities && prev.academic_activities.length > 0) ? prev.academic_activities : parsed.activities,
+                };
+              });
+
+              // Persist back to Supabase in the background
+              supabase.from('faculty').update({
+                email: m.email || parsed.email,
+                blood_group: m.blood_group || parsed.bloodGroup,
+                qualifications: (parsed.quals.length > 0 ? parsed.quals : (m.qualifications || [])) as any,
+                publications: (parsed.pubs.length > 0 ? parsed.pubs : (m.publications || [])) as any,
+                academic_activities: parsed.activities.length > 0 ? parsed.activities : (m.academic_activities || []),
+                last_synced_at: new Date().toISOString(),
+              }).eq('id', m.id).then(() => {});
+            }
+          })
+          .catch(() => clearTimeout(timeoutId));
+      }
+    } catch {
+      if (cachedMember) {
+        setIsOffline(true);
+      } else {
+        setFailed(true);
+      }
     }
   }, [facultyId, user?.id]);
 
@@ -367,6 +401,8 @@ export function FacultyProfileScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
+
         {/* Hero Card */}
         <View style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.headRow}>

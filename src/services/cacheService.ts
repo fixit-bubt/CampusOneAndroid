@@ -24,6 +24,7 @@ export const CacheKeys = {
   FACULTY_DEPTS: 'faculty_depts',
   FACULTY_LIST: 'faculty_list',
   FACULTY_DEPT: (deptId: string) => `faculty_dept_${deptId}`,
+  FACULTY_PROFILE: (id: string) => `faculty_profile_${id}`,
   FACULTY_BOOKMARKS: (uid: string) => `faculty_bookmarks_${uid}`,
   DOCTORS: 'doctors_list',
   COVER_COURSES: 'cover_courses',
@@ -48,6 +49,7 @@ export const CacheKeys = {
   // P2P Services & Issues
   CAMPUS_ISSUES_FEED: 'campus_issues_feed',
   MY_REPORTS: (uid: string) => `my_reports_${uid}`,
+  REPORT_DETAIL: (id: string) => `report_detail_${id}`,
   MARKET_LISTINGS: 'market_listings',
   RIDES: 'rides_feed',
   RIDES_TAKEN: 'rides_taken',
@@ -57,6 +59,7 @@ export const CacheKeys = {
   STUDY_DEPTS: 'study_depts',
   STUDY_COURSES: 'study_courses',
   DIRECTORY: (uid: string) => `student_dir_${uid}`,
+  STUDENT_PROFILE: (id: string) => `student_prof_${id}`,
   NOTIFICATIONS: (uid: string) => `notifications_${uid}`,
   STAFF_REPORTS: (uid: string) => `staff_assigned_reports_${uid}`,
   ASSIGNED_REPORTS: (uid: string) => `staff_assigned_reports_${uid}`,

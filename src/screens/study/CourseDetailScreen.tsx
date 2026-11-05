@@ -20,7 +20,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
-import { getCache, setCache } from '../../services/cacheService';
+import { getCache, setCache, withTimeout } from '../../services/cacheService';
 import { openInApp } from '../../utils/link';
 import { fetchPeople } from '../../services/peopleService';
 import { formatFileSize, formatRelativeTime } from '../../utils/format';
@@ -156,7 +156,10 @@ export function CourseDetailScreen({ route, navigation }: any) {
     }
 
     try {
-      const courseRes = await supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle();
+      const courseRes = await withTimeout(
+        supabase.from('study_courses').select('*').eq('id', courseId).maybeSingle(),
+        5000
+      );
 
       if (!courseRes.data && !cached) {
         setLoading(false);
@@ -213,11 +216,14 @@ export function CourseDetailScreen({ route, navigation }: any) {
         }
       }
 
-      const [matRes, qbRes, bookRes] = await Promise.all([
-        supabase.from('study_materials').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
-        supabase.from('study_question_bank').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
-        supabase.from('study_books').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
-      ]);
+      const [matRes, qbRes, bookRes] = await withTimeout(
+        Promise.all([
+          supabase.from('study_materials').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
+          supabase.from('study_question_bank').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
+          supabase.from('study_books').select('*').in('course_id', siblingCourseIds).order('created_at', { ascending: false }),
+        ]),
+        5000
+      );
 
       const rawMats = (matRes.data ?? []) as any[];
       const rawQbs = (qbRes.data ?? []) as any[];

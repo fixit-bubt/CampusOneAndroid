@@ -24,7 +24,8 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent, pillBg, Radius } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, CacheKeys, withTimeout } from '../../services/cacheService';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { openUrl } from '../../utils/link';
 import { normalizePdfUrl } from '../../utils/pdfUrl';
 import { useT } from '../../i18n';
@@ -59,6 +60,7 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const id = announcementId || paramId;
   const [item, setItem] = useState<Announcement | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [imageModalVisible, setImageModalVisible] = useState(false);
@@ -84,30 +86,44 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         }
       }
 
-      // 2. Fetch fresh
-      const [annRes, bmRes] = await Promise.all([
-        supabase.from('announcements').select('*').eq('id', id).maybeSingle(),
-        user?.id
-          ? supabase.from('announcement_bookmarks').select('announcement_id').eq('announcement_id', id).eq('user_id', user.id).maybeSingle()
-          : Promise.resolve({ data: null }),
-      ]);
+      // 2. Fetch fresh with 5s timeout
+      try {
+        const [annRes, bmRes] = await withTimeout(
+          Promise.all([
+            supabase.from('announcements').select('*').eq('id', id).maybeSingle(),
+            user?.id
+              ? supabase.from('announcement_bookmarks').select('announcement_id').eq('announcement_id', id).eq('user_id', user.id).maybeSingle()
+              : Promise.resolve({ data: null, error: null }),
+          ]),
+          5000
+        );
 
-      if (!active) return;
+        if (!active) return;
 
-      if (annRes.error || !annRes.data) {
-        if (!found) {
-          if (annRes.error) console.error('announcement detail fetch:', annRes.error.message);
-          setNotFound(true);
+        if (annRes.error || !annRes.data) {
+          if (!found) {
+            setNotFound(true);
+          } else {
+            setIsOffline(true);
+          }
+          return;
         }
-        return;
-      }
 
-      setItem(annRes.data as Announcement);
-      if (bmRes.data) setIsSaved(true);
+        setIsOffline(false);
+        setItem(annRes.data as Announcement);
+        if (bmRes.data) setIsSaved(true);
 
-      // Mark read
-      if (id) {
-        markAnnouncementAsRead(id, user?.id || 'guest');
+        // Mark read
+        if (id) {
+          markAnnouncementAsRead(id, user?.id || 'guest');
+        }
+      } catch {
+        if (!active) return;
+        if (!found) {
+          setNotFound(true);
+        } else {
+          setIsOffline(true);
+        }
       }
     })();
 
@@ -277,6 +293,8 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} />
+
         {/* Official Banner Tag */}
         {isOfficial && (
           <View style={[styles.officialBanner, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.14)' : '#e0edff', borderColor: '#93c5fd' }]}>

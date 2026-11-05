@@ -17,7 +17,7 @@ import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { useAuth } from '../../store/authStore';
-import { getCache, removeCache, CacheKeys } from '../../services/cacheService';
+import { getCache, removeCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import {
   donorEligibility,
   parseBloodRequestMeta,
@@ -108,10 +108,13 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
     }
 
     try {
-      const [reqRes, plRes] = await Promise.all([
-        getRequest(requestId),
-        getResponders(requestId),
-      ]);
+      const [reqRes, plRes] = await withTimeout(
+        Promise.all([
+          getRequest(requestId),
+          getResponders(requestId),
+        ]),
+        5000
+      );
       if (!reqRes.ok || !reqRes.data) {
         if (cached) {
           setIsOffline(true);

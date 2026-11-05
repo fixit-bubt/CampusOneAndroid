@@ -21,7 +21,8 @@ import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors, darken } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, CacheKeys, withTimeout } from '../../services/cacheService';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { BusRouteEditorModal } from './BusRouteEditorModal';
 import {
   nowDhakaMinutes,
@@ -55,6 +56,7 @@ export function BusDetailScreen({ route, navigation }: any) {
 
   const [busRoute, setBusRoute] = useState<BusRoute | null>(null);
   const [failed, setFailed] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [direction, setDirection] = useState<'to' | 'from'>(() => {
     if (initialDirection === 'to' || initialDirection === 'from') return initialDirection;
     return Math.floor(nowDhakaMinutes() / 60) >= 12 ? 'from' : 'to';
@@ -71,18 +73,34 @@ export function BusDetailScreen({ route, navigation }: any) {
 
   useEffect(() => {
     if (!id) { setFailed(true); return; }
+    let active = true;
     (async () => {
       const cached = await getCache<BusRoute[]>(CacheKeys.BUS_ROUTES);
       const found = cached?.find(r => r.id === id);
-      if (found) setBusRoute(found);
+      if (found && active) setBusRoute(found);
 
-      const { data, error } = await supabase.from('bus_routes').select('*').eq('id', id).maybeSingle();
-      if (error || !data) {
+      try {
+        const { data, error } = await withTimeout(
+          supabase.from('bus_routes').select('*').eq('id', id).maybeSingle(),
+          5000
+        );
+        if (!active) return;
+        if (error || !data) {
+          if (!found) setFailed(true);
+          else setIsOffline(true);
+          return;
+        }
+        setIsOffline(false);
+        setBusRoute(data as BusRoute);
+      } catch {
+        if (!active) return;
         if (!found) setFailed(true);
-        return;
+        else setIsOffline(true);
       }
-      setBusRoute(data as BusRoute);
     })();
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const departures = useMemo(() => {
@@ -157,6 +175,8 @@ export function BusDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} />
+
         {/* Direction Switcher (58dp SegmentedTabs) */}
         <View style={{ marginBottom: 12 }}>
           <SegmentedTabs<'to' | 'from'>

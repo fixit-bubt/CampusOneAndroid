@@ -11,11 +11,12 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, SectorColors, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { openUrl } from '../../utils/link';
 import { resolveBannerSource } from '../../components/home/HomeHeroBanner';
 import {
@@ -68,15 +69,26 @@ export function EventDetailScreen({ route, navigation }: any) {
   const [isSaved, setIsSaved] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
   const [bannerError, setBannerError] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.rpc('can_create_events').then(({ data }) => setCanCreateEvents(!!data));
-    if (id) {
-      fetchUserEventBookmarks(user.id).then(bookmarks => {
-        setIsSaved(bookmarks.has(id));
-      });
-    }
+    let active = true;
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('can_create_events');
+        if (active) setCanCreateEvents(!!data);
+      } catch {}
+      if (id) {
+        try {
+          const bookmarks = await fetchUserEventBookmarks(user.id);
+          if (active) setIsSaved(bookmarks.has(id));
+        } catch {}
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [user?.id, id]);
 
   const load = useCallback(async () => {
@@ -90,28 +102,34 @@ export function EventDetailScreen({ route, navigation }: any) {
     if (found) setEvent(found);
 
     try {
-      const [evRes, rsvpRes, countRes] = await Promise.all([
-        supabase.from('events').select('*').eq('id', id).maybeSingle(),
-        user
-          ? supabase.from('event_rsvps').select('user_id').eq('event_id', id).eq('user_id', user.id).maybeSingle()
-          : Promise.resolve({ data: null, error: null }),
-        supabase.from('event_rsvps').select('user_id', { count: 'exact', head: true }).eq('event_id', id),
-      ]);
+      const [evRes, rsvpRes, countRes] = await withTimeout(
+        Promise.all([
+          supabase.from('events').select('*').eq('id', id).maybeSingle(),
+          user
+            ? supabase.from('event_rsvps').select('user_id').eq('event_id', id).eq('user_id', user.id).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          supabase.from('event_rsvps').select('user_id', { count: 'exact', head: true }).eq('event_id', id),
+        ]),
+        5000
+      );
 
       if (evRes.error || !evRes.data) {
-        if (!found) {
-          if (evRes.error) console.error('event detail fetch error:', evRes.error.message);
+        if (found) {
+          setIsOffline(true);
+        } else {
           setNotFound(true);
         }
         return;
       }
 
+      setIsOffline(false);
       setEvent(evRes.data as Event);
       setGoing(!!rsvpRes.data);
       setGoingCount(countRes.count ?? 0);
     } catch (e) {
-      if (!found) {
-        console.error('EventDetail load error:', e);
+      if (found) {
+        setIsOffline(true);
+      } else {
         setNotFound(true);
       }
     }
@@ -254,6 +272,8 @@ export function EventDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
+
         {/* Banner Flyer or Category Header */}
         {(() => {
           const bannerSource = resolveBannerSource(event.banner_url);

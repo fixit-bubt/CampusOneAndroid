@@ -29,6 +29,7 @@ import {
 } from '../../services/connectionsService';
 import { FontFamily, Layout, Accent, SectorColors, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 
 export type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 
@@ -74,20 +75,44 @@ export function StudentProfileScreen({ route, navigation }: any) {
   // Single-profile lookup RPC - fast, lightweight, and bandwidth-efficient
   const refresh = useCallback(async () => {
     if (!targetId) return;
+
+    if (!student) {
+      const cachedDirect = await getCache<DirectoryStudent>(CacheKeys.STUDENT_PROFILE(targetId));
+      if (cachedDirect) {
+        setStudent(cachedDirect);
+        setLoading(false);
+      } else {
+        const cachedList = await getCache<DirectoryStudent[]>(CacheKeys.DIRECTORY(user?.id || 'anon'));
+        const found = cachedList?.find((s: any) => s.id === targetId);
+        if (found) {
+          setStudent({
+            ...found,
+            connState: (found as any).status ? (STATUS_MAP[(found as any).status] ?? 'none') : 'none',
+          });
+          setLoading(false);
+        }
+      }
+    }
+
     try {
-      const [res, clubsRes] = await Promise.all([
-        fetchStudentProfileDetail(targetId),
-        supabase
-          .from('club_members')
-          .select('role, clubs:clubs!club_id(id, name, is_active)')
-          .eq('user_id', targetId),
-      ]);
+      const [res, clubsRes] = await withTimeout(
+        Promise.all([
+          fetchStudentProfileDetail(targetId),
+          supabase
+            .from('club_members')
+            .select('role, clubs:clubs!club_id(id, name, is_active)')
+            .eq('user_id', targetId),
+        ]),
+        5000
+      );
       if (res.ok && res.data) {
         setIsOffline(false);
-        setStudent({
+        const resolved: DirectoryStudent = {
           ...res.data,
           connState: STATUS_MAP[res.data.status] ?? 'none',
-        });
+        };
+        setStudent(resolved);
+        setCache(CacheKeys.STUDENT_PROFILE(targetId), resolved);
       } else {
         if (!res.ok) setIsOffline(true);
       }
@@ -102,7 +127,7 @@ export function StudentProfileScreen({ route, navigation }: any) {
     } finally {
       setLoading(false);
     }
-  }, [targetId]);
+  }, [targetId, student]);
 
   useEffect(() => {
     refresh();

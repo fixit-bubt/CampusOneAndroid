@@ -4485,3 +4485,54 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Unit Test Suite: 18 passed, 18 total (140 passed, 140 total).
   - Local Native Release Build: Successfully compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 43s`).
   - Physical Device Verification: Cleanly installed via ADB and verified operational on connected device `8734b5da`.
+
+---
+
+### 121. Full-App Deep Feature Offline Coverage, Timeout Hardening & Detail Screens Resilience (`cacheService.ts`, `DoctorDetailScreen.tsx`, `MedicalScreen.tsx`, `BusDetailScreen.tsx`, `EventDetailScreen.tsx`, `MarketDetailScreen.tsx`, `LostFoundDetailScreen.tsx`, `BloodRequestDetailScreen.tsx`, `ReportDetailScreen.tsx`, `FacultyProfileScreen.tsx`, `AnnouncementDetailScreen.tsx`, `announcementService.ts`, `AcademicCalendarScreen.tsx`, `academicCalendarService.ts`, `CourseDetailScreen.tsx`, `StudentProfileScreen.tsx`) (/performance-optimization, /code-review-and-quality, /zero-slop)
+- **Universal Zero-Timeout Protection:** Wrapped all Supabase queries across detail screens with `withTimeout<T>(..., 5000)`. Weak campus Wi-Fi or cellular drops now cleanly trigger local cache fallback within 5 seconds without UI freezing or endless spinners.
+- **Medical & Doctors Offline Resilience (`DoctorDetailScreen.tsx`, `MedicalScreen.tsx`):**
+  - Added 0ms cache-first hydration from `CacheKeys.DOCTORS`.
+  - Added 5s timeout guard on single-doctor and doctor-roster queries.
+  - Integrated `OfflineBanner` inside `DoctorDetailScreen` ScrollView.
+- **Bus Routes & Timetable Deep Screen (`BusDetailScreen.tsx`):**
+  - Added instant cache hydration from `CacheKeys.BUS_ROUTES`.
+  - Guarded Supabase route fetch with `withTimeout(..., 5000)`.
+  - Added `isOffline` state with `OfflineBanner` below the top navigation bar.
+- **Events & Ticketing Detail (`EventDetailScreen.tsx`):**
+  - 0ms cache-first hydration from `CacheKeys.EVENTS`.
+  - Wrapped `Promise.all` network fetch with `withTimeout(..., 5000)`.
+  - Handled offline fallback seamlessly with `OfflineBanner`.
+- **Student Marketplace Detail (`MarketDetailScreen.tsx`):**
+  - 0ms cache-first hydration from `CacheKeys.MARKET_LISTINGS`.
+  - Guarded fresh database item fetch with `withTimeout(..., 5000)` and added `OfflineBanner`.
+- **Lost & Found Item Detail (`LostFoundDetailScreen.tsx`):**
+  - 0ms cache-first hydration from `CacheKeys.LOST_FOUND`.
+  - Wrapped `Promise.all([itemRes, claimsRes])` with `withTimeout(..., 5000)`.
+  - Displays `OfflineBanner` when viewing previously cached items offline.
+- **Emergency Blood Request Detail (`BloodRequestDetailScreen.tsx`):**
+  - 0ms cache-first hydration from `CacheKeys.BLOOD_FEED`.
+  - Wrapped `Promise.all([getRequest, getResponders])` with `withTimeout(..., 5000)` and offline banner.
+- **Campus Maintenance & Issues Detail (`ReportDetailScreen.tsx`):**
+  - Added 0ms cache-first hydration from `CacheKeys.MY_REPORTS`, `CacheKeys.CAMPUS_ISSUES_FEED`, and `CacheKeys.REPORT_DETAIL(id)`.
+  - Guarded report fetch with `withTimeout(..., 5000)` and `OfflineBanner`.
+- **Faculty Profile Detail (`FacultyProfileScreen.tsx`):**
+  - Added 0ms cache-first hydration from `CacheKeys.FACULTY_LIST` and `CacheKeys.FACULTY_PROFILE(id)`.
+  - Guarded profile query with `withTimeout(..., 5000)` and `OfflineBanner`.
+- **Announcements & University Notices (`AnnouncementDetailScreen.tsx`, `announcementService.ts`):**
+  - 0ms cache-first hydration from `CacheKeys.ANNOUNCEMENTS` and user bookmarks.
+  - Guarded `fetchAnnouncementsFeed` and detail queries with `withTimeout(..., 5000)`.
+  - Integrated `OfflineBanner` inside `AnnouncementDetailScreen`.
+- **Academic Calendar Resilience (`AcademicCalendarScreen.tsx`, `academicCalendarService.ts`):**
+  - Guarded Supabase calendar queries with `withTimeout(..., 5000)`.
+  - Guaranteed instant fallback to cached calendars or the bundled official 4-year archive (`OFFICIAL_CALENDAR_DOCS`).
+- **Study Hub Course Materials (`CourseDetailScreen.tsx`):**
+  - Added `withTimeout(..., 5000)` on course details and material queries (`Promise.all([matRes, qbRes, bookRes])`).
+  - Preserved complete offline notes, slides, question bank, and books viewing with `OfflineBanner`.
+- **Student Directory Profile (`StudentProfileScreen.tsx`):**
+  - Added instant cache lookup from `CacheKeys.STUDENT_PROFILE(targetId)` and `CacheKeys.DIRECTORY(uid)`.
+  - Guarded single-profile detail fetch with `withTimeout(..., 5000)` and offline banner.
+- **Verification Evidence:**
+  - TypeScript Type Check: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Unit Test Suite: 18 passed, 18 total (140 passed, 140 total).
+  - Local Native Release Build: Successfully compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 46s`).
+  - Physical Device Verification: Cleanly streamed via ADB and verified operational on connected device `8734b5da`.

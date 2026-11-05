@@ -2,7 +2,7 @@ import { File } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { BUCKETS } from '../constants/app';
-import { CacheKeys, getCache, setCache } from './cacheService';
+import { CacheKeys, getCache, setCache, withTimeout } from './cacheService';
 import { OFFICIAL_CALENDAR_DOCS, type AcademicCalendarDoc } from '../constants/academicCalendar';
 
 export type CalendarFileType = 'pdf' | 'image';
@@ -31,10 +31,13 @@ const STORAGE_KEY_LAST_CALENDAR_SYNC = 'campusone_last_calendar_sync_time';
  */
 export async function fetchAcademicCalendars(): Promise<AcademicCalendarDoc[]> {
   try {
-    const { data, error } = await (supabase.from('academic_calendar' as any) as any)
-      .select('id, title, description, file_url, file_type, semester, is_active, event_date, created_at')
-      .not('file_url', 'is', null)
-      .order('event_date', { ascending: false });
+    const { data, error } = await withTimeout<{ data: any; error: any }>(
+      (supabase.from('academic_calendar' as any) as any)
+        .select('id, title, description, file_url, file_type, semester, is_active, event_date, created_at')
+        .not('file_url', 'is', null)
+        .order('event_date', { ascending: false }),
+      5000
+    );
 
     if (error || !data || data.length === 0) {
       const cached = await getCache<AcademicCalendarDoc[]>(CacheKeys.ACADEMIC_CALENDAR);

@@ -8,10 +8,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { FontFamily, Layout, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { personName } from '../../services/peopleService';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
@@ -80,6 +82,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
   const [staffList, setStaffList] = useState<StaffCandidate[]>([]);
   const [activeByStaff, setActiveByStaff] = useState<Record<string, number>>({});
   const [assigningStaff, setAssigningStaff] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const reportId = report?.id ?? paramReportId ?? '';
 
@@ -95,50 +98,77 @@ export function ReportDetailScreen({ route, navigation }: any) {
 
   const load = useCallback(async () => {
     if (!reportId) return;
-    const [evRes, rptData, staffRes, activeRes] = await Promise.all([
-      supabase.from('report_events').select('*').eq('report_id', reportId).order('created_at', { ascending: true }),
-      supabase.from('reports').select('*').eq('id', reportId).maybeSingle(),
-      isAdmin
-        ? supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff').limit(100)
-        : Promise.resolve({ data: null }),
-      isAdmin
-        ? supabase.from('reports').select('assigned_staff_id').in('status', ['Open', 'In Progress']).is('deleted_at', null).limit(200)
-        : Promise.resolve({ data: null }),
-    ]);
-    if (evRes.data) setEvents(evRes.data as ReportEvent[]);
-    if (staffRes?.data) setStaffList(staffRes.data as StaffCandidate[]);
-    if (activeRes?.data) {
-      const counts: Record<string, number> = {};
-      (activeRes.data as any[]).forEach((r) => {
-        if (r.assigned_staff_id) {
-          counts[r.assigned_staff_id] = (counts[r.assigned_staff_id] || 0) + 1;
-        }
-      });
-      setActiveByStaff(counts);
+
+    // 1. Instant cache check from offline stores
+    const cachedMine = user?.id ? await getCache<Report[]>(CacheKeys.MY_REPORTS(user.id)) : null;
+    const cachedCampus = await getCache<any[]>(CacheKeys.CAMPUS_ISSUES_FEED);
+    const cachedSingle = await getCache<any>(CacheKeys.REPORT_DETAIL(reportId));
+    const cached = cachedSingle ?? cachedMine?.find(r => r.id === reportId) ?? cachedCampus?.find((r: any) => r.id === reportId);
+    if (cached) {
+      setReport(cached as Report);
+      setLoadingReport(false);
     }
 
-    let currentReport: any = rptData?.data;
-    if (!currentReport) {
-      // Viewer isn't the owner/assignee/admin (RLS hides the row) - open it
-      // read-only via the campus feed RPC so any student can view it.
-      const { data: feed } = await supabase.rpc('campus_reports', { p_limit: 500 });
-      currentReport = (feed ?? []).find((x: any) => x.id === reportId) ?? null;
-      if (currentReport?.reporter_name) setReporterName(currentReport.reporter_name);
-    }
-    if (currentReport) setReport(currentReport as Report);
-    setLoadingReport(false);
+    try {
+      const [evRes, rptData, staffRes, activeRes] = await withTimeout(
+        Promise.all([
+          supabase.from('report_events').select('*').eq('report_id', reportId).order('created_at', { ascending: true }),
+          supabase.from('reports').select('*').eq('id', reportId).maybeSingle(),
+          isAdmin
+            ? supabase.from('profiles').select('id, full_name, department, expertise').eq('role', 'staff').limit(100)
+            : Promise.resolve({ data: null }),
+          isAdmin
+            ? supabase.from('reports').select('assigned_staff_id').in('status', ['Open', 'In Progress']).is('deleted_at', null).limit(200)
+            : Promise.resolve({ data: null }),
+        ]),
+        5000
+      );
+      if (evRes.data) setEvents(evRes.data as ReportEvent[]);
+      if (staffRes?.data) setStaffList(staffRes.data as StaffCandidate[]);
+      if (activeRes?.data) {
+        const counts: Record<string, number> = {};
+        (activeRes.data as any[]).forEach((r) => {
+          if (r.assigned_staff_id) {
+            counts[r.assigned_staff_id] = (counts[r.assigned_staff_id] || 0) + 1;
+          }
+        });
+        setActiveByStaff(counts);
+      }
 
-    // Names via the roster RPC - profiles RLS only returns the caller's own row,
-    // so reading it directly leaves both of these blank.
-    if (currentReport?.reporter_id && !currentReport?.reporter_name) {
-      const name = await personName(currentReport.reporter_id);
-      if (name) setReporterName(name);
+      let currentReport: any = rptData?.data;
+      if (!currentReport) {
+        // Viewer isn't the owner/assignee/admin (RLS hides the row) - open it
+        // read-only via the campus feed RPC so any student can view it.
+        const { data: feed } = await supabase.rpc('campus_reports', { p_limit: 500 });
+        currentReport = (feed ?? []).find((x: any) => x.id === reportId) ?? null;
+        if (currentReport?.reporter_name) setReporterName(currentReport.reporter_name);
+      }
+      if (currentReport) {
+        setIsOffline(false);
+        setReport(currentReport as Report);
+        setCache(CacheKeys.REPORT_DETAIL(reportId), currentReport);
+      } else if (cached) {
+        setIsOffline(true);
+      }
+      setLoadingReport(false);
+
+      // Names via the roster RPC - profiles RLS only returns the caller's own row,
+      // so reading it directly leaves both of these blank.
+      if (currentReport?.reporter_id && !currentReport?.reporter_name) {
+        const name = await personName(currentReport.reporter_id);
+        if (name) setReporterName(name);
+      }
+      if (currentReport?.assigned_staff_id) {
+        const name = await personName(currentReport.assigned_staff_id);
+        if (name) setAssigneeName(name);
+      }
+    } catch {
+      if (cached) {
+        setIsOffline(true);
+      }
+      setLoadingReport(false);
     }
-    if (currentReport?.assigned_staff_id) {
-      const name = await personName(currentReport.assigned_staff_id);
-      if (name) setAssigneeName(name);
-    }
-  }, [reportId, isAdmin]);
+  }, [reportId, isAdmin, user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -389,6 +419,8 @@ export function ReportDetailScreen({ route, navigation }: any) {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
+
         {/* Standard 58dp Status & Category Header Bar */}
         <View style={[styles.statusHeaderBar58, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={[styles.categoryPill32, { backgroundColor: C.surface2, borderColor: C.border }]}>

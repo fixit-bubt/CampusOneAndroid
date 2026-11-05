@@ -25,7 +25,7 @@ import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { formatPrice, formatDate, formatTime, localToday } from '../../utils/format';
 import { openUrl, waHref } from '../../utils/link';
@@ -95,24 +95,27 @@ export function RideDetailScreen({ route, navigation }: any) {
     }
 
     try {
-      const [rideRes, reqRes, takenRes, countRes] = await Promise.all([
-        supabase
-          .from('rides')
-          .select('*')
-          .eq('id', rideId)
-          .maybeSingle(),
-        supabase
-          .from('ride_requests')
-          .select('ride_id')
-          .eq('ride_id', rideId)
-          .eq('requester_id', user?.id ?? '')
-          .maybeSingle(),
-        supabase
-          .from('ride_requests')
-          .select('requester_id')
-          .eq('ride_id', rideId),
-        supabase.rpc('ride_request_counts'),
-      ]);
+      const [rideRes, reqRes, takenRes, countRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from('rides')
+            .select('*')
+            .eq('id', rideId)
+            .maybeSingle(),
+          supabase
+            .from('ride_requests')
+            .select('ride_id')
+            .eq('ride_id', rideId)
+            .eq('requester_id', user?.id ?? '')
+            .maybeSingle(),
+          supabase
+            .from('ride_requests')
+            .select('requester_id')
+            .eq('ride_id', rideId),
+          supabase.rpc('ride_request_counts'),
+        ]),
+        5000
+      );
 
       if (rideRes.error || !rideRes.data) {
         if (cached) {

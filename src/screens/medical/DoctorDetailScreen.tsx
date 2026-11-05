@@ -23,7 +23,8 @@ import {
   fmtCountdown,
 } from '../../utils/transitPrayer';
 import { openUrl } from '../../utils/link';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, CacheKeys, withTimeout } from '../../services/cacheService';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { BUBT_CLINIC_INFO } from '../../constants/medicalServices';
 import type { Doctor } from '../../types/database';
 
@@ -157,6 +158,7 @@ export function DoctorDetailScreen({ route, navigation }: any) {
   const { doctorId } = route.params ?? {};
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [failed, setFailed] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -165,24 +167,43 @@ export function DoctorDetailScreen({ route, navigation }: any) {
       return;
     }
     (async () => {
-      const { data, error } = await supabase
-        .from('doctors')
-        .select('*')
-        .eq('id', doctorId)
-        .maybeSingle();
+      // 1. Instant cache load
+      const cachedList = await getCache<Doctor[]>(CacheKeys.DOCTORS);
+      const found = (cachedList || []).find((d) => d.id === doctorId);
+      if (found && active) {
+        setDoctor(found);
+      }
 
-      if (!active) return;
-      if (error || !data) {
-        const cachedList = await getCache<Doctor[]>(CacheKeys.DOCTORS);
-        const found = (cachedList || []).find((d) => d.id === doctorId);
-        if (found) {
-          setDoctor(found);
+      // 2. Fresh network sync with 5-second timeout
+      try {
+        const { data, error } = await withTimeout(
+          supabase
+            .from('doctors')
+            .select('*')
+            .eq('id', doctorId)
+            .maybeSingle(),
+          5000
+        );
+
+        if (!active) return;
+        if (error || !data) {
+          if (found) {
+            setIsOffline(true);
+            return;
+          }
+          setFailed(true);
           return;
         }
-        setFailed(true);
-        return;
+        setIsOffline(false);
+        setDoctor(data as Doctor);
+      } catch {
+        if (!active) return;
+        if (found) {
+          setIsOffline(true);
+        } else {
+          setFailed(true);
+        }
       }
-      setDoctor(data as Doctor);
     })();
     return () => {
       active = false;
@@ -242,6 +263,8 @@ export function DoctorDetailScreen({ route, navigation }: any) {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} />
+
         {/* Doctor Header Card */}
         <View
           style={[

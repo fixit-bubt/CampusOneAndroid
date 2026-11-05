@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { ContactSheet } from '../../components/ui/ContactSheet';
@@ -15,7 +16,7 @@ import { DirectionMapModal } from '../../components/location/DirectionMapModal';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { FontFamily, Layout, Accent, SectorColors, LightColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, CacheKeys } from '../../services/cacheService';
+import { getCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { fetchPeople, type Person } from '../../services/peopleService';
 import {
   getCurrentUserCoordinates,
@@ -76,6 +77,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   const [distanceText, setDistanceText] = useState<string | null>(null);
   const [moderateModalOpen, setModerateModalOpen] = useState(false);
   const [moderateLoading, setModerateLoading] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   // Obtain user's live coordinates for distance calculation
   useEffect(() => {
@@ -101,7 +103,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
   // Load wishlist bookmark state
   useEffect(() => {
     if (id) {
-      getSavedListingIds(user?.id).then(ids => setIsSaved(ids.includes(id)));
+      getSavedListingIds(user?.id).then(ids => setIsSaved(ids.includes(id))).catch(() => {});
     }
   }, [id, user?.id]);
 
@@ -115,26 +117,42 @@ export function MarketDetailScreen({ route, navigation }: any) {
       setListing(found);
       fetchPeople([found.seller_id]).then(p => {
         if (p[found.seller_id]) setSellerProfile(p[found.seller_id]);
-      });
+      }).catch(() => {});
     }
 
-    // 2. Fetch fresh from DB
-    const { data: l, error } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    // 2. Fetch fresh from DB with 5-second timeout
+    try {
+      const { data: l, error } = await withTimeout(
+        supabase
+          .from('listings')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle(),
+        5000
+      );
 
-    if (error || !l) {
-      if (!found) setFailed(true);
-      return;
-    }
+      if (error || !l) {
+        if (found) {
+          setIsOffline(true);
+        } else {
+          setFailed(true);
+        }
+        return;
+      }
 
-    setListing(l);
-    // Resolve seller info via directory RPC
-    const people = await fetchPeople([l.seller_id]);
-    if (people[l.seller_id]) {
-      setSellerProfile(people[l.seller_id]);
+      setIsOffline(false);
+      setListing(l);
+      // Resolve seller info via directory RPC
+      const people = await fetchPeople([l.seller_id]);
+      if (people[l.seller_id]) {
+        setSellerProfile(people[l.seller_id]);
+      }
+    } catch {
+      if (found) {
+        setIsOffline(true);
+      } else {
+        setFailed(true);
+      }
     }
   }, [id]);
 
@@ -353,6 +371,8 @@ export function MarketDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
+
         {/* Hero Photo / Lightbox Trigger */}
         <TouchableOpacity
           style={[styles.bigThumb, { backgroundColor: tintBg }]}

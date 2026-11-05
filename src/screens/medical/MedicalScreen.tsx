@@ -32,7 +32,7 @@ import { useToast } from '../../components/ui/Toast';
 import { DirectionMapModal } from '../../components/location/DirectionMapModal';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
-import { getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { useT, type Dict } from '../../i18n';
 import {
   nowDhakaMinutes,
@@ -322,24 +322,34 @@ export function MedicalScreen({ navigation }: any) {
       setLoading(false);
     }
 
-    const { data, error } = await supabase
-      .from('doctors')
-      .select('*')
-      .order('name')
-      .limit(100);
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('doctors')
+          .select('*')
+          .order('name')
+          .limit(100),
+        5000
+      );
 
-    if (error || !data) {
+      if (error || !data) {
+        if (cached && cached.length > 0) {
+          setIsOffline(true);
+        }
+        setLoading(false);
+        return;
+      }
+
+      setIsOffline(false);
+      setDoctors(data as Doctor[]);
+      setCache(CacheKeys.DOCTORS, data as Doctor[]);
+      setLoading(false);
+    } catch {
       if (cached && cached.length > 0) {
         setIsOffline(true);
       }
       setLoading(false);
-      return;
     }
-
-    setIsOffline(false);
-    setDoctors(data as Doctor[]);
-    setCache(CacheKeys.DOCTORS, data as Doctor[]);
-    setLoading(false);
   }, []);
 
   useFocusEffect(
