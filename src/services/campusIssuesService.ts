@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { ServiceResult } from './authService';
+import { getCache, setCache, CacheKeys, withTimeout } from './cacheService';
 
 // Row shape from campus_issues_feed() - safe columns only, no reporter identity.
 export interface CampusIssue {
@@ -25,10 +26,21 @@ export interface CampusIssue {
 // The public board feed: opted-in, non-Safety, non-Rejected reports, ordered by
 // vote count then newest. Each row carries the caller's own `voted` state.
 export async function getCampusIssues(): Promise<ServiceResult<CampusIssue[]>> {
-  const { data, error } = await supabase.rpc('campus_issues_feed');
-  if (error) return { ok: false, error: error.message };
-  const rows = ((data ?? []) as any[]).map((r) => ({ ...r, vote_count: Number(r.vote_count) }));
-  return { ok: true, data: rows as CampusIssue[] };
+  try {
+    const { data, error } = await withTimeout(supabase.rpc('campus_issues_feed'), 5000);
+    if (error) {
+      const cached = await getCache<CampusIssue[]>(CacheKeys.CAMPUS_ISSUES_FEED);
+      if (cached && cached.length > 0) return { ok: true, data: cached };
+      return { ok: false, error: error.message };
+    }
+    const rows = ((data ?? []) as any[]).map((r) => ({ ...r, vote_count: Number(r.vote_count) }));
+    setCache(CacheKeys.CAMPUS_ISSUES_FEED, rows);
+    return { ok: true, data: rows as CampusIssue[] };
+  } catch (err: any) {
+    const cached = await getCache<CampusIssue[]>(CacheKeys.CAMPUS_ISSUES_FEED);
+    if (cached && cached.length > 0) return { ok: true, data: cached };
+    return { ok: false, error: err?.message ?? 'Network error' };
+  }
 }
 
 // Idempotent "me too" toggle (adds a vote if absent, removes it if present).

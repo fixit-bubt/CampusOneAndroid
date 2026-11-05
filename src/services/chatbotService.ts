@@ -4,6 +4,7 @@
 import { fetch as expoFetch } from 'expo/fetch';
 import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 import type { ServiceResult } from './authService';
+import { getCache, setCache, CacheKeys, withTimeout } from './cacheService';
 
 export interface ChatTurn {
   role: 'user' | 'model';
@@ -24,14 +25,29 @@ export interface Conversation {
 // One row per past chat thread, newest activity first (bumped server-side by
 // a trigger on every message insert - see touch_chatbot_conversation()).
 export async function listConversations(userId: string): Promise<ServiceResult<Conversation[]>> {
-  const { data, error } = await supabase
-    .from('chatbot_conversations')
-    .select('id, title, updated_at')
-    .eq('user_id', userId)
-    .order('updated_at', { ascending: false })
-    .limit(100);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, data: (data ?? []).map((r: any) => ({ id: r.id, title: r.title, updatedAt: r.updated_at })) };
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('chatbot_conversations')
+        .select('id, title, updated_at')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(100),
+      5000
+    );
+    if (error) {
+      const cached = await getCache<Conversation[]>(CacheKeys.CHATBOT_CONVERSATIONS(userId));
+      if (cached && cached.length > 0) return { ok: true, data: cached };
+      return { ok: false, error: error.message };
+    }
+    const rows = (data ?? []).map((r: any) => ({ id: r.id, title: r.title, updatedAt: r.updated_at }));
+    setCache(CacheKeys.CHATBOT_CONVERSATIONS(userId), rows);
+    return { ok: true, data: rows };
+  } catch (err: any) {
+    const cached = await getCache<Conversation[]>(CacheKeys.CHATBOT_CONVERSATIONS(userId));
+    if (cached && cached.length > 0) return { ok: true, data: cached };
+    return { ok: false, error: err?.message ?? 'Network error' };
+  }
 }
 
 // Created lazily on the first message of a new chat, not eagerly on screen

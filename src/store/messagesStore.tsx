@@ -308,7 +308,14 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
     setMessages(prev => [...prev, temp]);
     const res = await insertMessage(kind, id, trimmed, myId);
     if (!res.ok) {
-      setMessages(prev => prev.filter(m => m.id !== tempId));
+      // Offline fallback: keep the message in state with pending clock icon
+      // and persist to offline cache so user does not lose what they typed.
+      getCache<any>(`messages_bundle_${myId}`).then(cached => {
+        if (cached) {
+          const nextList = [...(cached.messages ?? []).filter((m: any) => m.id !== tempId), temp];
+          setCache(`messages_bundle_${myId}`, { ...cached, messages: nextList });
+        }
+      });
       return { ok: false, error: res.error };
     }
     setMessages(prev => mergeMessages(prev, [res.data], tempId));

@@ -4459,3 +4459,29 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Type Check: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Local Native Release Build: Successfully compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 45s`).
   - Physical Device Verification: Cleanly streamed via ADB and verified operational on connected device `8734b5da`.
+
+---
+
+### 120. Full-App High-Performance Offline Architecture, Stale-While-Revalidate & Network Timeout Hardening (`cacheService.ts`, `RoutinesBrowseScreen.tsx`, `CampusIssuesScreen.tsx`, `reportsService.ts`, `campusIssuesService.ts`, `messagesStore.tsx`, `ClubDetailScreen.tsx`, `FacultyDeptScreen.tsx`, `JobDetailScreen.tsx`, `ChatbotHistoryScreen.tsx`, `chatbotService.ts`) (/performance-optimization, /code-review-and-quality, /zero-slop)
+- **Zero-Dependency Network Timeout Guard (`cacheService.ts`):**
+  - Added `withTimeout<T>(promiseLike, ms = 5000)` using native `Promise.race` and `Promise.resolve(promiseLike)`.
+  - Rejects hanging network promises within 5 seconds on weak campus Wi-Fi or dead cellular zones, guaranteeing screens fall back to local cache immediately instead of freezing the UI on endless spinners.
+- **Routines & Timetable Offline Hardening (`RoutinesBrowseScreen.tsx`):**
+  - Added instant 0ms cached routine loading via `CacheKeys.ROUTINES`, class slots via `CacheKeys.ROUTINE_SLOTS(dept, intake, sec)`, and exam slots via `CacheKeys.EXAM_SLOTS(dept, intake, sec)`.
+  - Guarded Supabase network fetches with 5s timeout and integrated `OfflineBanner` right below the header bar, allowing students to view schedules anytime without internet on campus.
+- **Campus Issues & Maintenance Board Offline Caching (`CampusIssuesScreen.tsx`, `campusIssuesService.ts`, `reportsService.ts`):**
+  - Added `CacheKeys.CAMPUS_ISSUES_FEED` and `CacheKeys.MY_REPORTS(uid)` to `cacheService.ts`.
+  - Upgraded `getCampusIssues()` and `getMyReports(userId)` to cache-first with `withTimeout(..., 5000)`.
+  - Integrated `OfflineBanner` into `CampusIssuesScreen` header with sync retry support.
+- **Chat Optimistic Message Retention (`messagesStore.tsx`):**
+  - Fixed critical bug where transient network failures or offline states immediately dropped and deleted newly typed messages (`setMessages(prev => prev.filter(m => m.id !== tempId))`).
+  - Outgoing messages now stay in the chat thread marked with `pending: true` (clock icon `🕒`) and persist into `messages_bundle_${myId}` offline storage, preventing message loss.
+- **Club Details, Faculty Department & Job Detail SWR Fallbacks (`ClubDetailScreen.tsx`, `FacultyDeptScreen.tsx`, `JobDetailScreen.tsx`):**
+  - Added offline cache hydration and `OfflineBanner` to `ClubDetailScreen` (`CacheKeys.CLUB_DETAIL`), `FacultyDeptScreen` (`CacheKeys.FACULTY_DEPT`), and `JobDetailScreen` (`CacheKeys.JOB_DETAIL` / `CacheKeys.JOBS` fallback).
+- **Chatbot Conversation History Offline Storage (`ChatbotHistoryScreen.tsx`, `chatbotService.ts`):**
+  - Added `CacheKeys.CHATBOT_CONVERSATIONS(uid)` to `chatbotService.ts`. Past conversation titles and timestamps load instantly when offline with `OfflineBanner` indication.
+- **Verification Evidence:**
+  - TypeScript Type Check: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Unit Test Suite: 18 passed, 18 total (140 passed, 140 total).
+  - Local Native Release Build: Successfully compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 43s`).
+  - Physical Device Verification: Cleanly installed via ADB and verified operational on connected device `8734b5da`.

@@ -23,6 +23,7 @@ export const CacheKeys = {
   BUS_SCHEDULE_PDF_URL: 'bus_schedule_pdf_url',
   FACULTY_DEPTS: 'faculty_depts',
   FACULTY_LIST: 'faculty_list',
+  FACULTY_DEPT: (deptId: string) => `faculty_dept_${deptId}`,
   FACULTY_BOOKMARKS: (uid: string) => `faculty_bookmarks_${uid}`,
   DOCTORS: 'doctors_list',
   COVER_COURSES: 'cover_courses',
@@ -40,9 +41,13 @@ export const CacheKeys = {
   CLUBS: 'clubs_list',
   CLUB_DETAIL: (id: string) => `club_detail_${id}`,
   JOBS: 'jobs_feed',
+  JOB_DETAIL: (id: string) => `job_detail_${id}`,
   JOB_BOOKMARKS: (uid: string) => `job_bookmarks_${uid}`,
+  CHATBOT_CONVERSATIONS: (uid: string) => `chatbot_convos_${uid}`,
 
-  // P2P Services
+  // P2P Services & Issues
+  CAMPUS_ISSUES_FEED: 'campus_issues_feed',
+  MY_REPORTS: (uid: string) => `my_reports_${uid}`,
   MARKET_LISTINGS: 'market_listings',
   RIDES: 'rides_feed',
   RIDES_TAKEN: 'rides_taken',
@@ -137,4 +142,22 @@ export async function clearAllCache(): Promise<void> {
       await AsyncStorage.multiRemove(c1Keys);
     }
   } catch {}
+}
+
+/**
+ * Wraps a promise or thenable with an explicit timeout.
+ * Rejects if the promise doesn't resolve within ms (default: 5000ms),
+ * allowing screens to fall back to cached data without hanging.
+ */
+export function withTimeout<T>(
+  promise: PromiseLike<T> | Promise<T>,
+  ms = 5000,
+  errorMsg = 'Network request timed out'
+): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMsg)), ms)
+    ),
+  ]);
 }

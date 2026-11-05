@@ -11,11 +11,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { ContactSheet } from '../../components/ui/ContactSheet';
 import { FontFamily, Layout, SectorColors, Accent, pillBg } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { fetchPeople, type Person } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -111,33 +113,65 @@ export function JobDetailScreen({ route, navigation }: any) {
   const [applying, setApplying] = useState(false);
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [viewApplicantsOpen, setViewApplicantsOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
 
   const loadJob = useCallback(async () => {
     if (!jobId) { setFailed(true); return; }
-    const [jobRes, saveRes, appRes] = await Promise.all([
-      supabase.from('jobs').select('*, clubs:club_id(name)').eq('id', jobId).maybeSingle(),
-      supabase.from('job_bookmarks').select('job_id').eq('job_id', jobId).eq('user_id', user?.id ?? '').maybeSingle(),
-      user?.id ? getStudentApplicationForJob(jobId, user.id) : Promise.resolve({ applied: false } as { applied: boolean; application?: JobApplication }),
-    ]);
 
-    if (jobRes.error || !jobRes.data) { setFailed(true); return; }
-    setJob(jobRes.data);
-    setSaved(!!saveRes.data);
-    setMyApplication(appRes.applied ? appRes.application ?? null : null);
-
-    // If caller is the poster or an admin, load received applications
-    if (jobRes.data.posted_by === user?.id || isAdmin) {
-      const apps = await getApplicationsForJob(jobId);
-      setJobApplications(apps.applications);
+    // 1. Instant cache load
+    const cachedList = await getCache<any[]>(CacheKeys.JOBS);
+    const cachedJob = cachedList?.find((j: any) => j.id === jobId) ?? await getCache<any>(CacheKeys.JOB_DETAIL(jobId));
+    if (cachedJob) {
+      setJob(cachedJob);
+      setFailed(false);
     }
 
-    // Resolve poster profile safely
-    if (jobRes.data.posted_by) {
-      const people = await fetchPeople([jobRes.data.posted_by]);
-      if (people[jobRes.data.posted_by]) {
-        setPoster(people[jobRes.data.posted_by]);
+    // 2. Network sync with 5-second timeout
+    try {
+      const [jobRes, saveRes, appRes] = await withTimeout(
+        Promise.all([
+          supabase.from('jobs').select('*, clubs:club_id(name)').eq('id', jobId).maybeSingle(),
+          supabase.from('job_bookmarks').select('job_id').eq('job_id', jobId).eq('user_id', user?.id ?? '').maybeSingle(),
+          user?.id ? getStudentApplicationForJob(jobId, user.id) : Promise.resolve({ applied: false } as { applied: boolean; application?: JobApplication }),
+        ]),
+        5000
+      );
+
+      if (jobRes.error || !jobRes.data) {
+        if (cachedJob) {
+          setIsOffline(true);
+        } else {
+          setFailed(true);
+        }
+        return;
+      }
+
+      setIsOffline(false);
+      setJob(jobRes.data);
+      setSaved(!!saveRes.data);
+      setMyApplication(appRes.applied ? appRes.application ?? null : null);
+      setCache(CacheKeys.JOB_DETAIL(jobId), jobRes.data);
+
+      // If caller is the poster or an admin, load received applications
+      if (jobRes.data.posted_by === user?.id || isAdmin) {
+        const apps = await getApplicationsForJob(jobId);
+        setJobApplications(apps.applications);
+      }
+
+      // Resolve poster profile safely
+      if (jobRes.data.posted_by) {
+        const people = await fetchPeople([jobRes.data.posted_by]);
+        if (people[jobRes.data.posted_by]) {
+          setPoster(people[jobRes.data.posted_by]);
+        }
+      }
+    } catch {
+      if (cachedJob) {
+        setIsOffline(true);
+      } else {
+        setFailed(true);
       }
     }
   }, [jobId, user?.id, isAdmin]);
@@ -375,6 +409,8 @@ export function JobDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.content, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} onRetry={loadJob} />
+
         {/* Header Hero Card */}
         <View style={styles.header}>
           <View style={styles.thumb}>

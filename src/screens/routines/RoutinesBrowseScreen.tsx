@@ -20,6 +20,8 @@ import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
 import { useToast } from '../../components/ui/Toast';
 import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { supabase } from '../../lib/supabase';
 import { normalizePdfUrl } from '../../utils/pdfUrl';
 import { openUrl } from '../../utils/link';
@@ -281,21 +283,39 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
     }
   }, [route?.params]);
 
-  // Load all routines from database
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Load all routines from database (with offline cache fallback)
   const loadRoutinesData = useCallback(async () => {
-    try {
+    // 1. Instant cache load
+    const cached = await getCache<OfficialRoutineRow[]>(CacheKeys.ROUTINES);
+    if (cached && cached.length > 0) {
+      setAllRoutines(cached);
+      setLoadingRoutines(false);
+    } else {
       setLoadingRoutines(true);
-      const { data, error } = await supabase
-        .from('routines')
-        .select('*')
-        .order('created_at', { ascending: false });
+    }
+
+    // 2. Network sync with 5-second timeout
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('routines')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        5000
+      );
 
       if (error) {
+        if (cached && cached.length > 0) setIsOffline(true);
         console.warn('Error loading routines:', error.message);
       } else if (data) {
+        setIsOffline(false);
         setAllRoutines(data as OfficialRoutineRow[]);
+        setCache(CacheKeys.ROUTINES, data as OfficialRoutineRow[]);
       }
     } catch (err: any) {
+      if (cached && cached.length > 0) setIsOffline(true);
       console.warn('loadRoutinesData exception:', err?.message);
     } finally {
       setLoadingRoutines(false);
@@ -309,41 +329,74 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
   // Load section routine slots & exam slots when in choose mode
   const loadSlotsData = useCallback(async () => {
     if (step !== 'choose') return;
-    try {
-      setLoadingSlots(true);
-      const intakeClean = selectedIntake.trim();
-      const sectionClean = selectedSection.trim();
+    const intakeClean = selectedIntake.trim();
+    const sectionClean = selectedSection.trim();
+    const cacheKey = activeType === 'class'
+      ? CacheKeys.ROUTINE_SLOTS(selectedDept.code, intakeClean, sectionClean)
+      : CacheKeys.EXAM_SLOTS(selectedDept.code, intakeClean, sectionClean);
 
+    // 1. Instant cache load
+    if (activeType === 'class') {
+      const cached = await getCache<RoutineSlot[]>(cacheKey);
+      if (cached && cached.length > 0) {
+        setClassSlots(cached);
+        setLoadingSlots(false);
+      } else {
+        setLoadingSlots(true);
+      }
+    } else {
+      const cached = await getCache<ExamSlot[]>(cacheKey);
+      if (cached && cached.length > 0) {
+        setExamSlots(cached);
+        setLoadingSlots(false);
+      } else {
+        setLoadingSlots(true);
+      }
+    }
+
+    // 2. Network sync with 5-second timeout
+    try {
       if (activeType === 'class') {
-        const { data, error } = await supabase
-          .from('routine_slots')
-          .select('*')
-          .or(`department.eq.${selectedDept.code},department.ilike.%${selectedDept.code}%,department.ilike.%${selectedDept.name}%`)
-          .eq('intake', intakeClean)
-          .eq('section', sectionClean)
-          .order('slot_index', { ascending: true });
+        const { data, error } = await withTimeout(
+          supabase
+            .from('routine_slots')
+            .select('*')
+            .or(`department.eq.${selectedDept.code},department.ilike.%${selectedDept.code}%,department.ilike.%${selectedDept.name}%`)
+            .eq('intake', intakeClean)
+            .eq('section', sectionClean)
+            .order('slot_index', { ascending: true }),
+          5000
+        );
 
         if (!error && data) {
+          setIsOffline(false);
           setClassSlots(data as RoutineSlot[]);
-        } else {
-          setClassSlots([]);
+          setCache(cacheKey, data as RoutineSlot[]);
+        } else if (error) {
+          setIsOffline(true);
         }
       } else {
-        const { data, error } = await supabase
-          .from('exam_slots')
-          .select('*')
-          .or(`department.eq.${selectedDept.code},department.ilike.%${selectedDept.code}%,department.ilike.%${selectedDept.name}%`)
-          .eq('intake', intakeClean)
-          .eq('section', sectionClean)
-          .order('exam_date', { ascending: true });
+        const { data, error } = await withTimeout(
+          supabase
+            .from('exam_slots')
+            .select('*')
+            .or(`department.eq.${selectedDept.code},department.ilike.%${selectedDept.code}%,department.ilike.%${selectedDept.name}%`)
+            .eq('intake', intakeClean)
+            .eq('section', sectionClean)
+            .order('exam_date', { ascending: true }),
+          5000
+        );
 
         if (!error && data) {
+          setIsOffline(false);
           setExamSlots(data as ExamSlot[]);
-        } else {
-          setExamSlots([]);
+          setCache(cacheKey, data as ExamSlot[]);
+        } else if (error) {
+          setIsOffline(true);
         }
       }
     } catch (err: any) {
+      setIsOffline(true);
       console.warn('loadSlotsData exception:', err?.message);
     } finally {
       setLoadingSlots(false);
@@ -533,6 +586,19 @@ export function RoutinesBrowseScreen({ route, navigation }: any) {
           ) : undefined
         }
       />
+
+      {isOffline && (
+        <View style={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6 }}>
+          <OfflineBanner
+            visible={isOffline}
+            message="Viewing saved timetable offline"
+            onRetry={() => {
+              loadRoutinesData();
+              loadSlotsData();
+            }}
+          />
+        </View>
+      )}
 
       {/* ──────────────── STEP 1: ROUTINE TYPES (TWO 72-SIZE BARS) ──────────────── */}
       {step === 'types' && (

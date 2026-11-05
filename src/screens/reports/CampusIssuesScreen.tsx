@@ -27,6 +27,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { SkeletonList, LoadError } from '../../components/ui/LoadState';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { LiquidToggle } from '../../components/ui/LiquidToggle';
 import { FontFamily, Layout } from '../../theme';
 import { useT } from '../../i18n';
@@ -133,6 +134,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   // Data fetching
   const loadCampus = useCallback(async () => {
@@ -140,13 +142,20 @@ export function CampusIssuesScreen({ navigation, route }: any) {
       const res = await getCampusIssues();
       if (res.ok) {
         setCampusIssues(res.data);
+        setIsOffline(false);
       } else {
-        setLoadError(res.error);
+        if (campusIssues.length > 0) {
+          setIsOffline(true);
+        } else {
+          setLoadError(res.error);
+        }
       }
+    } catch {
+      if (campusIssues.length > 0) setIsOffline(true);
     } finally {
       setCampusLoading(false);
     }
-  }, []);
+  }, [campusIssues.length]);
 
   const loadMine = useCallback(async () => {
     if (!user) {
@@ -158,13 +167,20 @@ export function CampusIssuesScreen({ navigation, route }: any) {
       if (res.ok) {
         setMyReports(res.data);
         setBoardMap(Object.fromEntries(res.data.map(m => [m.id, m.show_on_board === true])));
+        setIsOffline(false);
       } else {
-        setLoadError(res.error);
+        if (myReports.length > 0) {
+          setIsOffline(true);
+        } else {
+          setLoadError(res.error);
+        }
       }
+    } catch {
+      if (myReports.length > 0) setIsOffline(true);
     } finally {
       setMyReportsLoading(false);
     }
-  }, [user]);
+  }, [user, myReports.length]);
 
   const loadAll = useCallback(async () => {
     setLoadError(null);
@@ -270,6 +286,16 @@ export function CampusIssuesScreen({ navigation, route }: any) {
 
   const listHeader = (
     <View>
+      {isOffline && (
+        <View style={{ marginBottom: 6 }}>
+          <OfflineBanner
+            visible={isOffline}
+            message="Viewing saved issues · Offline mode"
+            onRetry={loadAll}
+          />
+        </View>
+      )}
+
       {/* 58dp Full-Width Action Bar */}
       <View style={styles.actionContainer}>
         <TouchableOpacity

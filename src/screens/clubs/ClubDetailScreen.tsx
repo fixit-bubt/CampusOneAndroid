@@ -14,11 +14,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { Avatar } from '../../components/ui/Avatar';
 import { Icon } from '../../components/ui/Icon';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
@@ -74,6 +76,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const [myRole, setMyRole] = useState<string | null>(null);
   const [myRequest, setMyRequest] = useState<{ id: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const CLUB_TABS: TabItem<Tab>[] = useMemo(() => [
     { id: 'feed',    label: t.clubs.feed,    color: C.brand },
@@ -87,39 +90,92 @@ export function ClubDetailScreen({ route, navigation }: any) {
   }, [id, user?.id]);
 
   async function load() {
-    const [clubRes, postsRes, membersRes, reqRes] = await Promise.all([
-      supabase.from('clubs').select('*').eq('id', id).single(),
-      supabase.from('club_posts').select('*').eq('club_id', id)
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(30),
-      supabase.from('club_members').select('*').eq('club_id', id),
-      // My own pending join request, if any (RLS only returns the caller's row).
-      supabase.from('club_join_requests').select('id')
-        .eq('club_id', id).eq('user_id', user?.id ?? '')
-        .eq('status', 'pending').maybeSingle(),
-    ]);
-    if (clubRes.data) setClub(clubRes.data as Club);
-    else setNotFound(true);
-    // Author/member names come from the roster RPC: profiles RLS hides everyone
-    // but the caller, so embedding it here would render blank names.
-    const people = await fetchPeople([
-      ...((postsRes.data as any[]) ?? []).map(p => p.author_id),
-      ...((membersRes.data as any[]) ?? []).map(m => m.user_id),
-    ]);
-    const named = (uid: string) =>
-      people[uid] ? { full_name: people[uid].full_name } : null;
-    if (postsRes.data) {
-      setPosts((postsRes.data as any[]).map(p => ({ ...p, profiles: named(p.author_id) })) as any);
+    if (!id) return;
+    const cacheKey = CacheKeys.CLUB_DETAIL(id);
+
+    // 1. Instant cache load
+    const cached = await getCache<{
+      club: Club;
+      posts: Post[];
+      members: Member[];
+      myRole: string | null;
+      myRequest: { id: string } | null;
+    }>(cacheKey);
+
+    if (cached) {
+      if (cached.club) setClub(cached.club);
+      if (cached.posts) setPosts(cached.posts);
+      if (cached.members) setMembers(cached.members);
+      if (cached.myRole !== undefined) setMyRole(cached.myRole);
+      if (cached.myRequest !== undefined) setMyRequest(cached.myRequest);
     }
-    if (membersRes.data) {
-      setMembers((membersRes.data as any[])
-        .map(m => ({ ...m, profiles: named(m.user_id) }))
-        .sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9)));
-      const me = (membersRes.data as any[]).find(m => m.user_id === user?.id);
-      setMyRole(me ? me.role : null);
+
+    // 2. Network sync with 5-second timeout
+    try {
+      const [clubRes, postsRes, membersRes, reqRes] = await withTimeout(
+        Promise.all([
+          supabase.from('clubs').select('*').eq('id', id).single(),
+          supabase.from('club_posts').select('*').eq('club_id', id)
+            .order('is_pinned', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(30),
+          supabase.from('club_members').select('*').eq('club_id', id),
+          supabase.from('club_join_requests').select('id')
+            .eq('club_id', id).eq('user_id', user?.id ?? '')
+            .eq('status', 'pending').maybeSingle(),
+        ]),
+        5000
+      );
+
+      if (clubRes.data) {
+        setIsOffline(false);
+        setClub(clubRes.data as Club);
+        setNotFound(false);
+      } else {
+        if (!cached?.club) setNotFound(true);
+        else setIsOffline(true);
+        return;
+      }
+
+      const people = await fetchPeople([
+        ...((postsRes.data as any[]) ?? []).map(p => p.author_id),
+        ...((membersRes.data as any[]) ?? []).map(m => m.user_id),
+      ]);
+      const named = (uid: string) =>
+        people[uid] ? { full_name: people[uid].full_name } : null;
+
+      const loadedPosts = postsRes.data ? (postsRes.data as any[]).map(p => ({ ...p, profiles: named(p.author_id) })) as any : [];
+      setPosts(loadedPosts);
+
+      let loadedMembers: Member[] = [];
+      let resolvedRole: string | null = null;
+      if (membersRes.data) {
+        loadedMembers = (membersRes.data as any[])
+          .map(m => ({ ...m, profiles: named(m.user_id) }))
+          .sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9));
+        setMembers(loadedMembers);
+        const me = (membersRes.data as any[]).find(m => m.user_id === user?.id);
+        resolvedRole = me ? me.role : null;
+        setMyRole(resolvedRole);
+      }
+      const resolvedReq = reqRes.data ? { id: (reqRes.data as any).id } : null;
+      setMyRequest(resolvedReq);
+
+      // Save to cache
+      setCache(cacheKey, {
+        club: clubRes.data as Club,
+        posts: loadedPosts,
+        members: loadedMembers,
+        myRole: resolvedRole,
+        myRequest: resolvedReq,
+      });
+    } catch {
+      if (cached?.club) {
+        setIsOffline(true);
+      } else {
+        setNotFound(true);
+      }
     }
-    setMyRequest(reqRes.data ? { id: (reqRes.data as any).id } : null);
   }
 
   async function requestJoin() {
@@ -209,6 +265,8 @@ export function ClubDetailScreen({ route, navigation }: any) {
         contentContainerStyle={[styles.scroll, { paddingHorizontal: Layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
+
         {/* Club header card */}
         <View style={[styles.headerCard, { backgroundColor: C.surface, borderColor: C.border }]}>
           <View style={styles.thumb}>

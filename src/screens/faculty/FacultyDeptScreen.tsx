@@ -12,11 +12,13 @@ import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { Icon } from '../../components/ui/Icon';
 import { AnimatedIcon } from '../../components/ui/AnimatedIcon';
 import { useToast } from '../../components/ui/Toast';
 import { FontFamily, Layout, Accent } from '../../theme';
 import { supabase } from '../../lib/supabase';
+import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import {
   FACULTY_ACCENT, BRANCH_ICON, shortDept, sortFaculty, interestsOf,
@@ -37,22 +39,66 @@ export function FacultyDeptScreen({ route, navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const INITIAL_LIMIT = 24;
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_LIMIT);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     setVisibleLimit(INITIAL_LIMIT);
   }, [query]);
 
   const load = useCallback(async () => {
-    const [deptRes, facRes, savedRes] = await Promise.all([
-      supabase.from('departments').select('id, name, branch, dept_number, chairman').eq('id', deptId).single(),
-      supabase.from('faculty')
-        .select('id, department_id, name, designation, email, phone, cell_phone, personal_email, short_code, room_number, building, floor, counseling_hours, blood_group, scopus_url, is_accepting_research, research_interests, teaching_areas, courses_taught, qualifications, publications, on_leave, is_chairman, photo_url')
-        .eq('department_id', deptId),
-      supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? ''),
-    ]);
-    if (deptRes.data) setDept(deptRes.data as Department);
-    if (facRes.data) setRoster(sortFaculty(facRes.data as FacultyMember[]));
-    if (savedRes.data) setSavedIds(new Set(savedRes.data.map((s: any) => s.faculty_id)));
+    if (!deptId) return;
+    const cacheKey = CacheKeys.FACULTY_DEPT(deptId);
+
+    // 1. Instant cache load
+    const cached = await getCache<{
+      dept: Department | null;
+      roster: FacultyMember[];
+      savedIds: string[];
+    }>(cacheKey);
+
+    if (cached) {
+      if (cached.dept) setDept(cached.dept);
+      if (cached.roster) setRoster(cached.roster);
+      if (cached.savedIds) setSavedIds(new Set(cached.savedIds));
+    }
+
+    // 2. Network sync with 5-second timeout
+    try {
+      const [deptRes, facRes, savedRes] = await withTimeout(
+        Promise.all([
+          supabase.from('departments').select('id, name, branch, dept_number, chairman').eq('id', deptId).single(),
+          supabase.from('faculty')
+            .select('id, department_id, name, designation, email, phone, cell_phone, personal_email, short_code, room_number, building, floor, counseling_hours, blood_group, scopus_url, is_accepting_research, research_interests, teaching_areas, courses_taught, qualifications, publications, on_leave, is_chairman, photo_url')
+            .eq('department_id', deptId),
+          supabase.from('faculty_bookmarks').select('faculty_id').eq('user_id', user?.id ?? ''),
+        ]),
+        5000
+      );
+
+      if (deptRes.data) {
+        setIsOffline(false);
+        setDept(deptRes.data as Department);
+      }
+      let loadedRoster: FacultyMember[] = [];
+      if (facRes.data) {
+        loadedRoster = sortFaculty(facRes.data as FacultyMember[]);
+        setRoster(loadedRoster);
+      }
+      const loadedSaved = savedRes.data ? savedRes.data.map((s: any) => s.faculty_id) : [];
+      setSavedIds(new Set(loadedSaved));
+
+      if (deptRes.data && facRes.data) {
+        setCache(cacheKey, {
+          dept: deptRes.data as Department,
+          roster: loadedRoster,
+          savedIds: loadedSaved,
+        });
+      }
+    } catch {
+      if (cached?.dept) {
+        setIsOffline(true);
+      }
+    }
   }, [deptId, user?.id]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -166,6 +212,8 @@ export function FacultyDeptScreen({ route, navigation }: any) {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brand} />}
       >
+        <OfflineBanner visible={isOffline} onRetry={load} />
+
         {/* Dept header */}
         {dept && (
           <View style={styles.header}>

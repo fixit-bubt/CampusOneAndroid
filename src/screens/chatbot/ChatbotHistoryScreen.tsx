@@ -12,6 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
 import { SubBar } from '../../components/layout/TopBar';
+import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout } from '../../theme';
 import { listConversations, deleteConversation, type Conversation } from '../../services/chatbotService';
 
@@ -29,13 +30,18 @@ export function ChatbotHistoryScreen({ navigation }: any) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
     const res = await listConversations(user.id);
-    if (res.ok) setConversations(res.data);
+    if (res.ok) {
+      setConversations(res.data);
+    } else {
+      if (conversations.length > 0) setIsOffline(true);
+    }
     setLoading(false);
-  }, [user]);
+  }, [user, conversations.length]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -108,6 +114,13 @@ export function ChatbotHistoryScreen({ navigation }: any) {
         removeClippedSubviews={Platform.OS === 'android'}
         contentContainerStyle={{ paddingHorizontal: Layout.screenPadding, paddingTop: 6, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          isOffline ? (
+            <View style={{ marginBottom: 8 }}>
+              <OfflineBanner visible={isOffline} onRetry={load} />
+            </View>
+          ) : null
+        }
         ItemSeparatorComponent={renderSeparator}
         ListEmptyComponent={
           !loading ? (
