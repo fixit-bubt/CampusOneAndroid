@@ -78,6 +78,9 @@ This document is the single, authoritative reference for any AI agent or develop
 - **Visual Design & Asset Creation:**
   - **Native Image Generation:** Agent `generate_image` tool generates high-resolution app icons, logos, banners, and splash screen artwork directly into project assets.
   - **Brand Identity System:** `brandkit` skill (`~/.gemini/config/skills/brandkit`) standardizes palettes, typography tokens, logo rules, and marketing mockups.
+- **Academic Writing & Anti-AI Detection System:**
+  - **`academic-humanizer` Skill:** Located in `~/.gemini/config/skills/academic-humanizer/`. Contains mathematical anti-detection protocols, Wikipedia WP:AISIGNS guides, and Turnitin chunking analysis.
+  - **Audit Tool:** `python ~/.gemini/config/skills/academic-humanizer/scripts/audit_academic_text.py <file>` measures sentence burstiness ($\text{CV} \ge 0.55$), flags banned AI vocabulary, and verifies thesis chapters pass Turnitin/iThenticate AI checks.
 
 ### 2.5 Master Team Account Transition & Infrastructure Roadmap
 
@@ -241,7 +244,7 @@ All visual styles must strictly flow from `src/theme/`. **Never hardcode hex col
 - **Zero-Emoji Project Standard:**
   - Strict ban on raw Unicode emojis (`🚗`, `🛺`, `🏍️`, `🩸`, `⚡`, `🎉`, `✨`, etc.) in button text, filter chips, list badges, and UI copy. All status indicators and categorizations must use vector badges (`StatusBadge` or `@expo/vector-icons`).
 - **1:1 Sibling Web Mobile Bottom Navigation Bar (`BottomTabNavigator.tsx`):**
-  - Midnight Navy Gradient (`#0f2862` to `#0a1b42`) with crisp 1px top rim highlight stroke (`rgba(255, 255, 255, 0.16)`).
+  - **Flat Edge-to-Edge Architecture & Midnight Navy Gradient:** Renders full-width via native `LinearGradient` (`#0f2862` to `#0a1b42`) using `StyleSheet.absoluteFill` with crisp 1px top rim highlight stroke (`borderTopColor: 'rgba(255, 255, 255, 0.16)'`). Replaced legacy curved shoulder SVG cutouts (`r = 20`) with clean flat top architecture, completely eliminating white corner cutout notches in Light Mode, eliminating active indicator pill clipping on outer tabs (Settings & Home), and eliminating the 2-3px subpixel side seam on high-DPI wide screens (such as Samsung Galaxy S24 Ultra).
   - Seamless Screen Edge Integration & Zero-Jank Inset Stability: All 7 root tab screens strictly use `useSafeAreaInsets()` from `react-native-safe-area-context` paired with standard `<View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>`. Combined with `<Tab.Navigator detachInactiveScreens={false}>`, screens are permanently attached in the native view hierarchy, eliminating native Android fragment re-mounts, window inset resets, and vertical jumping. Content below the 60dp `TopBar` is standardized to start at exactly 10dp across all tabs.
   - Clean in-line Messages tab button in the center (tab 3 of 5 for students) with unread badge.
   - Active tab highlighted by a full-tab sliding electric blue indicator card (`width: tabWidth - 6`, `height: 54`, `borderRadius: 15`, `rgba(96, 165, 250, 0.18)` fill, `rgba(96, 165, 250, 0.35)` border) backed by Android GPU hardware layer texture (`renderToHardwareTextureAndroid={true}`). Slide triggers instantaneously on Frame 1 upon touch (`onPressTab`, 0ms latency) via native-driver critically damped spring (`stiffness: 220`, `damping: 24`, `overshootClamping: true`) with strictly zero bounce, memoized `StandardTabButton` and `BottomNavBackdrop`, and fixed typography metrics to eliminate native Android text `requestLayout()` passes.
@@ -766,6 +769,9 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
   - **Document Card Styling:** Rendered images/canvases styled with `margin: 8px auto 16px auto !important; border-radius: 4px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.12) !important;`.
   - **Zero Top Gap:** Resets Google's `top: 80px` / `top: 128px` offset reserved for the hidden toolstrip, aligning pages directly below the executive top app bar.
   - **WebView Asset Caching:** Enabled `cacheEnabled={true}` and `cacheMode="LOAD_DEFAULT"` to cache Google's static 1.93MB script bundles on disk.
+- **Two-Stage Reliable Remote Download Pipeline (`prepareDocumentForViewer`):** Direct streaming `fetch` with standard `User-Agent: Mozilla/5.0 (Linux; Android) CampusOne/1.0` and `Accept: application/pdf` headers so LiteSpeed / Cloudflare servers never drop or challenge mobile download requests. Backed by native `File.downloadFileAsync` as secondary fallback.
+- **Protected Cache Pruning (`pruneNoticesCache`):** `pruneNoticesCache(excludeFileName)` explicitly guards the active notice file being viewed or downloaded, ensuring auto-purging of old notices never deletes the current document.
+- **Zero-CORS Direct In-Memory Base64 Rendering (`CampusPdfViewerModal.tsx`):** Always generates `base64Data` from downloaded bytes and prioritizes passing `payload.base64` directly to `window.loadPdfData()`, completely bypassing Android WebView `file://` XHR restrictions and CORS policies for instant 60 FPS offline document viewing.
 
 ---
 
@@ -4436,3 +4442,20 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - TypeScript Type Check: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
   - Local Native Release Build: Compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 47s`).
   - Physical Device Verification: Cleanly installed via ADB and launched on USB-connected device `8734b5da`.
+
+---
+
+### 119. Bottom Navigation Flat Edge-to-Edge Architecture & PDF Notice Engine Robustness Upgrade (`BottomTabNavigator.tsx`, `pdfViewerService.ts`, `CampusPdfViewerModal.tsx`) (/zero-slop, /code-review-and-quality, /performance-optimization)
+- **Bottom Navigation Flat Edge-to-Edge Architecture (`BottomTabNavigator.tsx`):**
+  - **Flat Top Line & Hardware Display Alignment:** Replaced legacy SVG curved shoulder cutouts (`r = 20`) with native `LinearGradient` (`#0f2862` to `#0a1b42`) using `StyleSheet.absoluteFill` and 1px top highlight rim (`borderTopColor: 'rgba(255, 255, 255, 0.16)'`).
+  - **Eliminated White Corner Cutouts:** Completely resolved the visual bug where dark navy rounded corners exposed the light mode page background (`#F8FAFC`) as awkward white triangular gaps in the top-left (next to Home) and top-right (above Settings).
+  - **Resolved Active Pill Indicator Collision:** The electric blue sliding active indicator (`slidingIndicator`) on the outer tabs (Settings and Home) now has full rectangular clearance with zero clipping or collision against curved boundaries.
+  - **Subpixel Density Fit on High-DPI Screens:** Replaced viewport-based SVG width math with native `StyleSheet.absoluteFill` stretching, completely eliminating the 2–3px subpixel white vertical gap along the screen edges on wide, high-resolution devices (such as Samsung Galaxy S24 Ultra).
+- **PDF Engine & Notice Viewer Robustness Upgrade (`pdfViewerService.ts`, `CampusPdfViewerModal.tsx`):**
+  - **Protected Notice Cache Pruning:** Updated `pruneNoticesCache(excludeFileName)` to explicitly guard the active notice file being opened, preventing the auto-purger from deleting the newly downloaded PDF before the viewer engine can render it.
+  - **Two-Stage Reliable Remote Download Pipeline:** Upgraded `prepareDocumentForViewer` to use a direct streaming `fetch` with standard `User-Agent: Mozilla/5.0 (Linux; Android) CampusOne/1.0` and `Accept: application/pdf` headers, ensuring university LiteSpeed / Cloudflare servers never drop or challenge mobile download requests. Backed by native `File.downloadFileAsync` as secondary fallback.
+  - **Zero-CORS Direct In-Memory Base64 Rendering:** Restored guaranteed `base64Data` generation from downloaded bytes. In `CampusPdfViewerModal.tsx`, `sendDocumentToWebView` prioritizes `payload.base64` via `window.loadPdfData()`, completely bypassing Android WebView `file://` XHR restrictions and CORS policies for instant 60 FPS offline document viewing.
+- **Verification Evidence:**
+  - TypeScript Type Check: Passed with 0 errors across the entire codebase (`tsc --noEmit`).
+  - Local Native Release Build: Successfully compiled via Gradle `assembleRelease` (`BUILD SUCCESSFUL in 45s`).
+  - Physical Device Verification: Cleanly streamed via ADB and verified operational on connected device `8734b5da`.
