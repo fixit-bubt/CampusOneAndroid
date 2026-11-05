@@ -70,23 +70,24 @@ export function CampusPdfViewerModal({
 
   // Synchronization refs for local pdf.js engine
   const webViewReadyRef = useRef(false);
-  const docPayloadRef = useRef<{ base64?: string; fileUri?: string } | null>(null);
+  const docPayloadRef = useRef<{ fileUri?: string; base64?: string } | null>(null);
   const sentPayloadRef = useRef<string | null>(null);
 
   const sendDocumentToWebView = useCallback(() => {
     if (!webViewReadyRef.current || !docPayloadRef.current) return;
     const payload = docPayloadRef.current;
-    const payloadKey = payload.base64 ? payload.base64.slice(0, 48) : payload.fileUri;
+    const payloadKey = payload.fileUri || (payload.base64 ? payload.base64.slice(0, 48) : 'doc');
     if (sentPayloadRef.current === payloadKey) return;
-    sentPayloadRef.current = payloadKey ?? null;
+    sentPayloadRef.current = payloadKey;
 
-    if (payload.base64) {
-      webRef.current?.injectJavaScript(
-        `if (typeof window.loadPdfData === 'function') { window.loadPdfData(${JSON.stringify(payload.base64)}); } true;`
-      );
-    } else if (payload.fileUri) {
+    // Prefer fast, native-speed local file reading via XHR: zero bridge memory pressure
+    if (payload.fileUri) {
       webRef.current?.injectJavaScript(
         `if (typeof window.loadPdfDoc === 'function') { window.loadPdfDoc(${JSON.stringify(payload.fileUri)}); } true;`
+      );
+    } else if (payload.base64) {
+      webRef.current?.injectJavaScript(
+        `if (typeof window.loadPdfData === 'function') { window.loadPdfData(${JSON.stringify(payload.base64)}); } true;`
       );
     }
   }, []);
@@ -113,8 +114,8 @@ export function CampusPdfViewerModal({
       setLocalFileUri(doc.localFileUri);
 
       docPayloadRef.current = {
+        fileUri: './active_viewer_doc.pdf',
         base64: doc.base64Data,
-        fileUri: doc.engineFileUri,
       };
       sendDocumentToWebView();
 

@@ -767,12 +767,23 @@ In `RootNavigator.tsx`, students who have not completed onboarding (`!profile?.s
 
 ---
 
-## 12. Capstone Project Thesis Report
+## 12. Capstone Project Thesis Report & LaTeX System
 
-- **Document Location:** `c:\Users\dracu\Desktop\CampusOne\Copy of Capstone_Project_Report_Format-DOCX (1).docx` (Backup: `...BACKUP.docx`).
-- **Current State:** Chapters 1–4 completed (Introduction, Background Study, Methodology, Implementation & Result Analysis). Chapters 5–6 (Constraints/Milestones, Conclusion) remain template placeholders.
+- **Authoritative LaTeX Workspace:** `c:\Users\dracu\Desktop\CampusOne\latex_report` (Synchronized Backup: `c:\Users\dracu\Desktop\capstone reports\latex_report`).
+- **Official BUBT Template:** `Capstone_Project_Report_Format__LaTex___V4_0` (`\documentclass{article}`, `\doublespacing`, `geometry` left=3cm/right=3cm/top=3cm/bottom=2.5cm, `biblatex` with `biber` & IEEE style).
+- **In-Folder Memory Reference:** See `c:\Users\dracu\Desktop\CampusOne\latex_report\THESIS_MEMORY.md` for complete academic metadata, author IDs, supervisory board, section numbering rules, and chapter breakdown.
+- **55-Page Reference PDF:** `c:\Users\dracu\Desktop\CampusOne\latex_report\CampusOne_Capstone_Report_Final.pdf` (serves as the exact ground-truth visual benchmark for pagination, table alignment, and formatting).
+- **Core LaTeX Files:**
+  - `main.tex`: Root driver file configuring packages, front matter, roman/arabic page numbering, bibliography, and annexures.
+  - `cover_page.tex`: Official BUBT Title page with authors, student IDs, supervisor, and `image/BUBT-Logo.png`.
+  - `Declaration.tex`, `Approval.tex`: Formal student declaration with 5 extracted author signatures (`image/sig_*.png`) and defense board approval block.
+  - `Dedication.tex`, `Acknowledgement.tex`, `Abstract.tex` (with 8 keywords), `Acronyms.tex` (28 acronyms).
+  - `chapter1.tex` through `chapter6.tex`: Complete thesis text across Introduction, Background Study, Methodology, Standards/Constraints/Milestones, and Conclusion. (Chapter 4 contains current BUBT template placeholders for implementation walk-throughs).
+  - `ref.bib`: 26 IEEE BibTeX citations.
+  - `project_timeline.png`, `Similarity Score.png` (Annexure-I), `AI Report.png` (Annexure-II).
+- **Legacy Word Document:** `c:\Users\dracu\Desktop\CampusOne\Copy of Capstone_Project_Report_Format-DOCX (1).docx` (Backup: `...BACKUP.docx`). Editable via `python-docx` if required.
 - **Report Strategy:** Mobile app and Web app are presented as **one unified system** with two client interfaces sharing a single backend.
-- **Editing Tool:** Edit using `python-docx` (`pip show python-docx` is available). Always confirm scope before altering document structure.
+- **Compilation in Overleaf:** Upload `latex_report/` as a zip project; ensure compiler is set to pdfLaTeX or XeLaTeX with Biber for bibliography.
 
 ---
 

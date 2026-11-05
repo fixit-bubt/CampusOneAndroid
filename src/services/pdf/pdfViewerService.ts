@@ -162,13 +162,18 @@ export async function prepareDocumentForViewer(
 
     if (!cachedFile.exists || cachedFile.size === 0) {
       let downloadOk = false;
+      const controller = new AbortController();
+      const timeoutTimer = setTimeout(() => controller.abort(), 25000);
 
       // 1. Primary: Native file download directly to destination file
       try {
         if (cachedFile.exists) {
           try { cachedFile.delete(); } catch { /* ignore */ }
         }
-        const downloaded = await File.downloadFileAsync(normalized, cachedFile, { idempotent: true });
+        const downloaded = await File.downloadFileAsync(normalized, cachedFile, {
+          idempotent: true,
+          signal: controller.signal,
+        });
         if (downloaded && downloaded.exists && downloaded.size > 0) {
           downloadOk = true;
         }
@@ -179,7 +184,7 @@ export async function prepareDocumentForViewer(
       // 2. Secondary: Standard React Native fetch() stream fallback
       if (!downloadOk || !cachedFile.exists || cachedFile.size === 0) {
         try {
-          const res = await fetch(normalized);
+          const res = await fetch(normalized, { signal: controller.signal });
           if (!res.ok) {
             throw new Error(`Server returned HTTP ${res.status}`);
           }
@@ -198,7 +203,11 @@ export async function prepareDocumentForViewer(
         } catch (fetchErr: any) {
           console.error('Fetch fallback error for PDF:', fetchErr);
           throw new Error(`Could not download PDF: ${fetchErr?.message || 'Network error'}`);
+        } finally {
+          clearTimeout(timeoutTimer);
         }
+      } else {
+        clearTimeout(timeoutTimer);
       }
 
       pruneNoticesCache();
@@ -212,15 +221,6 @@ export async function prepareDocumentForViewer(
 
   if (!localSourceFile.exists || localSourceFile.size === 0) {
     throw new Error('PDF file could not be found or downloaded.');
-  }
-
-  // Load raw bytes for memory loading
-  if (!rawBytes) {
-    try {
-      rawBytes = await localSourceFile.bytes();
-    } catch (err) {
-      console.warn('Could not read local file bytes:', err);
-    }
   }
 
   // Prepare active_viewer_doc.pdf in engineDir()
@@ -239,11 +239,14 @@ export async function prepareDocumentForViewer(
     console.warn('Could not write active_viewer_doc.pdf in engineDir:', copyErr);
   }
 
-  // Generate base64 string for zero-CORS in-memory WebView loading
+  // Generate fallback base64 string only if local file copy failed
   let base64Data: string | undefined;
-  if (rawBytes && rawBytes.length > 0 && rawBytes.length <= 16 * 1024 * 1024) {
+  if (!targetInEngine.exists || targetInEngine.size === 0) {
     try {
-      base64Data = bytesToBase64(rawBytes);
+      if (!rawBytes) rawBytes = await localSourceFile.bytes();
+      if (rawBytes && rawBytes.length > 0 && rawBytes.length <= 16 * 1024 * 1024) {
+        base64Data = bytesToBase64(rawBytes);
+      }
     } catch (err) {
       console.warn('Could not encode bytes to base64:', err);
     }

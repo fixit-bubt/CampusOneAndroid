@@ -88,6 +88,18 @@ export function buildViewerHtml(isDark: boolean = true): string {
   <div id="viewer-container"></div>
 
   <script>
+    // Polyfill Promise.withResolvers for Android WebView versions < Chromium 119
+    if (typeof Promise.withResolvers !== 'function') {
+      Promise.withResolvers = function() {
+        var resolve, reject;
+        var promise = new Promise(function(res, rej) {
+          resolve = res;
+          reject = rej;
+        });
+        return { promise: promise, resolve: resolve, reject: reject };
+      };
+    }
+
     // Global fallback error reporter
     window.addEventListener('error', function(e) {
       if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
@@ -100,6 +112,17 @@ export function buildViewerHtml(isDark: boolean = true): string {
   </script>
 
   <script type="module">
+    if (typeof Promise.withResolvers !== 'function') {
+      Promise.withResolvers = function() {
+        let resolve, reject;
+        const promise = new Promise((res, rej) => {
+          resolve = res;
+          reject = rej;
+        });
+        return { promise, resolve, reject };
+      };
+    }
+
     import * as pdfjs from './pdf.min.mjs';
     pdfjs.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs';
 
@@ -241,7 +264,8 @@ export function buildViewerHtml(isDark: boolean = true): string {
     // File path loading via XHR
     window.loadPdfDoc = async function(filePath) {
       try {
-        const buffer = await readLocalBytes(filePath);
+        const targetPath = filePath || './active_viewer_doc.pdf';
+        const buffer = await readLocalBytes(targetPath);
         await initPdfWithBytes(new Uint8Array(buffer));
       } catch (err) {
         send({ type: 'error', message: String(err && err.message ? err.message : err) });
@@ -297,6 +321,9 @@ export function buildViewerHtml(isDark: boolean = true): string {
         renderedPages.add(num);
       } catch (err) {
         console.error('Error rendering page ' + num, err);
+        if (num === 1) {
+          send({ type: 'error', message: 'Failed to render document page: ' + (err && err.message ? err.message : err) });
+        }
       } finally {
         renderingPages.delete(num);
       }
