@@ -76,18 +76,18 @@ export function CampusPdfViewerModal({
   const sendDocumentToWebView = useCallback(() => {
     if (!webViewReadyRef.current || !docPayloadRef.current) return;
     const payload = docPayloadRef.current;
-    const payloadKey = payload.fileUri || (payload.base64 ? payload.base64.slice(0, 48) : 'doc');
+    const payloadKey = payload.base64 ? payload.base64.slice(0, 48) : (payload.fileUri || 'doc');
     if (sentPayloadRef.current === payloadKey) return;
     sentPayloadRef.current = payloadKey;
 
-    // Prefer fast, native-speed local file reading via XHR: zero bridge memory pressure
-    if (payload.fileUri) {
-      webRef.current?.injectJavaScript(
-        `if (typeof window.loadPdfDoc === 'function') { window.loadPdfDoc(${JSON.stringify(payload.fileUri)}); } true;`
-      );
-    } else if (payload.base64) {
+    // Prefer zero-CORS direct memory base64 loading: immune to Android WebView file:// XHR restrictions
+    if (payload.base64) {
       webRef.current?.injectJavaScript(
         `if (typeof window.loadPdfData === 'function') { window.loadPdfData(${JSON.stringify(payload.base64)}); } true;`
+      );
+    } else if (payload.fileUri) {
+      webRef.current?.injectJavaScript(
+        `if (typeof window.loadPdfDoc === 'function') { window.loadPdfDoc(${JSON.stringify(payload.fileUri)}); } true;`
       );
     }
   }, []);

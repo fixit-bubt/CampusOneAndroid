@@ -50,20 +50,22 @@ function noticesCacheDir(): Directory {
 }
 
 // Auto-purge old cached notice previews so temporary files never accumulate or eat device storage
-export function pruneNoticesCache(): void {
+export function pruneNoticesCache(excludeFileName?: string): void {
   try {
     const dir = noticesCacheDir();
     const entries = dir.list();
     const files = entries.filter((e) => e instanceof File) as File[];
 
-    // Remove any 0-byte corrupt files immediately
+    // Remove any 0-byte corrupt files (except the active file)
     for (const f of files) {
-      if (f.size === 0) {
+      if (f.name !== excludeFileName && (f.size === 0 || f.size == null)) {
         try { f.delete(); } catch { /* ignore */ }
       }
     }
 
-    const validFiles = files.filter((f) => f.exists && f.size > 0);
+    const validFiles = files.filter(
+      (f) => f.name !== excludeFileName && f.exists && (f.size ?? 0) > 0
+    );
     if (validFiles.length > MAX_CACHED_NOTICES) {
       const excess = validFiles.slice(0, validFiles.length - MAX_CACHED_NOTICES);
       for (const f of excess) {
@@ -143,7 +145,7 @@ export async function prepareDocumentForViewer(
 ): Promise<PreparedDocument> {
   const normalized = normalizePdfUrl(fileUrlOrPath) || fileUrlOrPath;
   const isRemote = /^https?:\/\//i.test(normalized);
-  let localSourceFile: File;
+  let localSourceFile: File | null = null;
   let rawBytes: Uint8Array | null = null;
 
   if (isRemote) {
@@ -160,66 +162,76 @@ export async function prepareDocumentForViewer(
       try { cachedFile.delete(); } catch { /* ignore */ }
     }
 
-    if (!cachedFile.exists || cachedFile.size === 0) {
-      let downloadOk = false;
-      const controller = new AbortController();
-      const timeoutTimer = setTimeout(() => controller.abort(), 25000);
-
-      // 1. Primary: Native file download directly to destination file
+    if (cachedFile.exists && (cachedFile.size ?? 0) > 0) {
+      localSourceFile = cachedFile;
+    } else {
+      // 1. Primary: Direct fetch stream with User-Agent header (reliable on all Android networks)
       try {
-        if (cachedFile.exists) {
-          try { cachedFile.delete(); } catch { /* ignore */ }
-        }
-        const downloaded = await File.downloadFileAsync(normalized, cachedFile, {
-          idempotent: true,
+        const controller = new AbortController();
+        const timeoutTimer = setTimeout(() => controller.abort(), 20000);
+        const res = await fetch(normalized, {
+          headers: {
+            'Accept': 'application/pdf,*/*',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android) CampusOne/1.0',
+          },
           signal: controller.signal,
         });
-        if (downloaded && downloaded.exists && downloaded.size > 0) {
-          downloadOk = true;
-        }
-      } catch (nativeErr: any) {
-        console.warn('Native downloadFileAsync failed, attempting fetch fallback:', nativeErr?.message);
-      }
+        clearTimeout(timeoutTimer);
 
-      // 2. Secondary: Standard React Native fetch() stream fallback
-      if (!downloadOk || !cachedFile.exists || cachedFile.size === 0) {
-        try {
-          const res = await fetch(normalized, { signal: controller.signal });
-          if (!res.ok) {
-            throw new Error(`Server returned HTTP ${res.status}`);
-          }
+        if (res.ok) {
           const buf = await res.arrayBuffer();
           const bytes = new Uint8Array(buf);
-          if (bytes.length === 0) {
-            throw new Error('Downloaded document content is empty');
+          if (bytes.length > 0) {
+            rawBytes = bytes;
+            if (cachedFile.exists) {
+              try { cachedFile.delete(); } catch { /* ignore */ }
+            }
+            cachedFile.create();
+            cachedFile.write(bytes);
+            localSourceFile = cachedFile;
           }
+        }
+      } catch (fetchErr: any) {
+        console.warn('Fetch download failed, attempting native download:', fetchErr?.message);
+      }
+
+      // 2. Secondary: Native File.downloadFileAsync fallback
+      if (!localSourceFile || !localSourceFile.exists || (localSourceFile.size ?? 0) === 0) {
+        try {
           if (cachedFile.exists) {
             try { cachedFile.delete(); } catch { /* ignore */ }
           }
-          cachedFile.create();
-          cachedFile.write(bytes);
-          rawBytes = bytes;
-          downloadOk = true;
-        } catch (fetchErr: any) {
-          console.error('Fetch fallback error for PDF:', fetchErr);
-          throw new Error(`Could not download PDF: ${fetchErr?.message || 'Network error'}`);
-        } finally {
-          clearTimeout(timeoutTimer);
+          const downloaded = await File.downloadFileAsync(normalized, cachedFile, { idempotent: true });
+          if (downloaded && downloaded.exists && (downloaded.size ?? 0) > 0) {
+            localSourceFile = downloaded;
+          } else if (cachedFile.exists && (cachedFile.size ?? 0) > 0) {
+            localSourceFile = cachedFile;
+          }
+        } catch (nativeErr: any) {
+          console.warn('Native downloadFileAsync failed:', nativeErr?.message);
         }
-      } else {
-        clearTimeout(timeoutTimer);
       }
 
-      pruneNoticesCache();
+      pruneNoticesCache(cleanFileName);
     }
-
-    localSourceFile = cachedFile;
   } else {
     // Local file path
     localSourceFile = new File(fileUrlOrPath);
   }
 
-  if (!localSourceFile.exists || localSourceFile.size === 0) {
+  // Load raw bytes from local source file if not already loaded in memory
+  if (!rawBytes && localSourceFile && localSourceFile.exists) {
+    try {
+      rawBytes = await localSourceFile.bytes();
+    } catch (err) {
+      console.warn('Could not read local file bytes:', err);
+    }
+  }
+
+  if (
+    (!localSourceFile || !localSourceFile.exists || (localSourceFile.size ?? 0) === 0) &&
+    (!rawBytes || rawBytes.length === 0)
+  ) {
     throw new Error('PDF file could not be found or downloaded.');
   }
 
@@ -229,24 +241,21 @@ export async function prepareDocumentForViewer(
     if (targetInEngine.exists) {
       targetInEngine.delete();
     }
-    if (rawBytes) {
+    if (rawBytes && rawBytes.length > 0) {
       targetInEngine.create();
       targetInEngine.write(rawBytes);
-    } else {
+    } else if (localSourceFile) {
       await localSourceFile.copy(targetInEngine);
     }
   } catch (copyErr) {
     console.warn('Could not write active_viewer_doc.pdf in engineDir:', copyErr);
   }
 
-  // Generate fallback base64 string only if local file copy failed
+  // ALWAYS generate base64Data when rawBytes is available (up to 16MB) for instant, zero-CORS loading
   let base64Data: string | undefined;
-  if (!targetInEngine.exists || targetInEngine.size === 0) {
+  if (rawBytes && rawBytes.length > 0 && rawBytes.length <= 16 * 1024 * 1024) {
     try {
-      if (!rawBytes) rawBytes = await localSourceFile.bytes();
-      if (rawBytes && rawBytes.length > 0 && rawBytes.length <= 16 * 1024 * 1024) {
-        base64Data = bytesToBase64(rawBytes);
-      }
+      base64Data = bytesToBase64(rawBytes);
     } catch (err) {
       console.warn('Could not encode bytes to base64:', err);
     }
@@ -255,7 +264,7 @@ export async function prepareDocumentForViewer(
   return {
     viewerRelativePath: 'active_viewer_doc.pdf',
     engineFileUri: targetInEngine.uri,
-    localFileUri: localSourceFile.uri,
+    localFileUri: localSourceFile?.uri ?? targetInEngine.uri,
     base64Data,
     isCached: true,
   };
