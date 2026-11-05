@@ -11,7 +11,7 @@ import {
   createBottomTabNavigator,
   type BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
-import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../store/authStore';
@@ -41,40 +41,15 @@ const TAB_ICON: Record<keyof BottomTabParams, FeatherName> = {
   Settings: 'settings',
 };
 
-// 1-piece seamless SVG backdrop with midnight navy gradient,
-// rounded outer corner shoulders, and a clean flat top line across all tabs.
-const BottomNavBackdrop = React.memo(function BottomNavBackdrop({
-  width,
-  height,
-}: {
-  width: number;
-  height: number;
-}) {
-  const w = width;
-  const h = height;
-  const r = 20;
-
-  const bgPath = `M 0,${r} A ${r} ${r} 0 0 1 ${r},0 L ${w - r},0 A ${r} ${r} 0 0 1 ${w},${r} L ${w},${h} L 0,${h} Z`;
-  const rimPath = `M 0,${r} A ${r} ${r} 0 0 1 ${r},0 L ${w - r},0 A ${r} ${r} 0 0 1 ${w},${r}`;
-
+// Flat edge-to-edge backdrop with midnight navy gradient and crisp top rim line.
+const BottomNavBackdrop = React.memo(function BottomNavBackdrop() {
   return (
-    <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={StyleSheet.absoluteFill}>
-      <Defs>
-        <SvgLinearGradient id="navBgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor="#0f2862" />
-          <Stop offset="100%" stopColor="#0a1b42" />
-        </SvgLinearGradient>
-      </Defs>
-
-      <Path d={bgPath} fill="url(#navBgGrad)" />
-      <Path
-        d={rimPath}
-        stroke="rgba(255, 255, 255, 0.16)"
-        strokeWidth={1}
-        strokeLinecap="round"
-        fill="none"
-      />
-    </Svg>
+    <LinearGradient
+      colors={['#0f2862', '#0a1b42']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={[StyleSheet.absoluteFill, styles.backdropGradient]}
+    />
   );
 });
 
@@ -209,8 +184,8 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
 
   return (
     <View style={[styles.tabBarWrapper, { height: barHeight }]}>
-      {/* 1-piece SVG canvas with rounded shoulders, flat top, and midnight navy gradient */}
-      <BottomNavBackdrop width={width} height={barHeight} />
+      {/* Edge-to-edge backdrop with midnight navy gradient and crisp flat rim */}
+      <BottomNavBackdrop />
 
       <View style={[styles.itemsRow, { height: barHeight, paddingBottom: bottomPadding }]}>
         {/* Full-tab sliding blue indicator with Android GPU hardware layer acceleration */}
@@ -292,6 +267,11 @@ export function BottomTabNavigator() {
 const styles = StyleSheet.create({
   tabBarWrapper: {
     backgroundColor: 'transparent',
+    overflow: 'hidden',
+  },
+  backdropGradient: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.16)',
   },
   itemsRow: {
     flexDirection: 'row',
