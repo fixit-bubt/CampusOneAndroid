@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, currentUserId } from '../lib/supabase';
 import type { ServiceResult } from './authService';
 
 export interface Notification {
@@ -17,8 +17,7 @@ export async function getMyNotifications(
   limit = 20,
 ): Promise<ServiceResult<Notification[]>> {
   // explicit user filter in case the policy changes.
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
+  const uid = await currentUserId();
   if (!uid) return { ok: true, data: [] };
   const { data, error } = await supabase
     .from('notifications')
@@ -33,7 +32,7 @@ export async function getMyNotifications(
 export async function getUnreadNotificationCount(
   userId?: string,
 ): Promise<ServiceResult<number>> {
-  const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+  const uid = userId ?? await currentUserId();
   if (!uid) return { ok: true, data: 0 };
   const { count, error } = await supabase
     .from('notifications')

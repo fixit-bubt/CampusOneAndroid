@@ -20,3 +20,11 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// Signed-in user id from the local session. auth.getUser() makes a network
+// round-trip to the Auth server on every call; for filtering our own rows
+// the local id is enough, since RLS still checks the JWT server-side.
+export async function currentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.id ?? null;
+}

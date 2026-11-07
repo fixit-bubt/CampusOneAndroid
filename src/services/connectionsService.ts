@@ -1,6 +1,6 @@
 // Connections Service - manage connection requests, responses, and mutual peer states.
 
-import { supabase } from '../lib/supabase';
+import { supabase, currentUserId } from '../lib/supabase';
 import type { ServiceResult } from './authService';
 import { getCache, setCache, CacheKeys } from './cacheService';
 
@@ -29,8 +29,7 @@ export async function syncDirectoryCache(
   extra?: { email?: string | null; whatsapp?: string | null }
 ): Promise<void> {
   try {
-    const { data: auth } = await supabase.auth.getUser();
-    const uid = auth.user?.id;
+    const uid = await currentUserId();
     if (!uid) return;
     const cacheKey = CacheKeys.DIRECTORY(uid);
     const cached = await getCache<any[]>(cacheKey);
@@ -63,8 +62,7 @@ export async function getConnectionStates(
 ): Promise<ServiceResult<Record<string, 'pending' | 'accepted' | 'gone'>>> {
   const map: Record<string, 'pending' | 'accepted' | 'gone'> = {};
   if (requesterIds.length === 0) return { ok: true, data: map };
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
+  const uid = await currentUserId();
   if (!uid) return { ok: false, error: 'You must be signed in.' };
 
   const { data, error } = await supabase
@@ -89,8 +87,7 @@ export function connectErrorKey(dbMessage: string): 'alreadyLinked' | 'connectFa
 
 // Send a connection request to target student
 export async function sendConnectionRequest(targetId: string): Promise<ServiceResult<null>> {
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
+  const uid = await currentUserId();
   if (!uid) return { ok: false, error: 'You must be signed in.' };
 
   const { error } = await supabase.from('connections').insert({
@@ -105,8 +102,7 @@ export async function sendConnectionRequest(targetId: string): Promise<ServiceRe
 
 // Cancel an outgoing connection request you previously sent
 export async function cancelConnectionRequest(targetId: string): Promise<ServiceResult<null>> {
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
+  const uid = await currentUserId();
   if (!uid) return { ok: false, error: 'You must be signed in.' };
 
   const { data, error } = await supabase
@@ -128,8 +124,7 @@ export async function respondConnection(
   requesterId: string,
   accept: boolean,
 ): Promise<ServiceResult<null>> {
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
+  const uid = await currentUserId();
   if (!uid) return { ok: false, error: 'You must be signed in.' };
 
   const { data, error } = accept
@@ -156,8 +151,7 @@ export async function respondConnection(
 
 // Disconnect from an accepted student connection
 export async function disconnectStudent(targetId: string): Promise<ServiceResult<null>> {
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
+  const uid = await currentUserId();
   if (!uid) return { ok: false, error: 'You must be signed in.' };
 
   const { data, error } = await supabase.rpc('disconnect_student', { p_target_id: targetId });

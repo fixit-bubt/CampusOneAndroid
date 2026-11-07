@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 
 interface CacheEntry<T> {
   data: T;
@@ -114,6 +115,34 @@ export async function getCacheWithMeta<T>(key: string): Promise<CacheEntry<T> | 
   }
 }
 
+// Disk writes are batched: a feed can be hundreds of rows, and serialising
+// it synchronously on every load stalled the JS thread mid-transition.
+// Memory is updated at once, so reads in this session never see stale data.
+const pendingWrites = new Map<string, CacheEntry<any>>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+const FLUSH_DELAY_MS = 1200;
+
+async function flushPendingWrites(): Promise<void> {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  if (pendingWrites.size === 0) return;
+  const batch: [string, string][] = [];
+  for (const [k, entry] of pendingWrites) batch.push([k, JSON.stringify(entry)]);
+  pendingWrites.clear();
+  try {
+    await AsyncStorage.multiSet(batch);
+  } catch {
+    // Non-fatal if storage write fails
+  }
+}
+
+// Don't lose a pending write when the user leaves the app.
+AppState.addEventListener('change', (state) => {
+  if (state !== 'active') flushPendingWrites();
+});
+
 export async function setCache<T>(key: string, data: T): Promise<void> {
   const fullKey = `${CACHE_PREFIX}${key}`;
   const entry: CacheEntry<T> = {
@@ -121,16 +150,14 @@ export async function setCache<T>(key: string, data: T): Promise<void> {
     timestamp: Date.now(),
   };
   memoryCache.set(fullKey, entry);
-  try {
-    await AsyncStorage.setItem(fullKey, JSON.stringify(entry));
-  } catch {
-    // Non-fatal if storage write fails
-  }
+  pendingWrites.set(fullKey, entry);
+  if (!flushTimer) flushTimer = setTimeout(flushPendingWrites, FLUSH_DELAY_MS);
 }
 
 export async function removeCache(key: string): Promise<void> {
   const fullKey = `${CACHE_PREFIX}${key}`;
   memoryCache.delete(fullKey);
+  pendingWrites.delete(fullKey);
   try {
     await AsyncStorage.removeItem(fullKey);
   } catch {}
@@ -138,6 +165,7 @@ export async function removeCache(key: string): Promise<void> {
 
 export async function clearAllCache(): Promise<void> {
   memoryCache.clear();
+  pendingWrites.clear();
   try {
     const keys = await AsyncStorage.getAllKeys();
     const c1Keys = keys.filter(k => k.startsWith(CACHE_PREFIX));
@@ -157,10 +185,11 @@ export function withTimeout<T>(
   ms = 5000,
   errorMsg = 'Network request timed out'
 ): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   return Promise.race([
     Promise.resolve(promise),
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(errorMsg)), ms)
-    ),
-  ]);
+    new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(errorMsg)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
 }

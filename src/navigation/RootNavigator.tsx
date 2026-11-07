@@ -64,11 +64,12 @@ export function RootNavigator() {
   // Claim this device's FCM token once the user is signed in and their
   // profile is loaded, and keep it current if FCM rotates the token while
   // the app is running.
+  const hasProfile = !!profile;
   React.useEffect(() => {
-    if (!user?.id || !profileLoaded || !profile) return;
+    if (!user?.id || !profileLoaded || !hasProfile) return;
     registerPushToken();
     return addPushTokenRotationHandler();
-  }, [user?.id, profileLoaded, profile]);
+  }, [user?.id, profileLoaded, hasProfile]);
 
   // Tapping a push deep-links to the referenced item (falling back to the
   // Notifications screen). On a cold start the navigator isn't mounted yet

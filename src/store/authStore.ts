@@ -1,7 +1,7 @@
 // Auth Store - React context + useReducer.
 // Wrap the app in <AuthProvider>, then call useAuth() anywhere.
 
-import React, { createContext, useContext, useEffect, useReducer, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import type { Session, User } from '@supabase/supabase-js';
@@ -63,6 +63,12 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case 'SET_SESSION': {
       const isSameUser = !!state.user?.id && !!action.session?.user?.id && action.session.user.id === state.user.id;
+      // Hourly token refreshes hand us a new session object for the same user.
+      // Nothing in the tree reads the token from context, so keep the old
+      // object and skip re-rendering every useAuth() consumer.
+      if (isSameUser && state.session) {
+        return state.loading ? { ...state, loading: false } : state;
+      }
       return {
         ...state,
         session: action.session,
@@ -74,6 +80,13 @@ function reducer(state: AuthState, action: AuthAction): AuthState {
       };
     }
     case 'SET_PROFILE':
+      // Cached profile renders first; the network copy is usually identical.
+      if (
+        action.profile && state.profile && state.profileLoaded && !state.profileError &&
+        JSON.stringify(action.profile) === JSON.stringify(state.profile)
+      ) {
+        return state;
+      }
       return {
         ...state,
         profile: action.profile,
@@ -120,43 +133,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profileError: false,
   });
 
-  // Token to discard stale profile fetches: getSession() and onAuthStateChange
-  // can both fire for the same user on cold start, racing each other.
+  // Token to discard stale profile fetches.
   const reqIdRef = useRef(0);
+  // Latest state for the action functions, so they can stay referentially
+  // stable instead of being rebuilt on every auth render.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  // User whose profile has already been requested; token refreshes and
+  // repeated SIGNED_IN events for the same user must not refetch it.
+  const loadedUidRef = useRef<string | null>(null);
+  const inFlightRef = useRef<{ uid: string; promise: Promise<void> } | null>(null);
 
   useEffect(() => {
-    // Initial session check
-    supabase.auth.getSession().then(async ({ data }) => {
-      dispatch({ type: 'SET_SESSION', session: data.session });
-      const uid = data.session?.user?.id;
-      if (uid) {
-        // Pre-load cached profile for instant cold start and offline access
-        getCachedProfile(uid).then((cached) => {
-          if (cached) dispatch({ type: 'SET_PROFILE', profile: cached });
-        });
-        fetchProfile(uid);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // INITIAL_SESSION fires on subscribe, so this one listener covers the
+    // cold start too (a separate getSession() call fetched the profile twice).
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       dispatch({ type: 'SET_SESSION', session });
-      setMonitoringUser(session?.user.id ?? null);
-      if (session?.user?.id) {
-        const uid = session.user.id;
+      const uid = session?.user?.id ?? null;
+      if (!uid) {
+        loadedUidRef.current = null;
+        setMonitoringUser(null);
+        dispatch({ type: 'SIGN_OUT' });
+        return;
+      }
+      if (uid === loadedUidRef.current && event !== 'USER_UPDATED') return;
+      loadedUidRef.current = uid;
+      setMonitoringUser(uid);
+      // Supabase calls made inside this callback can deadlock on the auth
+      // lock; run them on the next tick.
+      setTimeout(() => {
         getCachedProfile(uid).then((cached) => {
-          if (cached) dispatch({ type: 'SET_PROFILE', profile: cached });
+          if (cached && !stateRef.current.profile) dispatch({ type: 'SET_PROFILE', profile: cached });
         });
         fetchProfile(uid);
-      } else {
-        dispatch({ type: 'SIGN_OUT' });
-      }
+      }, 0);
     });
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  async function fetchProfile(userId: string) {
+  // Joins a fetch already running for the same user instead of starting another.
+  function fetchProfile(userId: string): Promise<void> {
+    const cur = inFlightRef.current;
+    if (cur && cur.uid === userId) return cur.promise;
+    const promise = doFetchProfile(userId).finally(() => {
+      if (inFlightRef.current?.promise === promise) inFlightRef.current = null;
+    });
+    inFlightRef.current = { uid: userId, promise };
+    return promise;
+  }
+
+  async function doFetchProfile(userId: string) {
     const myReq = ++reqIdRef.current;
     const { data, error } = await supabase
       .from('profiles')
@@ -173,7 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hasCached = true;
       }
 
-      if (!hasCached && !state.profile) {
+      if (!hasCached && !stateRef.current.profile) {
         console.error('fetchProfile failed without cache:', error?.message ?? 'Profile not found');
         // Do NOT mark the profile as loaded-with-null; that silently drops
         // admin/staff into the student UI. Surface an error for retry instead.
@@ -185,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Auto-sync any student signup credentials stored in user_metadata
     const profileData = data as Profile;
     const sessionRes = await supabase.auth.getSession();
-    const sessionUser = sessionRes.data.session?.user ?? state.session?.user;
+    const sessionUser = sessionRes.data.session?.user ?? stateRef.current.session?.user;
     if (sessionUser && !profileData.student_id && sessionUser.user_metadata?.student_id) {
       const meta = sessionUser.user_metadata;
       try {
@@ -206,8 +233,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     }
 
-    // Persist latest profile for offline launches
-    await setCachedProfile(userId, profileData);
+    if (myReq !== reqIdRef.current) return;
+    // Persist latest profile for offline launches (SecureStore writes are
+    // slow, so skip when nothing changed).
+    const prev = stateRef.current.profile;
+    if (!prev || JSON.stringify(prev) !== JSON.stringify(profileData)) {
+      await setCachedProfile(userId, profileData);
+    }
     dispatch({ type: 'SET_PROFILE', profile: profileData });
   }
 
@@ -262,9 +294,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     reqIdRef.current++; // invalidate any in-flight profile fetch
     clearPeople();      // drop the cached roster so the next account starts fresh
     clearAllCache();    // drop feature cache on sign-out
-    if (state.user?.id) {
-      clearCachedProfile(state.user.id);
-    }
+    const uid = stateRef.current.user?.id;
+    if (uid) clearCachedProfile(uid);
     await unregisterPushToken(); // stop pushes to this device (shared phones)
     try {
       await supabase.auth.signOut();
@@ -280,9 +311,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     reqIdRef.current++;
     clearPeople();
     clearAllCache();
-    if (state.user?.id) {
-      clearCachedProfile(state.user.id);
-    }
+    const uid = stateRef.current.user?.id;
+    if (uid) clearCachedProfile(uid);
     await unregisterPushToken().catch(() => {});
     const { error } = await supabase.rpc('delete_own_account');
     if (error) {
@@ -298,14 +328,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function refreshProfile() {
-    if (state.user) await fetchProfile(state.user.id);
+    // Always a fresh read: callers use this right after editing the profile.
+    const uid = stateRef.current.user?.id;
+    if (uid) await doFetchProfile(uid);
   }
 
-  return React.createElement(
-    AuthContext.Provider,
-    { value: { ...state, signIn, signUp, signOut, deleteAccount, refreshProfile } },
-    children,
+  // The actions only touch refs and dispatch, so the first render's closures
+  // stay valid; keeping them stable lets the value below memoize on state.
+  const actions = useMemo(
+    () => ({ signIn, signUp, signOut, deleteAccount, refreshProfile }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
+  const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);
+
+  return React.createElement(AuthContext.Provider, { value }, children);
 }
 
 export function useAuth(): AuthContextValue {

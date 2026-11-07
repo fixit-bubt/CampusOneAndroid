@@ -1,6 +1,6 @@
 // Reports Service - report DB logic.
 
-import { supabase } from '../lib/supabase';
+import { supabase, currentUserId } from '../lib/supabase';
 import type { Report } from '../types/database';
 import type { ServiceResult } from './authService';
 import { getCache, setCache, CacheKeys, withTimeout } from './cacheService';
@@ -40,12 +40,12 @@ export async function createReport(payload: {
   show_on_board?: boolean;
 }): Promise<ServiceResult<Report>> {
   // RLS reports_insert requires reporter_id = auth.uid() AND status = 'Open'.
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth?.user) return { ok: false, error: 'You must be signed in to report an issue.' };
+  const uid = await currentUserId();
+  if (!uid) return { ok: false, error: 'You must be signed in to report an issue.' };
 
   const { data, error } = await supabase
     .from('reports')
-    .insert({ ...payload, reporter_id: auth.user.id, status: 'Open' })
+    .insert({ ...payload, reporter_id: uid, status: 'Open' })
     .select()
     .single();
   if (error) return { ok: false, error: error.message };
