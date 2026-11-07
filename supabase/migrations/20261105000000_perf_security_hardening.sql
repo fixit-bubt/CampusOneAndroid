@@ -34,20 +34,26 @@ drop index if exists public.listings_course_code_idx;
 drop policy if exists academic_calendar_anon_select on public.academic_calendar;
 
 drop policy if exists staff_admin_manage_exam_slots on public.exam_slots;
+drop policy if exists staff_admin_insert_exam_slots on public.exam_slots;
 create policy staff_admin_insert_exam_slots on public.exam_slots for insert to authenticated
   with check (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')));
+drop policy if exists staff_admin_update_exam_slots on public.exam_slots;
 create policy staff_admin_update_exam_slots on public.exam_slots for update to authenticated
   using (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')))
   with check (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')));
+drop policy if exists staff_admin_delete_exam_slots on public.exam_slots;
 create policy staff_admin_delete_exam_slots on public.exam_slots for delete to authenticated
   using (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')));
 
 drop policy if exists staff_admin_manage_routine_slots on public.routine_slots;
+drop policy if exists staff_admin_insert_routine_slots on public.routine_slots;
 create policy staff_admin_insert_routine_slots on public.routine_slots for insert to authenticated
   with check (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')));
+drop policy if exists staff_admin_update_routine_slots on public.routine_slots;
 create policy staff_admin_update_routine_slots on public.routine_slots for update to authenticated
   using (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')))
   with check (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')));
+drop policy if exists staff_admin_delete_routine_slots on public.routine_slots;
 create policy staff_admin_delete_routine_slots on public.routine_slots for delete to authenticated
   using (exists (select 1 from public.profiles where id = (select auth.uid()) and role in ('admin','staff')));
 
