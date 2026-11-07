@@ -90,7 +90,11 @@ const Stack = createNativeStackNavigator<AppStackParams>();
 
 export function AppNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    // Android 13+'s default stack animation fades the new page in over 83ms while
+    // it is still 10% offset, so for a moment both pages show through each other
+    // (with the new page's loading state). A solid slide from the right edge
+    // keeps the incoming page opaque and starts it fully off-screen.
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'ios_from_right' }}>
       {/* Main tabs (Home tab = role dashboard for admin/staff) */}
       <Stack.Screen name="Tabs"           component={BottomTabNavigator} />
 

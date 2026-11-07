@@ -20,7 +20,7 @@ import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople, loadPeople } from '../../services/peopleService';
-import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
+import { getCache, getCacheSync, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const STUDY_COLOR = SectorColors.study;
@@ -693,7 +693,14 @@ export function StudyHubScreen({ navigation }: any) {
 
   const toast = useToast();
   const [sub, setSub] = useState<Sub>('home');
-  const [persona, setPersona] = useState<Persona>('notjoined');
+  // Membership from the in-memory copy, so a returning member doesn't see the
+  // "Join a study section" page flash before their section loads.
+  const cachedMembership = user
+    ? getCacheSync<{ sec: SectionRow | null; persona: Persona; courses: Course[] }>(`study_my_section_${user.id}`)
+    : null;
+  const [persona, setPersona] = useState<Persona>(() => cachedMembership?.persona ?? 'notjoined');
+  // False until membership is known (cache or network): show a spinner, not the join page.
+  const [personaReady, setPersonaReady] = useState(() => !!cachedMembership);
   const [homeTab, setHomeTab] = useState<HomeTab>('courses');
   const [semMounted, setSemMounted] = useState(false);
   useEffect(() => {
@@ -708,14 +715,14 @@ export function StudyHubScreen({ navigation }: any) {
     return () => clearTimeout(timer);
   }, []);
 
-  const [mySection, setMySection] = useState<SectionRow | null>(null);
+  const [mySection, setMySection] = useState<SectionRow | null>(() => cachedMembership?.sec ?? null);
   const [sections, setSections] = useState<SectionRow[]>([]);
   const [joinReqs, setJoinReqs] = useState<JoinRequest[]>([]);
   const [secMembers, setSecMembers] = useState<{ id: string; user_id: string; role: string; full_name: string }[]>([]);
   const [pins, setPins] = useState<{ id: string; message: string | null; created_at: string }[]>([]);
   const [pinText, setPinText] = useState('');
   const [adminReqs, setAdminReqs] = useState<AdminRequest[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(() => cachedMembership?.courses ?? []);
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [vote, setVote] = useState<Vote | null>(null);
 
@@ -808,6 +815,7 @@ export function StudyHubScreen({ navigation }: any) {
       if (cachedStudy.sec) setMySection(cachedStudy.sec);
       setPersona(cachedStudy.persona);
       setCourses(cachedStudy.courses);
+      setPersonaReady(true);
     }
 
     try {
@@ -891,6 +899,8 @@ export function StudyHubScreen({ navigation }: any) {
       }
     } catch {
       if (cachedStudy) setIsOffline(true);
+    } finally {
+      setPersonaReady(true);
     }
   }, [user]);
 
@@ -3021,6 +3031,12 @@ export function StudyHubScreen({ navigation }: any) {
                   ? renderIntakeSections()
                   : sub === 'section'
                     ? renderSectionRoom()
+                    : !personaReady
+                      ? (
+                        <View style={{ paddingVertical: 64, alignItems: 'center' }}>
+                          <ActivityIndicator color={STUDY_COLOR} />
+                        </View>
+                      )
                     : persona === 'notjoined'
                       ? renderNotJoined()
                       : persona === 'pendingcreate'
