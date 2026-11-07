@@ -353,6 +353,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
   const { C, isDark } = useTheme();
   const { user, profile } = useAuth();
   const t = useT();
+  const M = (t.statusStrips?.metrics ?? {}) as Record<string, string>;
   const uid = user?.id || 'guest';
 
   const [selectedStrips, setSelectedStrips] = useState<StatusStripId[]>(
@@ -694,17 +695,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('MyReports')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{reportCounts.open}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Open</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.open}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('MyReports')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{reportCounts.inProgress}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Pending</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.pending}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('MyReports')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{reportCounts.resolved}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Resolved</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.resolved}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -726,21 +727,21 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Bus')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
-                  {nextBus ? nextBus.route.name.split(' ')[0] : 'All'}
+                  {nextBus ? nextBus.route.name.split(' ')[0] : M.all}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Route</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.route}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Bus')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {nextBus ? formatTime12(minutesToHHMM(nextBus.mins)) : '--:--'}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Departs</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.departs}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Bus')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
-                  {nextBus ? (nextBus.tomorrow ? 'Tomorrow' : fmtCountdown(nextBus.wait)) : 'No bus'}
+                  {nextBus ? (nextBus.tomorrow ? M.tomorrow : fmtCountdown(nextBus.wait)) : M.noBus}
                 </Text>
                 <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)' }]}>
                   <View style={[styles.progressBar, { width: `${busProgress}%`, backgroundColor: SectorColors.bus }]} />
@@ -766,21 +767,21 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Prayer')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
-                  {nextPrayer ? nextPrayer.en : 'Prayer'}
+                  {nextPrayer ? (t.statusStrips?.prayerNames?.[nextPrayer.key ?? ''] ?? nextPrayer.en) : t.statusStrips?.titles?.prayer}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Salah</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.salah}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Prayer')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
                   {nextPrayer ? formatTime12(nextPrayer.azan) : '--:--'}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Azan</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.azan}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Prayer')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>
-                  {prayerSt ? (prayerSt.tomorrow ? 'Tomorrow' : fmtCountdown(prayerSt.wait)) : 'Schedule'}
+                  {prayerSt ? (prayerSt.tomorrow ? M.tomorrow : fmtCountdown(prayerSt.wait)) : M.schedule}
                 </Text>
                 <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)' }]}>
                   <View style={[styles.progressBar, { width: `${prayerProgress}%`, backgroundColor: SectorColors.prayer }]} />
@@ -808,17 +809,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
                 <Text style={[styles.metricVal, { color: bloodStats.urgent > 0 ? C.danger : C.text }]} numberOfLines={1}>
                   {bloodStats.urgent}
                 </Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Urgent</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.urgent}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Blood')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{bloodStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Needed</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.needed}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Blood')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{bloodStats.donors}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Donors</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.donors}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -840,17 +841,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Rides')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{rideStats.offers}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Offers</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.offers}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Rides')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{rideStats.requests}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Requests</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.requests}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Rides')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{rideStats.seats}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Seats</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.seats}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -872,17 +873,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Market')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{marketStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Items</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.items}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Market')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{marketStats.active}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Active</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.active}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Market')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{marketStats.saved}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Saved</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.saved}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -904,17 +905,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LostFoundBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{lostStats.lost}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Lost</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.lost}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LostFoundBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{lostStats.found}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Found</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.found}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('LostFoundBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{lostStats.claims}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Claims</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.claims}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -936,17 +937,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('JobsBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{jobStats.open}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Open</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.open}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('JobsBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{jobStats.interns}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Interns</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.interns}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('JobsBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{jobStats.applied}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Applied</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.applied}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -968,17 +969,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{studyStats.notes}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Notes</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.notes}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{studyStats.files}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Q Bank</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.qBank}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{studyStats.saved}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Saved</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.saved}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1000,17 +1001,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('EventsBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{eventStats.upcoming}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Upcoming</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.upcoming}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('EventsBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{eventStats.thisWeek}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>This Wk</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.thisWeek}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('EventsBrowse')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{eventStats.going}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Going</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.going}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1032,17 +1033,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Clubs')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{clubStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Clubs</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.clubs}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Clubs')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{clubStats.joined}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Joined</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.joined}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Clubs')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{clubStats.posts}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Posts</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.posts}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1064,17 +1065,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Medical')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: doctorStats.onDuty > 0 ? C.text : C.danger }]} numberOfLines={1}>{doctorStats.onDuty}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>On Duty</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.onDuty}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Medical')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{doctorStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Doctors</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.doctors}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Medical')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Open</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Clinic</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.open}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.clinic}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1096,17 +1097,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Directory')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>4</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Connects</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.connects}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Directory')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>1</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Requests</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.requests}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Directory')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>BUBT</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Campus</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.campus}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1128,17 +1129,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Faculty')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{facultyStats.total}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Teachers</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.teachers}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Faculty')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{facultyStats.mentors}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Mentors</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.mentors}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Faculty')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>8</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Depts</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.depts}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1167,13 +1168,13 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse', { initialTab: 'my_routine', subSchedule: 'class' })} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.brand }]} numberOfLines={1}>Timetable</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Visual Grid</Text>
+                <Text style={[styles.metricValText, { color: C.brand }]} numberOfLines={1}>{M.timetable}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.visualGrid}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('RoutinesBrowse', { initialTab: 'my_routine', subSchedule: 'exam' })} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: SectorColors.routines }]} numberOfLines={1}>Exams</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Shifts & Rooms</Text>
+                <Text style={[styles.metricValText, { color: SectorColors.routines }]} numberOfLines={1}>{M.exams}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.shiftsRooms}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1196,17 +1197,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('AcademicCalendar')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>8</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Events</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.events}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('AcademicCalendar')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Midterm</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Exams</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.midterm}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.exams}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('AcademicCalendar')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Summer</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Breaks</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.summer}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.breaks}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1227,18 +1228,18 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
 
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PdfMaker')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Merge</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Files</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.merge}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.files}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PdfMaker')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Shrink</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Size</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.shrink}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.size}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('PdfMaker')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Scan</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Images</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.scan}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.images}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1260,17 +1261,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('CoverPageForm')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>4 Styles</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Styles</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.styles}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('CoverPageForm')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>BUBT</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Format</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.format}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('CoverPageForm')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Instant</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Maker</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.instant}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.maker}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1292,17 +1293,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
             <View style={styles.metricsRow}>
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Cgpa')} style={styles.metricCol}>
                 <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>4.00</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Target</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.target}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Cgpa')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Term</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>GPA</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.term}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.gpa}</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('Cgpa')} style={styles.metricCol}>
-                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>Total</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Credit</Text>
+                <Text style={[styles.metricValText, { color: C.text }]} numberOfLines={1}>{M.total}</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>{M.credit}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1497,7 +1498,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
                         ]}
                         numberOfLines={1}
                       >
-                        {item.subtitle}
+                        {t.statusStrips?.subtitles?.[item.id] ?? item.subtitle}
                       </Text>
                     </View>
 

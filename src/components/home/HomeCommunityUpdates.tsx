@@ -430,7 +430,7 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
           <View style={styles.pulseDot} />
           <Text style={[styles.liveText, { color: SectorColors.announce, fontFamily: FontFamily.jakartaBold }]}>
             {activeTab === 'Notices'
-              ? (counts.Notices > 0 ? `${counts.Notices} unread` : 'All caught up')
+              ? (counts.Notices > 0 ? t.communityUpdates.unreadCount(counts.Notices) : t.communityUpdates.allCaughtUp)
               : (filtered.length > 99 ? '99+' : `${filtered.length} ${t.statusStrips?.metrics?.active ?? 'updates'}`)}
           </Text>
         </View>
