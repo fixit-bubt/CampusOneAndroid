@@ -62,22 +62,6 @@ export function convKeyOf(m: Message, myId: string): string {
   return `section:${m.sectionId}`;
 }
 
-// Realtime broadcast topic a message belongs to.
-export function topicOf(m: Message): string {
-  if (m.kind === 'dm') return `chat:dm:${m.peerLow}:${m.peerHigh}`;
-  if (m.kind === 'club') return `chat:club:${m.clubId}`;
-  return `chat:section:${m.sectionId}`;
-}
-
-// Realtime topic for a (kind, id) conversation from my perspective.
-export function topicFor(kind: MsgKind, id: string, myId: string): string {
-  if (kind === 'dm') {
-    const { low, high } = dmPair(myId, id);
-    return `chat:dm:${low}:${high}`;
-  }
-  return `chat:${kind}:${id}`;
-}
-
 // Merge incoming rows into a list, deduped by id (newer copy wins), optionally
 // dropping a temp/optimistic row once its real row arrives.
 export function mergeMessages(prev: Message[], incoming: Message[], dropId?: string): Message[] {

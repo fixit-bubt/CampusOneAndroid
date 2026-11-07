@@ -15,7 +15,7 @@ import {
   fetchMessages, fetchReads, fetchBlocks, fetchDmPartners,
   fetchConversation, fetchOlder, searchConversation,
   insertMessage, updateMessageBody, softDeleteMessage, upsertRead, insertBlock, deleteBlock,
-  toMessage, mergeMessages, convKey, convKeyOf, topicFor, dmPair,
+  toMessage, mergeMessages, convKey, convKeyOf, dmPair,
   type Message, type MsgKind,
 } from '../services/messagesService';
 
@@ -67,6 +67,10 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
   const [mySections, setMySections] = useState<SectionChat[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const readsRef = useRef(reads);
+  readsRef.current = reads;
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   // ---- initial / full load ------------------------------------------------
   const reload = useCallback(async () => {
@@ -118,10 +122,9 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
       let nextSecs = cached?.mySections ?? [];
 
       if (mRes.ok) {
-        setMessages(prev => {
-          nextMessages = mergeMessages(prev, mRes.data);
-          return nextMessages;
-        });
+        // Computed outside the updater: it feeds the partner list and cache below.
+        nextMessages = mergeMessages(messagesRef.current, mRes.data);
+        setMessages(prev => mergeMessages(prev, mRes.data));
       }
       if (rRes.ok) { setReads(rRes.data); nextReads = rRes.data; }
       if (bRes.ok) { setBlocked(bRes.data); nextBlocked = bRes.data; }
@@ -200,16 +203,18 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
     }, 800);
   }, [myId]);
 
-  // ---- realtime: one private channel per conversation topic ---------------
+  // ---- realtime: one inbox channel for every DM, plus one per club/section --
+  // DMs arrive on the user's own topic (migration 20261107000000), so the
+  // channel count no longer grows with the number of connections.
   const myTopics = useMemo(() => {
     if (!myId || !isStudent) return [];
     const topics = [
-      ...dmPartners.map(pid => topicFor('dm', pid, myId)),
+      `chat:user:${myId}`,
       ...myClubs.map(c => `chat:club:${c.id}`),
       ...mySections.map(s => `chat:section:${s.id}`),
     ];
     return Array.from(new Set(topics)).sort();
-  }, [myId, isStudent, dmPartners, myClubs, mySections]);
+  }, [myId, isStudent, myClubs, mySections]);
   const topicKey = myTopics.join('|');
 
   const channelsRef = useRef<RealtimeChannel[]>([]);
@@ -356,16 +361,19 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
     return { ok: true };
   }, [myId]);
 
+  // React may run a state updater later, so the "did it change" decision is
+  // made against a ref instead of a flag set inside setReads (which left the
+  // server read marker unsaved and brought unread badges back on restart).
   const markRead = useCallback(async (convKeyStr: string, iso: string) => {
     if (!myId) return;
-    let changed = false;
+    const cur = readsRef.current[convKeyStr];
+    if (cur && new Date(cur) >= new Date(iso)) return;
+    readsRef.current = { ...readsRef.current, [convKeyStr]: iso };
     setReads(prev => {
-      const cur = prev[convKeyStr];
-      if (cur && new Date(cur) >= new Date(iso)) return prev;
-      changed = true;
-      return { ...prev, [convKeyStr]: iso };
+      const p = prev[convKeyStr];
+      return p && new Date(p) >= new Date(iso) ? prev : { ...prev, [convKeyStr]: iso };
     });
-    if (changed) await upsertRead(myId, convKeyStr);
+    await upsertRead(myId, convKeyStr);
   }, [myId]);
 
   const loadConversation = useCallback(async (kind: MsgKind, id: string) => {
