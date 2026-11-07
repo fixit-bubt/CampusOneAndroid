@@ -8,7 +8,7 @@ import {
   View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView,
   ScrollView, Platform, ActivityIndicator, StyleSheet, Alert, Image, type ViewStyle, type TextStyle, type ImageStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';

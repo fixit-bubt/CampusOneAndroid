@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, StyleSheet, Modal, type ViewStyle, type TextStyle } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 import { Feather } from '@expo/vector-icons';
 import { useToast } from '../../components/ui/Toast';
 import { useTheme } from '../../hooks/useTheme';

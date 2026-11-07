@@ -2,7 +2,7 @@
 // their text stays selectable; photos become A4 pages.
 import { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, type ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '../../hooks/useTheme';

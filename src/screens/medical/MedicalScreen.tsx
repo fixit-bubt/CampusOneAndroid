@@ -19,7 +19,8 @@ import {
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { useApp } from '../../store/appStore';

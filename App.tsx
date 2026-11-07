@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/store/appStore';
 import { AuthProvider } from './src/store/authStore';
 import { MessagesProvider } from './src/store/messagesStore';
@@ -17,7 +17,7 @@ function ThemedStatusBar() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <AppProvider>
         <AuthProvider>
           <MessagesProvider>

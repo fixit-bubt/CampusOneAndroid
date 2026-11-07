@@ -7,7 +7,8 @@ import {
   View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet,
   RefreshControl, Modal, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { getTradeLabel, isTradeMatch } from '../../utils/tradeMatcher';
 import { useTheme } from '../../hooks/useTheme';

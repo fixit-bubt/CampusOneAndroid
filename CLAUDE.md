@@ -4620,8 +4620,9 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 #### 124.3 Transition smoothness architecture (mandatory patterns)
 
 - **`useFocusRefresh(fn)` (`src/hooks/useFocusRefresh.ts`):** replaces `useFocusEffect(useCallback(() => { load(); }, [load]))` in ~47 screens. First mount (or `fn` changing while focused) runs immediately; returning to a screen (pop / tab switch) waits for `transitionEnd` (listening up the parent chain, since tab screens never get it directly) or a 450ms fallback. Refetching mid-slide re-rendered lists under the back animation. **Rule:** new screens load with `useFocusRefresh`, and its callback must be referentially stable (`useCallback`), otherwise it refetches every render.
-- **`afterTransition(Screen, { plain? })` (`src/navigation/afterTransition.tsx`):** every stack screen in `AppNavigator` mounts after its slide-in. During the slide it shows the real `SubBar` (empty title, working back button), so only the title and content fill in. `{ plain: true }` for screens with their own header: `AnnexPortalScreen`, `MessageThread`, `AdminDashboardScreen`.
-- **Rule (critical):** never do a screen's first load from `navigation.addListener('focus', ...)`. Under `afterTransition` the real screen mounts after `focus` has already fired, so the listener never runs. This left Announcements, Club Detail and Course Detail permanently empty until fixed.
+- **Removed (Nov 8): `afterTransition` deferred mounting.** It slid every page in empty and filled the content in afterwards; the user reported that white page as a bug. Stack screens mount normally again. **Rule:** do not defer whole-screen mounting behind a placeholder; keep heavy work out of the first render instead.
+- **`SafeAreaView` (`src/components/layout/SafeAreaView.tsx`) (mandatory):** drop-in for the library component, used by ~80 screens. The library's native Android view applied insets one frame after drawing, so pages rendered under the status bar for a frame and then jumped down (seen frame by frame in a screen recording). Ours pads with `useSafeAreaInsets()` on the first frame (same additive edges semantics). `App.tsx` passes `initialMetrics={initialWindowMetrics}` to `SafeAreaProvider`. **Rule:** never import `SafeAreaView` from `react-native-safe-area-context` or `react-native`; import it from `components/layout/SafeAreaView`.
+- **Rule:** load a screen's first data with `useFocusRefresh`, not `navigation.addListener('focus', ...)`; a focus listener added after the screen is already focused never runs.
 - **Bottom tabs:** non-active tabs are preloaded one by one (`navigation.preload`) 1.5s after start, so the first tap on a tab doesn't drop frames. `freezeOnBlur` stays `false` on purpose (see 5.3 inset-jump note).
 - **`useAfterInteractions`** uses `requestIdleCallback` (`InteractionManager` is deprecated in RN 0.85 and logged a warning).
 
@@ -4639,5 +4640,5 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 
 - `tsc --noEmit` 0 errors; Jest 17 suites / 138 tests passing.
 - New strip count queries and the inbox policy exercised against production with the staff test account.
-- Release APK built with Gradle, installed on `8734b5da`: Home, Explore, Events, Announcements (placeholder header mid-slide, then content), Club Detail (5 opens incl. cold start) and Bengali mode checked by screenshot / UI dump; logcat clean.
+- Release APK built with Gradle, installed on `8734b5da`: Home, Explore, Events, Announcements, Club Detail (5 opens incl. cold start) and Bengali mode checked by screenshot / UI dump; logcat clean.
 - Commits on `main`: `a0eb371`, `8ec99a8`, `e197684`, `98e40b8`, `5bde77e`, `ac6d593`.

@@ -14,7 +14,7 @@ import {
   Pressable,
   type ViewStyle, FlatList } from 'react-native';
 
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
 import { Feather } from '@expo/vector-icons';

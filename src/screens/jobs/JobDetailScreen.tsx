@@ -5,7 +5,7 @@ import {
   ActivityIndicator, Modal, Alert, KeyboardAvoidingView, Share,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 
 import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';

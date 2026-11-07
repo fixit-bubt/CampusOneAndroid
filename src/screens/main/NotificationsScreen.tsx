@@ -3,7 +3,7 @@ import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo } from 'react';
 
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, type ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../../components/layout/SafeAreaView';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { useAuth } from '../../store/authStore';
