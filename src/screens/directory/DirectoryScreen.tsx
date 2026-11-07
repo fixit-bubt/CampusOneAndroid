@@ -22,7 +22,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -46,6 +46,7 @@ import {
   cancelConnectionRequest,
   respondConnection,
 } from '../../services/connectionsService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type ConnState = 'none' | 'requested' | 'incoming' | 'connected';
 type TabKey = 'all' | 'connections' | 'requests';
@@ -226,7 +227,6 @@ export function DirectoryScreen({ route, navigation }: any) {
     [selectedDept]
   );
 
-
   const isHidden = profile?.directory_visible === false;
 
   const load = useCallback(async () => {
@@ -265,7 +265,7 @@ export function DirectoryScreen({ route, navigation }: any) {
     }
   }, [user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -576,7 +576,6 @@ export function DirectoryScreen({ route, navigation }: any) {
       </View>
     );
   }, [actionBusy, C, navigation, tab, isDark, t, handleCancel, handleConnect, handleAccept, handleDecline, setContactStudent]);
-
 
   const hasCohort = !!(profile?.intake && profile?.section);
 
@@ -970,7 +969,6 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
 
   headerBlock: { marginBottom: 12 } as ViewStyle,
-
 
   /* Option A: Dual Control Bar Directly Below Tabs */
   dualBarRow: {

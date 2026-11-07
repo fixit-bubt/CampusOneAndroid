@@ -21,6 +21,7 @@ import { FontFamily, Layout, SectorColors } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { fetchPeople, loadPeople } from '../../services/peopleService';
 import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const STUDY_COLOR = SectorColors.study;
 
@@ -1148,7 +1149,7 @@ export function StudyHubScreen({ navigation }: any) {
     });
   }
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   useEffect(() => {
     getCache<Dept[]>(CacheKeys.STUDY_DEPTS).then(c => { if (c && c.length) setDepartments(c); });

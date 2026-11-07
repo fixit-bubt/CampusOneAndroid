@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   type ViewStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -29,6 +29,7 @@ import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { nowDhakaMinutes } from '../../utils/transitPrayer';
 import { localToday } from '../../utils/format';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const PRAYER_GREEN = SectorColors.prayer;
 
@@ -162,7 +163,7 @@ export function PrayerScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { InteractionManager } from 'react-native';
 
-// False until the screen's open animation has finished, so heavy lists are
-// built after the transition instead of during it.
+// False until the JS thread goes idle after mount, so heavy lists are built
+// after the open transition instead of during it. (InteractionManager, used
+// before, is deprecated in RN 0.85; requestIdleCallback is its replacement.)
 export function useAfterInteractions(): boolean {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    const handle = InteractionManager.runAfterInteractions(() => setReady(true));
-    return () => handle.cancel();
+    const handle = requestIdleCallback(() => setReady(true), { timeout: 500 });
+    return () => cancelIdleCallback(handle);
   }, []);
   return ready;
 }

@@ -5,7 +5,7 @@ import { SkeletonList } from '../../components/ui/LoadState';
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, RefreshControl, type ViewStyle, type TextStyle } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -17,6 +17,7 @@ import { TopBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
 import { convKeyOf, type Message, type MsgKind } from '../../services/messagesService';
 import { fetchPeople } from '../../services/peopleService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type TabKey = 'all' | 'dm' | 'club' | 'section';
 
@@ -74,7 +75,7 @@ export function MessagesHome({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
 
   // Refresh the roster on focus so a just-accepted connection shows up.
-  useFocusEffect(useCallback(() => { reload(); }, [reload]));
+  useFocusRefresh(reload);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

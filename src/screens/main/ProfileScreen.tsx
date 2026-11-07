@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -29,6 +28,7 @@ import type { SectorKey } from '../../theme';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/Toast';
 import { getCacheSync, getCache, setCache, withTimeout } from '../../services/cacheService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 
@@ -562,12 +562,11 @@ export function ProfileScreen({ navigation }: any) {
     } catch {}
   }, [user]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadContrib();
-      loadAccomplishments();
-    }, [loadContrib, loadAccomplishments])
-  );
+  const loadOnFocus = useCallback(() => {
+    loadContrib();
+    loadAccomplishments();
+  }, [loadContrib, loadAccomplishments]);
+  useFocusRefresh(loadOnFocus);
 
   const computedBadges = useMemo(() => {
     const mk = (id: string, icon: string, fg: string, cur: number, total: number) => ({

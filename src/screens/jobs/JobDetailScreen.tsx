@@ -6,7 +6,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -42,6 +42,7 @@ import {
   type JobStatus,
 } from '../../services/jobsService';
 import type { JobApplication } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const JOB_COLOR = SectorColors.jobs;
 
@@ -176,7 +177,7 @@ export function JobDetailScreen({ route, navigation }: any) {
     }
   }, [jobId, user?.id, isAdmin]);
 
-  useFocusEffect(useCallback(() => { loadJob(); }, [loadJob]));
+  useFocusRefresh(loadJob);
 
   // When poster opens candidate list, automatically update submitted applications to viewed
   useEffect(() => {

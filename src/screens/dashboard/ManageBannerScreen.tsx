@@ -14,7 +14,7 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
@@ -32,6 +32,7 @@ import {
   type BannerSlide,
 } from '../../services/announcementService';
 import { BANNERS_MAP, resolveBannerSource } from '../../utils/bannerUrl';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 interface CandidateItem {
   id: string;
@@ -182,11 +183,7 @@ export function ManageBannerScreen({ navigation }: any) {
     }
   }, [toast]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
+  useFocusRefresh(loadData);
 
   const activeSourceIds = useMemo(() => {
     return new Set(activeSlides.map((s) => s.sourceId));

@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import * as Notifications from 'expo-notifications';
-import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -18,6 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { watchPushStatus, registerPushToken, syncPushPermission, type PushStatus } from '../../lib/push';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const SECTORS: { id: SectorKey; label: string; desc: string }[] = [
   { id: 'reports',   label: 'Reports',       desc: 'Campus maintenance issues' },
@@ -141,12 +141,11 @@ export function NotifSettingsScreen({ navigation }: any) {
     }
   }, [user?.id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-      checkOsPermission();
-    }, [load, checkOsPermission])
-  );
+  const loadOnFocus = useCallback(() => {
+    load();
+    checkOsPermission();
+  }, [load, checkOsPermission]);
+  useFocusRefresh(loadOnFocus);
 
   useEffect(() => {
     checkOsPermission();

@@ -14,7 +14,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -42,6 +42,7 @@ import {
   type JobStatus,
 } from '../../services/jobsService';
 import type { Job, JobApplication } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 export type MainTab = 'browse' | 'saved' | 'my_applications';
 export type TypeFilter = 'all' | 'internship' | 'tuition' | 'on_campus' | 'part_time' | 'full_time' | 'freelance' | 'expired';
@@ -275,7 +276,7 @@ export function JobsBrowseScreen({ navigation }: any) {
     setLoading(false);
   }, [user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   // Check job posting permissions to match RLS
   useEffect(() => {

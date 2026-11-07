@@ -13,7 +13,7 @@ import {
   Modal,
   Pressable,
   type ViewStyle, FlatList } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -39,6 +39,7 @@ import {
 } from '../../services/eventsService';
 import { useToast } from '../../components/ui/Toast';
 import type { Event } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 export interface EventCategoryOption {
   id: string;
@@ -304,11 +305,7 @@ export function EventsBrowseScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

@@ -13,7 +13,7 @@ import {
   Platform,
   type ViewStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -26,6 +26,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import type { Profile } from '../../types/database';
 import { useT } from '../../i18n';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type UserTab = 'student' | 'staff' | 'admin';
 
@@ -183,11 +184,7 @@ export function ManageUsersScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadUsers();
-    }, [loadUsers])
-  );
+  useFocusRefresh(loadUsers);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -322,7 +319,6 @@ export function ManageUsersScreen({ navigation }: any) {
     ),
     [handleUserPress, C]
   );
-
 
   if (profile && profile.role !== 'admin') {
     return (

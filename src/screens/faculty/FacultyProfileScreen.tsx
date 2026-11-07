@@ -14,7 +14,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '../../hooks/useTheme';
@@ -34,6 +34,7 @@ import {
   FACULTY_ACCENT, BRANCH_ICON, shortDept, PersonBadges,
   getCounselingStatus, type FacultyMember,
 } from './facultyShared';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const LINK_META: { key: string; label: string; icon: keyof typeof Feather.glyphMap; color: string }[] = [
   { key: 'scholar_url',      label: 'Google Scholar', icon: 'book',       color: '#4285F4' },
@@ -266,7 +267,7 @@ export function FacultyProfileScreen({ route, navigation }: any) {
     }
   }, [facultyId, user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function toggleSave() {
     if (!user || !member) return;

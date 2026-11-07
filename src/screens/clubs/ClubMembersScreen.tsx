@@ -15,7 +15,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -28,6 +28,7 @@ import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 interface Member {
   id: string;
@@ -93,8 +94,7 @@ export function ClubMembersScreen({ route, navigation }: any) {
     setRequests(((reqRes.data as any[]) ?? []).map(hydrate) as JoinReq[]);
   }, [clubId]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
+  useFocusRefresh(load);
 
 
   async function setRole(m: Member, role: string) {
@@ -256,7 +256,6 @@ export function ClubMembersScreen({ route, navigation }: any) {
         </View>
         <View style={{ height: 16 }} />
       </ScrollView>
-
 
 
       {/* Role Picker Sheet (Universal 58dp Option Bars) */}

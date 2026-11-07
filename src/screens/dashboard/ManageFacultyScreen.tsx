@@ -9,7 +9,7 @@ import {
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -31,6 +31,7 @@ import {
   shortDept, BRANCH_ICON, sortFaculty,
   type Department, type FacultyMember,
 } from '../faculty/facultyShared';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 interface FacultyRow {
   id: string;
@@ -273,7 +274,7 @@ export function ManageFacultyScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -691,7 +692,6 @@ export function ManageFacultyScreen({ navigation }: any) {
       </View>
     );
   };
-
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

@@ -9,7 +9,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, FlatList, StyleSheet,
   RefreshControl, ActivityIndicator, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -21,6 +21,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { getCacheSync, getCache, setCache, CacheKeys } from '../../services/cacheService';
 import type { Report } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved'] as const;
 type StatusFilter = (typeof STATUSES)[number];
@@ -161,7 +162,7 @@ export function AssignedToMeScreen({ navigation }: any) {
     }
   }, [user, cacheKey]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -203,7 +204,6 @@ export function AssignedToMeScreen({ navigation }: any) {
       />
     );
   }, [C, t.status, handlePressCard]);
-
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>

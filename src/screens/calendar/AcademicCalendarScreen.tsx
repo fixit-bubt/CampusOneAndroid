@@ -15,7 +15,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -25,6 +25,7 @@ import { CampusPdfViewerModal } from '../../components/pdf/CampusPdfViewerModal'
 import { FontFamily, Radius } from '../../theme';
 import { fetchAcademicCalendars } from '../../services/academicCalendarService';
 import type { AcademicCalendarDoc } from '../../constants/academicCalendar';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 // 72dp Calendar Semester Bar
 const CalendarBar72 = memo(function CalendarBar72({
@@ -115,11 +116,7 @@ export function AcademicCalendarScreen({ navigation }: any) {
     }
   }, [toast]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadCalendars();
-    }, [loadCalendars])
-  );
+  useFocusRefresh(loadCalendars);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

@@ -2,7 +2,7 @@ import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
 import { indexKey, listGap } from '../../components/ui/listHelpers';
 import { useState, useCallback, useMemo, memo } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+
 import {
   View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet,
   RefreshControl, Modal, ActivityIndicator, type ViewStyle, type TextStyle,
@@ -21,6 +21,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getUnreadNotificationCount } from '../../services/notificationsService';
 import { getCacheSync, getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: Accent.gold },
@@ -375,7 +376,7 @@ export function AdminDashboardScreen({ navigation }: any) {
     }
   }, [profile, user?.id, cacheReportsKey, cacheStatsKey]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -492,7 +493,6 @@ export function AdminDashboardScreen({ navigation }: any) {
     return reports;
   }, [reports, filterTab]);
 
-
   const renderItem = useCallback(({ item: r }: { item: Report }) => {
     return (
       <ReportCard
@@ -504,7 +504,6 @@ export function AdminDashboardScreen({ navigation }: any) {
       />
     );
   }, [C, t.status, handlePressCard, handleOpenAssign]);
-
 
   if (profile && profile.role !== 'admin') {
     return (
@@ -882,7 +881,6 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     textAlign: 'center',
   } as any,
-
 
   // Section Header
   sectionRow: {

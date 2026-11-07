@@ -1,7 +1,7 @@
 import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
 import { useState, useCallback, useMemo } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -22,6 +22,7 @@ import {
 import { respondConnection, getConnectionStates } from '../../services/connectionsService';
 import { useMessages } from '../../store/messagesStore';
 import { useToast } from '../../components/ui/Toast';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type Filter = 'all' | 'unread';
 
@@ -164,7 +165,7 @@ export function NotificationsScreen({ navigation }: any) {
 
   // Reload every time the screen regains focus so new notifications appear
   // without a manual pull-to-refresh.
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -340,7 +341,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-
 
 
   chipText: { fontSize: 13 } as any,

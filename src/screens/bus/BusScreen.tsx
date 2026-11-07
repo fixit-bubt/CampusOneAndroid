@@ -4,7 +4,7 @@ import {
   View, Text, TouchableOpacity, TextInput, ScrollView,
   StyleSheet, RefreshControl, Linking, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -30,6 +30,7 @@ import {
 } from '../../utils/transitPrayer';
 import type { BusRoute } from '../../types/database';
 import { BusRouteEditorModal } from './BusRouteEditorModal';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const BUS_COLOR = SectorColors.bus;
 
@@ -127,7 +128,7 @@ export function BusScreen({ navigation }: any) {
     setLoading(false);
   }, [user?.id, isAdmin]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

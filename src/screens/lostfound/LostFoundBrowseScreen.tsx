@@ -5,7 +5,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image,
   RefreshControl, Keyboard, Modal, KeyboardAvoidingView, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -21,6 +21,7 @@ import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cache
 import { formatRelativeTime } from '../../utils/format';
 import type { LostFoundItem } from '../../types/database';
 import { useT } from '../../i18n';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type TabFilter = 'all' | 'Lost' | 'Found' | 'mine';
 type StatusFilter = 'Open' | 'Resolved' | 'All';
@@ -178,7 +179,7 @@ export function LostFoundBrowseScreen({ navigation }: any) {
     }
   }, [isStudent, isAdmin, profile]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -988,7 +989,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 8,
   } as TextStyle,
-
 
 
   catOptionsList: {

@@ -4,7 +4,7 @@ import {
   Modal, Alert, RefreshControl, ActivityIndicator, KeyboardAvoidingView,
   Platform, BackHandler, type ViewStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -18,6 +18,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 interface Department {
   id: string;
@@ -296,7 +297,7 @@ export function ManageStudyHubScreen({ navigation }: any) {
     }
   }, [loadDepartments, loadPendingRequests]);
 
-  useFocusEffect(useCallback(() => { loadAll(); }, [loadAll]));
+  useFocusRefresh(loadAll);
 
   useEffect(() => {
     if (activeDeptId) {

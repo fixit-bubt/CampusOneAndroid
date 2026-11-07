@@ -4,7 +4,7 @@ import {
   Modal, RefreshControl, ActivityIndicator, KeyboardAvoidingView,
   type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabase';
 import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const CATEGORY_LIST = ['All', 'My Clubs', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
 type CategoryFilter = typeof CATEGORY_LIST[number];
@@ -123,7 +124,7 @@ export function ClubsScreen({ navigation }: any) {
     }
   }, [user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -208,7 +209,7 @@ export function ClubsScreen({ navigation }: any) {
             </View>
 
             <Text style={[styles.memberCount, { color: C.textMuted, fontFamily: FontFamily.jakartaMedium }]}>
-              {c.member_count} {t.clubs.members.toLowerCase()}
+              {c.member_count} {(c.member_count === 1 ? t.clubs.members.replace(/s$/, '') : t.clubs.members).toLowerCase()}
             </Text>
           </View>
         </View>

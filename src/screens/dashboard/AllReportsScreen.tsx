@@ -14,7 +14,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -30,6 +30,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../store/authStore';
 import { getReportVoteCounts } from '../../services/campusIssuesService';
 import type { Report, Profile } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type StatusFilter = 'all' | Report['status'];
 
@@ -286,7 +287,7 @@ export function AllReportsScreen({ navigation }: any) {
     if (vRes.ok) setVoteCounts(vRes.data);
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -401,7 +402,6 @@ export function AllReportsScreen({ navigation }: any) {
       C={C}
     />
   ), [voteCounts, handleCardPress, handleAssignTrigger, isAdmin, C]);
-
 
   if (profile && profile.role !== 'admin') {
     return (

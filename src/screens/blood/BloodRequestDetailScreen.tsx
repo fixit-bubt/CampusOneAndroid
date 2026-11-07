@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -28,6 +28,7 @@ import {
   getDonorContact, openBloodDmThread, type Pledge,
 } from '../../services/bloodService';
 import { ContactSheet } from '../../components/ui/ContactSheet';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const BLOOD = SectorColors.blood;
 
@@ -140,7 +141,7 @@ export function BloodRequestDetailScreen({ route, navigation }: any) {
     }
   }, [requestId, user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

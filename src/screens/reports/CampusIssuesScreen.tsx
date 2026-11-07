@@ -18,7 +18,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -41,6 +41,7 @@ import {
 } from '../../services/campusIssuesService';
 import { getMyReports } from '../../services/reportsService';
 import type { Report } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Resolved', 'Closed'] as const;
 type StatusFilter = (typeof STATUSES)[number];
@@ -187,9 +188,7 @@ export function CampusIssuesScreen({ navigation, route }: any) {
     await Promise.allSettled([loadCampus(), loadMine()]);
   }, [loadCampus, loadMine]);
 
-  useFocusEffect(useCallback(() => {
-    loadAll();
-  }, [loadAll]));
+  useFocusRefresh(loadAll);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -543,7 +542,6 @@ export function CampusIssuesScreen({ navigation, route }: any) {
     );
   }, [C, boardMap, toggleBoard, confirmDelete, navigation, t]);
 
-
   return (
     <View style={[styles.safe, { backgroundColor: C.bg, paddingTop: insets.top }]}>
       {/* Permanent Header - Title never changes on tab switch */}
@@ -760,7 +758,6 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   } as ViewStyle,
-
 
   actionContainer: {
     paddingVertical: 5,

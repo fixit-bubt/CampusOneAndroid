@@ -8,7 +8,8 @@ import {
   type GestureResponderEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 import { FontFamily } from '../../theme';
 import { useTheme } from '../../hooks/useTheme';
 import { getCacheSync, CacheKeys } from '../../services/cacheService';
@@ -17,7 +18,7 @@ import {
   type BannerSlide,
   FALLBACK_SLIDES,
 } from '../../services/announcementService';
-import { resolveBannerSource } from '../../utils/bannerUrl';
+import { resolveBannerSource, BANNERS_MAP } from '../../utils/bannerUrl';
 export { resolveBannerSource } from '../../utils/bannerUrl';
 
 export interface HomeHeroBannerProps {
@@ -31,6 +32,7 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
     () => getCacheSync<BannerSlide[]>(CacheKeys.HOME_BANNER) ?? FALLBACK_SLIDES
   );
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [failedId, setFailedId] = useState<string | null>(null);
   const isFocused = useIsFocused();
   const touchStartX = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,11 +49,8 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSlides(false);
-    }, [loadSlides])
-  );
+  const loadOnFocus = useCallback(() => { loadSlides(false); }, [loadSlides]);
+  useFocusRefresh(loadOnFocus);
 
   useEffect(() => {
     if (refreshTrigger) {
@@ -109,10 +108,11 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
 
   if (!activeSlide) return null;
 
-  const imgSource = resolveBannerSource(
-    activeSlide.imageUri,
-    activeSlide.localImage
-  );
+  // A missing or broken remote image would leave the card pure black
+  const imgSource =
+    (failedId !== activeSlide.id
+      ? resolveBannerSource(activeSlide.imageUri, activeSlide.localImage)
+      : null) ?? BANNERS_MAP['convocation-2026.jpg'];
 
   return (
     <View style={styles.container}>
@@ -126,7 +126,12 @@ export function HomeHeroBanner({ refreshTrigger }: HomeHeroBannerProps = {}) {
           style={styles.card}
         >
           {imgSource ? (
-            <Image resizeMethod="resize" source={imgSource} style={styles.bgImage} />
+            <Image
+              resizeMethod="resize"
+              source={imgSource}
+              style={styles.bgImage}
+              onError={() => setFailedId(activeSlide.id)}
+            />
           ) : null}
 
           {/* Gradient Scrim for contrast */}

@@ -34,6 +34,7 @@ import { useToast } from '../../components/ui/Toast';
 import type { Announcement } from '../../types/database';
 import { toggleAnnouncementBookmark, markAnnouncementAsRead, updateAnnouncementBannerStatus } from '../../services/announcementService';
 import { resolveBannerSource } from '../../utils/bannerUrl';
+import { LoadError } from '../../components/ui/LoadState';
 
 function priTone(C: any, priority: string, isDark?: boolean): { fg: string; bg: string } {
   switch (priority) {
@@ -60,6 +61,9 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
   const id = announcementId || paramId;
   const [item, setItem] = useState<Announcement | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // Network/server failure with nothing cached: offer a retry, not a dead end.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
@@ -101,15 +105,14 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         if (!active) return;
 
         if (annRes.error || !annRes.data) {
-          if (!found) {
-            setNotFound(true);
-          } else {
-            setIsOffline(true);
-          }
+          if (found) setIsOffline(true);
+          else if (annRes.error) setLoadFailed(true);
+          else setNotFound(true);
           return;
         }
 
         setIsOffline(false);
+        setLoadFailed(false);
         setItem(annRes.data as Announcement);
         if (bmRes.data) setIsSaved(true);
 
@@ -119,16 +122,13 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         }
       } catch {
         if (!active) return;
-        if (!found) {
-          setNotFound(true);
-        } else {
-          setIsOffline(true);
-        }
+        if (found) setIsOffline(true);
+        else setLoadFailed(true);
       }
     })();
 
     return () => { active = false; };
-  }, [id, user?.id]);
+  }, [id, user?.id, retryKey]);
 
   async function handleToggleSave() {
     if (!user?.id || !item) {
@@ -252,8 +252,10 @@ export function AnnouncementDetailScreen({ route, navigation }: any) {
         <SubBar title={t.announce2.title} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
           {notFound
-            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.error}</Text>
-            : <ActivityIndicator color={C.brand} />}
+            ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
+            : loadFailed
+              ? <LoadError onRetry={() => { setLoadFailed(false); setRetryKey(k => k + 1); }} />
+              : <ActivityIndicator color={C.brand} />}
         </View>
       </SafeAreaView>
     );

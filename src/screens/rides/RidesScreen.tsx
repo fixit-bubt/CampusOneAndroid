@@ -8,7 +8,7 @@ import {
   type ViewStyle, type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -27,6 +27,7 @@ import { localToday, nowDhakaMinutes, formatTime, formatPrice, formatDate } from
 import { useAuth } from '../../store/authStore';
 import { getCache, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import type { Ride as RideRow } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const RIDE_COLOR = SectorColors.ride;
 
@@ -147,7 +148,7 @@ export function RidesScreen({ navigation }: any) {
     }
   }, [user?.id, toast, t]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

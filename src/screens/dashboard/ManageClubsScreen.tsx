@@ -18,7 +18,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -31,6 +31,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { fetchPeople } from '../../services/peopleService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const CATEGORY_LIST = ['All', 'Tech', 'Cultural', 'Sports', 'Professional', 'Social'] as const;
 type CategoryFilter = typeof CATEGORY_LIST[number];
@@ -292,7 +293,7 @@ export function ManageClubsScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   useEffect(() => {
     if (!presTarget) return;

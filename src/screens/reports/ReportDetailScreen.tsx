@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Image,
   RefreshControl, Alert, ActivityIndicator, Modal, type ViewStyle, type TextStyle, type ImageStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -21,6 +21,7 @@ import { declineReport } from '../../services/reportsService';
 import { SegmentedTabs, type TabItem } from '../../components/ui/SegmentedTabs';
 import { getTradeLabel, isTradeMatch } from '../../utils/tradeMatcher';
 import type { Report, ReportEvent } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const CAT_MAP: Record<string, { icon: string; fg: string }> = {
   'Electrical':       { icon: 'bolt',    fg: Accent.gold },
@@ -170,7 +171,7 @@ export function ReportDetailScreen({ route, navigation }: any) {
     }
   }, [reportId, isAdmin, user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

@@ -15,7 +15,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../hooks/useTheme';
@@ -49,6 +49,7 @@ import { DHAKA_AREAS } from '../../constants/dhakaAreas';
 import type { BloodRequest, Donor } from '../../types/database';
 import type { Coordinates } from '../../services/locationService';
 import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type Tab = 'requests' | 'donors';
 
@@ -341,8 +342,7 @@ export function BloodScreen({ route, navigation }: any) {
     }
   }, [user?.id, t.blood2.rechargedNotificationTitle, t.blood2.rechargedNotificationBody]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -632,7 +632,6 @@ export function BloodScreen({ route, navigation }: any) {
     donors.forEach(d => { map[d.blood_group] = (map[d.blood_group] ?? 0) + 1; });
     return map;
   }, [donors]);
-
 
 
   return (

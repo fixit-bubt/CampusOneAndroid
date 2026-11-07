@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ import { fetchPeople } from '../../services/peopleService';
 import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
+import { LoadError } from '../../components/ui/LoadState';
 
 type Tab = 'feed' | 'members';
 
@@ -65,6 +67,8 @@ export function ClubDetailScreen({ route, navigation }: any) {
   const id = route.params?.clubId ?? route.params?.id;
   const [club, setClub] = useState<Club | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // Network/server failure with nothing cached: offer a retry, not "Not found".
+  const [loadFailed, setLoadFailed] = useState(false);
   const [tab, setTab] = useState<Tab>('feed');
   const [membersReady, setMembersReady] = useState(false);
   useEffect(() => {
@@ -83,11 +87,10 @@ export function ClubDetailScreen({ route, navigation }: any) {
     { id: 'members', label: t.clubs.members, count: members.length > 0 ? members.length : undefined, color: Accent.teal },
   ], [t.clubs.feed, t.clubs.members, members.length, C.brand]);
 
-  useEffect(() => {
-    const unsub = navigation.addListener('focus', load);
-    return unsub;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user?.id]);
+  // load() is rebuilt every render; only these inputs should retrigger it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const loadOnFocus = useCallback(() => { load(); }, [id, user?.id]);
+  useFocusRefresh(loadOnFocus);
 
   async function load() {
     if (!id) return;
@@ -129,11 +132,15 @@ export function ClubDetailScreen({ route, navigation }: any) {
 
       if (clubRes.data) {
         setIsOffline(false);
+        setLoadFailed(false);
         setClub(clubRes.data as Club);
         setNotFound(false);
       } else {
-        if (!cached?.club) setNotFound(true);
-        else setIsOffline(true);
+        // PGRST116 = .single() matched no row: the club really doesn't exist.
+        const missing = !clubRes.error || clubRes.error.code === 'PGRST116';
+        if (cached?.club) setIsOffline(true);
+        else if (missing) setNotFound(true);
+        else setLoadFailed(true);
         return;
       }
 
@@ -173,7 +180,7 @@ export function ClubDetailScreen({ route, navigation }: any) {
       if (cached?.club) {
         setIsOffline(true);
       } else {
-        setNotFound(true);
+        setLoadFailed(true);
       }
     }
   }
@@ -213,7 +220,9 @@ export function ClubDetailScreen({ route, navigation }: any) {
         <View style={styles.center}>
           {notFound
             ? <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>{t.common.notFound}</Text>
-            : <ActivityIndicator color={C.brand} />}
+            : loadFailed
+              ? <LoadError onRetry={() => { setLoadFailed(false); load(); }} />
+              : <ActivityIndicator color={C.brand} />}
         </View>
       </SafeAreaView>
     );

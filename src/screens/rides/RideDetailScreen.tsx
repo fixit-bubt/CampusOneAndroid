@@ -10,7 +10,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
@@ -38,6 +38,7 @@ import {
 import { findMasterLocationByName } from '../../constants/dhakaMasterLocations';
 import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import { RideRouteMapModal } from '../../components/rides/RideRouteMapModal';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const RIDE_COLOR = SectorColors.ride;
 const RIDE_BG    = `${SectorColors.ride}1e`;
@@ -181,7 +182,7 @@ export function RideDetailScreen({ route, navigation }: any) {
     }
   }, [rideId, user?.id, toast, t]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function revealRequester(requesterId: string) {
     if (isOffline) {

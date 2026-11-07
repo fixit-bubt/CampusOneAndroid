@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
   type ViewStyle,
   type ImageSourcePropType,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -304,21 +305,14 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
   }, []);
 
   // 1. Instant sync of read IDs and fresh data when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      const uid = user?.id || 'guest';
-      getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(uid)).then((cachedReads) => {
-        if (cachedReads && active) {
-          setReadIds(new Set(cachedReads));
-        }
-      });
-      loadData();
-      return () => {
-        active = false;
-      };
-    }, [user?.id, loadData])
-  );
+  const syncOnFocus = useCallback(() => {
+    const uid = user?.id || 'guest';
+    getCache<string[]>(CacheKeys.ANNOUNCEMENT_READS(uid)).then((cachedReads) => {
+      if (cachedReads) setReadIds(new Set(cachedReads));
+    });
+    loadData();
+  }, [user?.id, loadData]);
+  useFocusRefresh(syncOnFocus);
 
   // 2. Real-time in-app broadcast listener (instant 0ms update when notice read anywhere)
   useEffect(() => {
@@ -337,26 +331,40 @@ export function HomeCommunityUpdates({ refreshTrigger }: HomeCommunityUpdatesPro
     };
   }, []);
 
-  // 3. Initial load & Supabase Realtime channel
+  // 3. Supabase Realtime. The focus effect above already does the first load.
+  // A crawler run upserts hundreds of notices at once; coalesce that burst
+  // into one refetch, and skip it while Home is hidden (focus reloads anyway).
+  const isFocused = useIsFocused();
+  const focusedRef = useRef(isFocused);
+  focusedRef.current = isFocused;
   useEffect(() => {
-    loadData();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleReload = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        if (focusedRef.current) loadData();
+      }, 1500);
+    };
 
-    const channel = supabase
+    let channel = supabase
       .channel('home_community_live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-        loadData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_posts' }, () => {
-        loadData();
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'announcement_reads' }, (payload: any) => {
-        if (payload?.new?.announcement_id && (!user?.id || payload.new.user_id === user.id)) {
-          setReadIds((prev) => new Set(prev).add(payload.new.announcement_id));
-        }
-      })
-      .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_posts' }, scheduleReload);
+    if (user?.id) {
+      channel = channel.on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'announcement_reads', filter: `user_id=eq.${user.id}` },
+        (payload: any) => {
+          const aid = payload?.new?.announcement_id;
+          if (aid) setReadIds((prev) => (prev.has(aid) ? prev : new Set(prev).add(aid)));
+        },
+      );
+    }
+    channel.subscribe();
 
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [loadData, user?.id]);

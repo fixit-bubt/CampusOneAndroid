@@ -2,7 +2,7 @@ import { useAfterInteractions } from '../../hooks/useAfterInteractions';
 import { SkeletonList } from '../../components/ui/LoadState';
 import { indexKey, listGap } from '../../components/ui/listHelpers';
 import { useState, useCallback, useMemo, memo } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+
 import {
   View, Text, TouchableOpacity, FlatList, StyleSheet,
   RefreshControl, Alert, ActivityIndicator, type ViewStyle,
@@ -21,6 +21,7 @@ import { useAuth } from '../../store/authStore';
 import { getUnreadNotificationCount } from '../../services/notificationsService';
 import { declineReport } from '../../services/reportsService';
 import { getCacheSync, getCache, setCache, CacheKeys } from '../../services/cacheService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const ISSUE_MAP: Record<string, { icon: string; fg: string }> = {
   electrical: { icon: 'bolt',     fg: Accent.gold },
@@ -313,7 +314,7 @@ export function StaffDashboardScreen({ navigation }: any) {
     }
   }, [user?.id, profile, cacheKey]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -380,7 +381,6 @@ export function StaffDashboardScreen({ navigation }: any) {
       />
     );
   }, [C, t.status, advanceStatus, declineAssigned, handlePressCard]);
-
 
   if (profile && profile.role !== 'staff' && profile.role !== 'admin') {
     return (

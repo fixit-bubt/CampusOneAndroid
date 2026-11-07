@@ -4,7 +4,7 @@ import {
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Modal, RefreshControl,
   type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -37,6 +37,7 @@ import {
 import { resolveHospitalLocation } from '../../constants/dhakaHospitalCoords';
 import { BUCKETS } from '../../constants/app';
 import type { LostFoundItem } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const CAT_COLOR: Record<string, string> = {
   Personal: Accent.blue, Electronics: SectorColors.lostfound, Documents: Accent.green, Other: Accent.slate,
@@ -216,7 +217,7 @@ export function LostFoundDetailScreen({ route, navigation }: any) {
     setRefreshing(false);
   }
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   // Reveal the counterpart's contact once an approved claim involves me.
   useEffect(() => {

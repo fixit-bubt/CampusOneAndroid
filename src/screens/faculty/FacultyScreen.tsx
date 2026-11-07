@@ -17,7 +17,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -39,6 +39,7 @@ import {
   FACULTY_CATEGORIES, type FacultyCategory, TeacherBar,
   type FacultyMember, type Department,
 } from './facultyShared';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type TabMode = 'all' | 'mentors' | 'saved';
 
@@ -72,7 +73,6 @@ export function FacultyScreen({ navigation }: any) {
 
   // Active teacher for ContactSheet
   const [contactTeacher, setContactTeacher] = useState<FacultyMember | null>(null);
-
 
 
   // Reset pagination when switching tabs or changing filters
@@ -167,7 +167,7 @@ export function FacultyScreen({ navigation }: any) {
     }
   }, [user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -998,8 +998,6 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 6, paddingBottom: 24 } as ViewStyle,
 
   // Tab switcher matching HomeCommunityUpdates
-
-
 
 
 

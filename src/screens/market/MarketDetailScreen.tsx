@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, Image, Modal, Share, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -39,6 +39,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import type { Listing } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const MARKET_COLOR = SectorColors.market;
 
@@ -156,7 +157,7 @@ export function MarketDetailScreen({ route, navigation }: any) {
     }
   }, [id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   // Toggle favorite
   async function handleToggleBookmark() {

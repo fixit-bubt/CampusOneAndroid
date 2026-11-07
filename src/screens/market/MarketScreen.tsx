@@ -19,7 +19,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -37,6 +37,7 @@ import { useAuth } from '../../store/authStore';
 import { useT } from '../../i18n';
 import { formatRelativeTime, formatPrice } from '../../utils/format';
 import type { Listing } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 type Tab = 'all' | 'mine' | 'saved';
 type ConditionPreset = 'all' | 'New' | 'Like New' | 'Used';
@@ -90,7 +91,6 @@ export function MarketScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
-
 
 
   // Load saved listing IDs from AsyncStorage
@@ -152,7 +152,7 @@ export function MarketScreen({ navigation }: any) {
     }
   }, [loadSavedIds]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -447,7 +447,6 @@ export function MarketScreen({ navigation }: any) {
       </TouchableOpacity>
     );
   }, [cardWidth, savedIds, peopleMap, isDark, C, navigation, t]);
-
 
   const listHeader = (
     <View>

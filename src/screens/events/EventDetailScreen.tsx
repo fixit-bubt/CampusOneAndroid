@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, Image, Modal, type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -26,6 +26,8 @@ import {
   fetchUserEventBookmarks,
 } from '../../services/eventsService';
 import type { Event } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
+import { LoadError } from '../../components/ui/LoadState';
 
 const CAT_COLOR: Record<string, string> = {
   Academic: SectorColors.reports,
@@ -62,6 +64,8 @@ export function EventDetailScreen({ route, navigation }: any) {
 
   const [event, setEvent] = useState<Event | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // Network/server failure with nothing cached: offer a retry, not a dead end.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [going, setGoing] = useState(false);
   const [goingCount, setGoingCount] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -114,32 +118,24 @@ export function EventDetailScreen({ route, navigation }: any) {
       );
 
       if (evRes.error || !evRes.data) {
-        if (found) {
-          setIsOffline(true);
-        } else {
-          setNotFound(true);
-        }
+        if (found) setIsOffline(true);
+        else if (evRes.error) setLoadFailed(true);
+        else setNotFound(true);
         return;
       }
 
       setIsOffline(false);
+      setLoadFailed(false);
       setEvent(evRes.data as Event);
       setGoing(!!rsvpRes.data);
       setGoingCount(countRes.count ?? 0);
-    } catch (e) {
-      if (found) {
-        setIsOffline(true);
-      } else {
-        setNotFound(true);
-      }
+    } catch {
+      if (found) setIsOffline(true);
+      else setLoadFailed(true);
     }
   }, [id, user?.id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useFocusRefresh(load);
 
   async function handleRSVP() {
     if (!event || !user || busy) return;
@@ -196,12 +192,14 @@ export function EventDetailScreen({ route, navigation }: any) {
   if (!event) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
-        <SubBar title="Events" onBack={() => navigation.goBack()} />
+        <SubBar title={t.sectorTitles?.events ?? 'Events'} onBack={() => navigation.goBack()} />
         <View style={styles.center}>
           {notFound ? (
             <Text style={{ color: C.textMuted, fontFamily: FontFamily.jakartaMedium }}>
-              {t.common.error}
+              {t.common.notFound}
             </Text>
+          ) : loadFailed ? (
+            <LoadError onRetry={() => { setLoadFailed(false); load(); }} />
           ) : (
             <ActivityIndicator color={C.brand} />
           )}

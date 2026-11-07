@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+
 import {
   View,
   ScrollView,
@@ -18,6 +18,7 @@ import { HomeFrequentTools } from '../../components/home/HomeFrequentTools';
 import { HomeCommunityUpdates } from '../../components/home/HomeCommunityUpdates';
 import { Layout } from '../../theme';
 import { getUnreadNotificationCount } from '../../services/notificationsService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 export function HomeScreen({ navigation }: any) {
   const { C } = useTheme();
@@ -36,11 +37,7 @@ export function HomeScreen({ navigation }: any) {
     }
   }, [user, profile]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

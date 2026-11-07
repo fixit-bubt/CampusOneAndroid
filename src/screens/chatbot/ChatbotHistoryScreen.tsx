@@ -5,7 +5,7 @@ import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -15,6 +15,7 @@ import { SubBar } from '../../components/layout/TopBar';
 import { OfflineBanner } from '../../components/ui/OfflineBanner';
 import { FontFamily, Layout } from '../../theme';
 import { listConversations, deleteConversation, type Conversation } from '../../services/chatbotService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 function timeAgo(iso: string): string {
   const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
@@ -43,7 +44,7 @@ export function ChatbotHistoryScreen({ navigation }: any) {
     setLoading(false);
   }, [user, conversations.length]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   function confirmDelete(c: Conversation) {
     Alert.alert(t.chatbot.deleteTitle, t.chatbot.deleteBody, [

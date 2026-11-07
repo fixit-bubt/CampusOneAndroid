@@ -3,6 +3,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppStackParams } from '../types/navigation';
 import { BottomTabNavigator } from './BottomTabNavigator';
+import { afterTransition } from './afterTransition';
 
 // Auth + feature screens
 import { ReportFormScreen }        from '../screens/reports/ReportFormScreen';
@@ -95,143 +96,143 @@ export function AppNavigator() {
       <Stack.Screen name="Tabs"           component={BottomTabNavigator} />
 
       {/* Annex Portal (from Explore) */}
-      <Stack.Screen name="Annex"          component={AnnexPortalScreen} />
+      <Stack.Screen name="Annex"          component={afterTransition(AnnexPortalScreen, { plain: true })} />
 
       {/* Reports */}
-      <Stack.Screen name="ReportForm"     component={ReportFormScreen} />
-      <Stack.Screen name="MyReports"      component={MyReportsScreen} />
-      <Stack.Screen name="AssignedToMe"   component={AssignedToMeScreen} />
-      <Stack.Screen name="CampusIssues"   component={CampusIssuesScreen} />
+      <Stack.Screen name="ReportForm"     component={afterTransition(ReportFormScreen)} />
+      <Stack.Screen name="MyReports"      component={afterTransition(MyReportsScreen)} />
+      <Stack.Screen name="AssignedToMe"   component={afterTransition(AssignedToMeScreen)} />
+      <Stack.Screen name="CampusIssues"   component={afterTransition(CampusIssuesScreen)} />
 
       {/* Lost & Found */}
-      <Stack.Screen name="LostFoundBrowse"  component={LostFoundBrowseScreen} />
-      <Stack.Screen name="LostFoundDetail"  component={LostFoundDetailScreen} />
-      <Stack.Screen name="LostFoundPost"    component={PostItemFormScreen} />
-      <Stack.Screen name="LostFoundEdit"   component={PostItemFormScreen} />
+      <Stack.Screen name="LostFoundBrowse"  component={afterTransition(LostFoundBrowseScreen)} />
+      <Stack.Screen name="LostFoundDetail"  component={afterTransition(LostFoundDetailScreen)} />
+      <Stack.Screen name="LostFoundPost"    component={afterTransition(PostItemFormScreen)} />
+      <Stack.Screen name="LostFoundEdit"   component={afterTransition(PostItemFormScreen)} />
 
       {/* Events */}
-      <Stack.Screen name="EventsBrowse"   component={EventsBrowseScreen} />
-      <Stack.Screen name="EventDetail"    component={EventDetailScreen} />
+      <Stack.Screen name="EventsBrowse"   component={afterTransition(EventsBrowseScreen)} />
+      <Stack.Screen name="EventDetail"    component={afterTransition(EventDetailScreen)} />
 
       {/* Announcements */}
-      <Stack.Screen name="Announcements"        component={AnnouncementsScreen} />
-      <Stack.Screen name="AnnouncementDetail"   component={AnnouncementDetailScreen} />
+      <Stack.Screen name="Announcements"        component={afterTransition(AnnouncementsScreen)} />
+      <Stack.Screen name="AnnouncementDetail"   component={afterTransition(AnnouncementDetailScreen)} />
 
       {/* Blood */}
-      <Stack.Screen name="Blood"          component={BloodScreen} />
+      <Stack.Screen name="Blood"          component={afterTransition(BloodScreen)} />
 
       {/* Bus */}
-      <Stack.Screen name="Bus"            component={BusScreen} />
-      <Stack.Screen name="BusDetail"      component={BusDetailScreen} />
+      <Stack.Screen name="Bus"            component={afterTransition(BusScreen)} />
+      <Stack.Screen name="BusDetail"      component={afterTransition(BusDetailScreen)} />
 
       {/* Jobs */}
-      <Stack.Screen name="JobsBrowse"     component={JobsBrowseScreen} />
-      <Stack.Screen name="JobDetail"      component={JobDetailScreen} />
-      <Stack.Screen name="JobsModerate"   component={JobsModerateScreen} />
+      <Stack.Screen name="JobsBrowse"     component={afterTransition(JobsBrowseScreen)} />
+      <Stack.Screen name="JobDetail"      component={afterTransition(JobDetailScreen)} />
+      <Stack.Screen name="JobsModerate"   component={afterTransition(JobsModerateScreen)} />
 
       {/* Market */}
-      <Stack.Screen name="Market"         component={MarketScreen} />
-      <Stack.Screen name="MarketDetail"   component={MarketDetailScreen} />
+      <Stack.Screen name="Market"         component={afterTransition(MarketScreen)} />
+      <Stack.Screen name="MarketDetail"   component={afterTransition(MarketDetailScreen)} />
 
       {/* Rides */}
-      <Stack.Screen name="Rides"          component={RidesScreen} />
-      <Stack.Screen name="RideDetail"     component={RideDetailScreen} />
+      <Stack.Screen name="Rides"          component={afterTransition(RidesScreen)} />
+      <Stack.Screen name="RideDetail"     component={afterTransition(RideDetailScreen)} />
 
       {/* Directory */}
-      <Stack.Screen name="Directory"      component={DirectoryScreen} />
-      <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
+      <Stack.Screen name="Directory"      component={afterTransition(DirectoryScreen)} />
+      <Stack.Screen name="StudentProfile" component={afterTransition(StudentProfileScreen)} />
 
       {/* Medical - directory + doctor availability only (no booking) */}
-      <Stack.Screen name="Medical"        component={MedicalScreen} />
-      <Stack.Screen name="DoctorDetail"   component={DoctorDetailScreen} />
+      <Stack.Screen name="Medical"        component={afterTransition(MedicalScreen)} />
+      <Stack.Screen name="DoctorDetail"   component={afterTransition(DoctorDetailScreen)} />
 
       {/* Prayer */}
-      <Stack.Screen name="Prayer"         component={PrayerScreen} />
+      <Stack.Screen name="Prayer"         component={afterTransition(PrayerScreen)} />
 
       {/* Clubs */}
-      <Stack.Screen name="Clubs"          component={ClubsScreen} />
-      <Stack.Screen name="ClubDetail"     component={ClubDetailScreen} />
-      <Stack.Screen name="ClubManage"     component={ClubManageScreen} />
-      <Stack.Screen name="ClubMembers"    component={ClubMembersScreen} />
-      <Stack.Screen name="ClubAddMember"  component={ClubAddMemberScreen} />
-      <Stack.Screen name="ClubPostDetail" component={ClubPostDetailScreen} />
-      <Stack.Screen name="ManageClubs"    component={ManageClubsScreen} />
+      <Stack.Screen name="Clubs"          component={afterTransition(ClubsScreen)} />
+      <Stack.Screen name="ClubDetail"     component={afterTransition(ClubDetailScreen)} />
+      <Stack.Screen name="ClubManage"     component={afterTransition(ClubManageScreen)} />
+      <Stack.Screen name="ClubMembers"    component={afterTransition(ClubMembersScreen)} />
+      <Stack.Screen name="ClubAddMember"  component={afterTransition(ClubAddMemberScreen)} />
+      <Stack.Screen name="ClubPostDetail" component={afterTransition(ClubPostDetailScreen)} />
+      <Stack.Screen name="ManageClubs"    component={afterTransition(ManageClubsScreen)} />
 
       {/* Study */}
-      <Stack.Screen name="StudyHub"       component={StudyHubScreen} />
-      <Stack.Screen name="CourseDetail"   component={CourseDetailScreen} />
-      <Stack.Screen name="StudyUpload"    component={StudyUploadScreen} />
+      <Stack.Screen name="StudyHub"       component={afterTransition(StudyHubScreen)} />
+      <Stack.Screen name="CourseDetail"   component={afterTransition(CourseDetailScreen)} />
+      <Stack.Screen name="StudyUpload"    component={afterTransition(StudyUploadScreen)} />
 
       {/* Faculty */}
-      <Stack.Screen name="Faculty"        component={FacultyScreen} />
-      <Stack.Screen name="FacultyDept"    component={FacultyDeptScreen} />
-      <Stack.Screen name="FacultyProfile" component={FacultyProfileScreen} />
+      <Stack.Screen name="Faculty"        component={afterTransition(FacultyScreen)} />
+      <Stack.Screen name="FacultyDept"    component={afterTransition(FacultyDeptScreen)} />
+      <Stack.Screen name="FacultyProfile" component={afterTransition(FacultyProfileScreen)} />
 
       {/* Academic Calendar */}
-      <Stack.Screen name="AcademicCalendar" component={AcademicCalendarScreen} />
+      <Stack.Screen name="AcademicCalendar" component={afterTransition(AcademicCalendarScreen)} />
 
       {/* Routines */}
-      <Stack.Screen name="RoutinesBrowse" component={RoutinesBrowseScreen} />
+      <Stack.Screen name="RoutinesBrowse" component={afterTransition(RoutinesBrowseScreen)} />
 
       {/* Cover Page Generator */}
-      <Stack.Screen name="CoverPageForm" component={CoverPageFormScreen} />
+      <Stack.Screen name="CoverPageForm" component={afterTransition(CoverPageFormScreen)} />
 
       {/* CGPA Calculator */}
-      <Stack.Screen name="Cgpa"          component={CgpaScreen} />
-      <Stack.Screen name="PdfMaker"      component={PdfMakerScreen} />
-      <Stack.Screen name="PdfImages"     component={ToolImagesScreen} />
-      <Stack.Screen name="PdfMerge"      component={ToolMergeScreen} />
-      <Stack.Screen name="PdfOrganize"   component={ToolOrganizeScreen} />
-      <Stack.Screen name="PdfCompress"   component={ToolCompressScreen} />
+      <Stack.Screen name="Cgpa"          component={afterTransition(CgpaScreen)} />
+      <Stack.Screen name="PdfMaker"      component={afterTransition(PdfMakerScreen)} />
+      <Stack.Screen name="PdfImages"     component={afterTransition(ToolImagesScreen)} />
+      <Stack.Screen name="PdfMerge"      component={afterTransition(ToolMergeScreen)} />
+      <Stack.Screen name="PdfOrganize"   component={afterTransition(ToolOrganizeScreen)} />
+      <Stack.Screen name="PdfCompress"   component={afterTransition(ToolCompressScreen)} />
 
       {/* Profile (from Settings tab) */}
-      <Stack.Screen name="Profile"        component={ProfileScreen} />
+      <Stack.Screen name="Profile"        component={afterTransition(ProfileScreen)} />
 
       {/* Generic feature landing */}
-      <Stack.Screen name="Feature"        component={FeatureScreen} />
+      <Stack.Screen name="Feature"        component={afterTransition(FeatureScreen)} />
 
       {/* AI Chatbot */}
-      <Stack.Screen name="Chatbot"        component={ChatbotScreen} />
-      <Stack.Screen name="ChatbotHistory" component={ChatbotHistoryScreen} />
+      <Stack.Screen name="Chatbot"        component={afterTransition(ChatbotScreen)} />
+      <Stack.Screen name="ChatbotHistory" component={afterTransition(ChatbotHistoryScreen)} />
 
       {/* Notifications (reached via the bell on Home, not a bottom tab) */}
-      <Stack.Screen name="Notifications"  component={NotificationsScreen} />
-      <Stack.Screen name="NotifDetail"    component={NotifDetailScreen} />
-      <Stack.Screen name="NotifSettings"  component={NotifSettingsScreen} />
+      <Stack.Screen name="Notifications"  component={afterTransition(NotificationsScreen)} />
+      <Stack.Screen name="NotifDetail"    component={afterTransition(NotifDetailScreen)} />
+      <Stack.Screen name="NotifSettings"  component={afterTransition(NotifSettingsScreen)} />
 
       {/* Messages */}
-      <Stack.Screen name="MessageThread"  component={MessageThread} />
+      <Stack.Screen name="MessageThread"  component={afterTransition(MessageThread, { plain: true })} />
 
       {/* Dashboards (reached from Admin Dashboard tiles / Home tab) */}
-      <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-      <Stack.Screen name="ManageUsers"    component={ManageUsersScreen} />
-      <Stack.Screen name="CreateStaffAdmin" component={CreateStaffAdminScreen} />
-      <Stack.Screen name="ManageFaculty"  component={ManageFacultyScreen} />
-      <Stack.Screen name="ManageStudyHub"  component={ManageStudyHubScreen} />
-      <Stack.Screen name="ManageBanner"    component={ManageBannerScreen} />
-      <Stack.Screen name="ManageAnnouncements" component={ManageAnnouncementsScreen} />
-      <Stack.Screen name="ManageAcademicCalendar" component={ManageAcademicCalendarScreen} />
-      <Stack.Screen name="ManageMarket"   component={ManageMarketScreen} />
-      <Stack.Screen name="ManageEvents"   component={ManageEventsScreen} />
-      <Stack.Screen name="AllReports"     component={AllReportsScreen} />
+      <Stack.Screen name="AdminDashboard" component={afterTransition(AdminDashboardScreen, { plain: true })} />
+      <Stack.Screen name="ManageUsers"    component={afterTransition(ManageUsersScreen)} />
+      <Stack.Screen name="CreateStaffAdmin" component={afterTransition(CreateStaffAdminScreen)} />
+      <Stack.Screen name="ManageFaculty"  component={afterTransition(ManageFacultyScreen)} />
+      <Stack.Screen name="ManageStudyHub"  component={afterTransition(ManageStudyHubScreen)} />
+      <Stack.Screen name="ManageBanner"    component={afterTransition(ManageBannerScreen)} />
+      <Stack.Screen name="ManageAnnouncements" component={afterTransition(ManageAnnouncementsScreen)} />
+      <Stack.Screen name="ManageAcademicCalendar" component={afterTransition(ManageAcademicCalendarScreen)} />
+      <Stack.Screen name="ManageMarket"   component={afterTransition(ManageMarketScreen)} />
+      <Stack.Screen name="ManageEvents"   component={afterTransition(ManageEventsScreen)} />
+      <Stack.Screen name="AllReports"     component={afterTransition(AllReportsScreen)} />
 
       {/* Report detail */}
-      <Stack.Screen name="ReportDetail"   component={ReportDetailScreen} />
+      <Stack.Screen name="ReportDetail"   component={afterTransition(ReportDetailScreen)} />
 
       {/* Post/create forms */}
-      <Stack.Screen name="MarketPost"     component={MarketPostScreen} />
-      <Stack.Screen name="RidePost"       component={RidePostScreen} />
-      <Stack.Screen name="EventPost"      component={EventPostScreen} />
-      <Stack.Screen name="JobPost"        component={JobPostScreen} />
-      <Stack.Screen name="AnnouncePost"   component={AnnouncePostScreen} />
-      <Stack.Screen name="BloodRequest"   component={BloodRequestScreen} />
-      <Stack.Screen name="BloodRequestDetail" component={BloodRequestDetailScreen} />
-      <Stack.Screen name="DonorRegister"  component={DonorRegisterScreen} />
-      <Stack.Screen name="ClubPost"       component={ClubPostScreen} />
+      <Stack.Screen name="MarketPost"     component={afterTransition(MarketPostScreen)} />
+      <Stack.Screen name="RidePost"       component={afterTransition(RidePostScreen)} />
+      <Stack.Screen name="EventPost"      component={afterTransition(EventPostScreen)} />
+      <Stack.Screen name="JobPost"        component={afterTransition(JobPostScreen)} />
+      <Stack.Screen name="AnnouncePost"   component={afterTransition(AnnouncePostScreen)} />
+      <Stack.Screen name="BloodRequest"   component={afterTransition(BloodRequestScreen)} />
+      <Stack.Screen name="BloodRequestDetail" component={afterTransition(BloodRequestDetailScreen)} />
+      <Stack.Screen name="DonorRegister"  component={afterTransition(DonorRegisterScreen)} />
+      <Stack.Screen name="ClubPost"       component={afterTransition(ClubPostScreen)} />
 
       {/* Legal & Policies */}
-      <Stack.Screen name="PrivacyPolicy"  component={PrivacyPolicyScreen} />
-      <Stack.Screen name="TermsOfService" component={TermsScreen} />
+      <Stack.Screen name="PrivacyPolicy"  component={afterTransition(PrivacyPolicyScreen)} />
+      <Stack.Screen name="TermsOfService" component={afterTransition(TermsScreen)} />
     </Stack.Navigator>
   );
 }

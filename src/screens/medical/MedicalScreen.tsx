@@ -18,7 +18,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../store/authStore';
@@ -51,6 +51,7 @@ import {
   type EmergencyHospital,
 } from '../../constants/medicalServices';
 import type { Doctor } from '../../types/database';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const MED_COLOR = SectorColors.medical;
 const MED_BG = `${SectorColors.medical}1e`;
@@ -352,11 +353,7 @@ export function MedicalScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);

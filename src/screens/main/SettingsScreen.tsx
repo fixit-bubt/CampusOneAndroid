@@ -17,7 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { TactileSwitch } from '../../components/ui/TactileSwitch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
+
 import * as Notifications from 'expo-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -39,6 +39,7 @@ import {
   openSystemAppSettings,
 } from '../../services/storageService';
 import { openUrl } from '../../utils/link';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 const ROLE_TOKEN = { student: 'roleStudent', staff: 'roleStaff', admin: 'roleAdmin' } as const;
 
@@ -127,11 +128,7 @@ export function SettingsScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      checkNotifPerm();
-    }, [checkNotifPerm])
-  );
+  useFocusRefresh(checkNotifPerm);
 
   useEffect(() => {
     checkNotifPerm();

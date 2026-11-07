@@ -17,7 +17,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { SubBar } from '../../components/layout/TopBar';
@@ -34,6 +34,7 @@ import {
   triggerNoticeSync,
   updateAnnouncementBannerStatus,
 } from '../../services/announcementService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 interface SyncLog {
   id: string;
@@ -113,11 +114,7 @@ export function ManageAnnouncementsScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
+  useFocusRefresh(loadData);
 
   const onRefresh = () => {
     setRefreshing(true);

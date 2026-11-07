@@ -43,6 +43,7 @@ import {
   ANNOUNCEMENT_CATEGORIES,
   KNOWN_DEPARTMENTS,
 } from '../../services/announcementService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 export type MainTab = 'all' | 'urgent' | 'saved';
 
@@ -91,7 +92,9 @@ const AnnouncementCard = memo(function AnnouncementCard({
 }) {
   const { fg } = priTone(C, a.priority, isDark);
   const isOfficial = a.source === 'bubt_official' || a.code?.startsWith('BUBT-N-');
-  const dept = a.department_code && a.department_code !== 'ALL' ? a.department_code : a.department;
+  const code = a.department_code;
+  const isOfficeCode = code === 'REG' || code === 'EXAM';
+  const dept = isOfficeCode ? null : code && code !== 'ALL' ? code : a.department;
 
   const handleCardPress = useCallback(() => onPress(a.id), [onPress, a.id]);
   const handleToggle = useCallback(() => onToggleSave(a), [onToggleSave, a]);
@@ -223,8 +226,11 @@ export function AnnouncementsScreen({ navigation }: any) {
     }
   }, [user?.id]);
 
+  // Mounts after the open transition, i.e. after 'focus' already fired, so a
+  // focus listener alone never ran the first load.
+  useFocusRefresh(load);
+
   useEffect(() => {
-    const unsub = navigation.addListener('focus', load);
     const sub = DeviceEventEmitter.addListener('announcement_read', ({ id }) => {
       if (id) {
         setReadIds(prev => {
@@ -236,10 +242,9 @@ export function AnnouncementsScreen({ navigation }: any) {
       }
     });
     return () => {
-      unsub();
       sub.remove();
     };
-  }, [load, navigation]);
+  }, []);
 
   async function onRefresh() {
     setRefreshing(true);

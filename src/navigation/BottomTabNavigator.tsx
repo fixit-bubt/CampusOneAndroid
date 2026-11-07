@@ -121,6 +121,21 @@ function CustomBottomTabBar(props: BottomTabBarProps) {
   const { totalUnread } = useMessages();
   const t = useT();
 
+  // Tabs mount on first tap (50-130ms of dropped frames). Build them one by
+  // one in the background once Home has settled.
+  useEffect(() => {
+    const names = state.routeNames.filter((n) => n !== state.routes[state.index]?.name);
+    let timer: ReturnType<typeof setTimeout>;
+    let i = 0;
+    const next = () => {
+      if (i >= names.length) return;
+      (navigation as any).preload(names[i++]);
+      timer = setTimeout(next, 800);
+    };
+    timer = setTimeout(next, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const TAB_LABEL: Record<string, string> = useMemo(() => ({
     Home:     t.tabs.home,
     StudyHub: t.tabs.studyHub ?? 'Study Hub',

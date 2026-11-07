@@ -10,7 +10,7 @@ import {
   RefreshControl, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView,
   Alert, Platform, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -27,6 +27,7 @@ import {
   adminRemoveJobListing,
   adminDismissJobReports,
 } from '../../services/jobsService';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 interface JobRow {
   id: string;
@@ -205,7 +206,7 @@ export function JobsModerateScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -299,7 +300,6 @@ export function JobsModerateScreen({ navigation }: any) {
       t={t}
     />
   ), [tab, handleNavigateDetail, restore, confirmDismissReports, handleOpenRemoveModal, C, t]);
-
 
   if (profile && profile.role !== 'admin') {
     return (

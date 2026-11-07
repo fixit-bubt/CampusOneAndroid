@@ -6,7 +6,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   RefreshControl, type ViewStyle, type TextStyle,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
@@ -25,6 +25,7 @@ import {
   TeacherBar, type FacultyMember, type Department,
 } from './facultyShared';
 import { DepartmentAuthoritiesDropdown } from './DepartmentAuthoritiesDropdown';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 export function FacultyDeptScreen({ route, navigation }: any) {
   const { C } = useTheme();
@@ -101,7 +102,7 @@ export function FacultyDeptScreen({ route, navigation }: any) {
     }
   }, [deptId, user?.id]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusRefresh(load);
 
   async function onRefresh() {
     setRefreshing(true);
