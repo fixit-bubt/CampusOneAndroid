@@ -4597,3 +4597,47 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
   - Unit Test Suite: 18 passed, 18 total (140 passed, 140 total).
   - Local Native Release Build: Successfully compiled via Gradle `assembleRelease`.
   - Physical Device Verification: Cleanly installed via ADB and verified operational on connected device `8734b5da`.
+
+---
+
+### 124. Full-App Speed, Transition & Stability Audit + Migration Drift Correction (Nov 7-8, 2026)
+
+#### 124.1 Correction: migrations that earlier sections called "pushed" were NOT live
+
+- Sections 105, 106, 117 and the Nov 4-5 entries describe `20261104040000` (admin_moderate_listing), `20261104050000` (rides peer-to-peer RLS), `20261104060000` (admin indexes + `set_event_banner` / `admin_report_stats` / `event_rsvp_counts`) and `20261105000000` (RLS `(select auth.uid())` hardening) as applied. **They were not.** `supabase migration list --remote` showed them local-only, and the RPCs returned PGRST202 (function not found). The app ran on its slower client-side fallbacks.
+- All four were applied on Nov 7, 2026. `20261105000000` had been partly run by hand in the SQL editor, so it failed with "policy already exists"; it now uses `drop policy if exists` before every `create policy` and is re-runnable.
+- `20261107010000_revoke_anon_admin_rpcs.sql`: those three SECURITY DEFINER functions never revoked Supabase's default anon EXECUTE (rule 8.3); `event_rsvp_counts()` answered unauthenticated callers. Now authenticated-only.
+- **Rule:** never claim a migration is live without `npx supabase migration list --remote` showing it in the `remote` column. The CLI is linked to `xhgpxvyqrufbbuivttmi`; pushing needs `npx supabase db push --remote --yes` after the user approves (agent mode refuses without `--yes`). Read-only SQL: `npx supabase db query --remote --read-only "<sql>"`.
+
+#### 124.2 Cold start & app-wide re-render fixes
+
+- **`metro.config.js`:** `inlineRequires: true` (Expo ships it `false`). Screen modules, `pdf-lib` and the 11k-line `dhakaMasterLocations.ts` now execute on first use instead of at launch.
+- **`authStore.ts`:** one `onAuthStateChange` listener (its `INITIAL_SESSION` covers cold start; the separate `getSession()` path fetched the profile twice). Same-user `TOKEN_REFRESHED` no longer re-renders every `useAuth()` consumer (only `!!session` is read from context). Identical profiles are not re-dispatched or re-written to SecureStore. Context value memoized; in-flight profile fetches are shared per user. Supabase calls inside the auth callback run on `setTimeout(0)` (auth-lock deadlock guard).
+- **`currentUserId()` in `src/lib/supabase.ts`:** reads the id from the local session. `supabase.auth.getUser()` is a network round-trip to the Auth server on every call; it was used before 9 queries. **Rule:** do not use `auth.getUser()` just to filter by the caller's id; RLS still checks the JWT server-side.
+- **`cacheService.ts`:** `setCache` updates memory immediately and batches disk writes (`AsyncStorage.multiSet` 1.2s later, flushed when the app backgrounds). Synchronous `JSON.stringify` of large feeds on every load was stalling transitions. `withTimeout` now clears its timer.
+- **`RootNavigator.tsx`:** push-token effect depends on `!!profile`, not the profile object (it re-registered FCM on every profile refresh).
+
+#### 124.3 Transition smoothness architecture (mandatory patterns)
+
+- **`useFocusRefresh(fn)` (`src/hooks/useFocusRefresh.ts`):** replaces `useFocusEffect(useCallback(() => { load(); }, [load]))` in ~47 screens. First mount (or `fn` changing while focused) runs immediately; returning to a screen (pop / tab switch) waits for `transitionEnd` (listening up the parent chain, since tab screens never get it directly) or a 450ms fallback. Refetching mid-slide re-rendered lists under the back animation. **Rule:** new screens load with `useFocusRefresh`, and its callback must be referentially stable (`useCallback`), otherwise it refetches every render.
+- **`afterTransition(Screen, { plain? })` (`src/navigation/afterTransition.tsx`):** every stack screen in `AppNavigator` mounts after its slide-in. During the slide it shows the real `SubBar` (empty title, working back button), so only the title and content fill in. `{ plain: true }` for screens with their own header: `AnnexPortalScreen`, `MessageThread`, `AdminDashboardScreen`.
+- **Rule (critical):** never do a screen's first load from `navigation.addListener('focus', ...)`. Under `afterTransition` the real screen mounts after `focus` has already fired, so the listener never runs. This left Announcements, Club Detail and Course Detail permanently empty until fixed.
+- **Bottom tabs:** non-active tabs are preloaded one by one (`navigation.preload`) 1.5s after start, so the first tap on a tab doesn't drop frames. `freezeOnBlur` stays `false` on purpose (see 5.3 inset-jump note).
+- **`useAfterInteractions`** uses `requestIdleCallback` (`InteractionManager` is deprecated in RN 0.85 and logged a warning).
+
+#### 124.4 Data-correctness and stability fixes
+
+- **Home status strips (`HomeStatusStrips.tsx`):** hardcoded or estimated metrics removed (clubs joined 2 / posts 8, faculty mentors 14, events going 1, study saved 4, files = notes x 0.7, market saved = min(total,3), jobs applied 0, L&F claims = open item count). Every figure is now an exact `{ count: 'exact', head: true }` query (fixes the `.limit(50)` cap). Study's middle metric is "Q Bank" (`study_question_bank`). Note: Mentors equals total faculty because every `faculty.is_accepting_research` is `true` in the data.
+- **Bilingual strips:** 65 hardcoded English captions now use `t.statusStrips.metrics`; new `t.statusStrips.subtitles` (customize sheet), `t.statusStrips.prayerNames` (keyed by `prayer_times.key`), `t.communityUpdates.unreadCount(n)` / `allCaughtUp`. en/bn key parity: 122/122.
+- **Messages (`messagesStore.tsx`):** `markRead` decided "changed" inside a `setReads` updater, which React may run later, so `upsertRead` was skipped and unread badges returned after restart. It now compares against `readsRef`.
+- **Realtime DM inbox (`20261107000000_chat_user_inbox_topic.sql`):** `broadcast_message_change()` also sends each DM to `chat:user:<peer_low>` and `chat:user:<peer_high>`; `chat_topic_read` allows only the owner on `chat:user:<uuid>` (verified live: own inbox SUBSCRIBED, other inbox CHANNEL_ERROR). The app subscribes to one inbox channel plus club/section channels instead of one channel per DM partner. Per-conversation `chat:dm:*` broadcasts are kept, so the web client is unaffected.
+- **Home community feed:** removed the duplicate mount load; realtime `announcements` / `club_posts` events are debounced (1.5s) and ignored while Home is hidden (a crawler run upserts hundreds of rows); `announcement_reads` is filtered server-side to `user_id=eq.<me>`.
+- **Detail screens:** Club, Announcement and Event detail show `LoadError` with Retry on network/server failure and "Not found" only when the row truly doesn't exist (`.single()` PGRST116, or `maybeSingle()` returning no data and no error). Previously any timeout showed a permanent "Not found".
+- **Dead code:** removed `SquareLoader.tsx` (+ test) and the unused `topicFor` / `topicOf` helpers.
+
+#### 124.5 Verification
+
+- `tsc --noEmit` 0 errors; Jest 17 suites / 138 tests passing.
+- New strip count queries and the inbox policy exercised against production with the staff test account.
+- Release APK built with Gradle, installed on `8734b5da`: Home, Explore, Events, Announcements (placeholder header mid-slide, then content), Club Detail (5 opens incl. cold start) and Bengali mode checked by screenshot / UI dump; logcat clean.
+- Commits on `main`: `a0eb371`, `8ec99a8`, `e197684`, `98e40b8`, `5bde77e`, `ac6d593`.
