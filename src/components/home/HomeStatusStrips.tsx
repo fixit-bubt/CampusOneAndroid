@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
-import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useT } from '../../i18n';
 import { AnimatedIcon } from '../ui/AnimatedIcon';
 import { getMyReports } from '../../services/reportsService';
+import { getSavedListingIds } from '../../services/marketService';
 import { getCache, getCacheSync, setCache, CacheKeys, withTimeout } from '../../services/cacheService';
 import type { Report } from '../../types/database';
 import {
@@ -25,6 +26,7 @@ import {
 } from '../../utils/transitPrayer';
 import { localToday } from '../../utils/format';
 import { FontFamily, SectorColors } from '../../theme';
+import { useFocusRefresh } from '../../hooks/useFocusRefresh';
 
 export type StatusStripId =
   | 'reports'
@@ -194,6 +196,112 @@ export const ALL_STATUS_STRIPS: StatusStripOption[] = [
 export const DEFAULT_STATUS_STRIP_IDS: StatusStripId[] = ['reports', 'bus', 'prayer'];
 
 const inMemorySelectedStrips: Record<string, StatusStripId[]> = {};
+
+// Exact row counts: fetching rows with .limit(50) capped every figure at 50.
+const HEAD = { count: 'exact' as const, head: true };
+async function countOf(q: PromiseLike<{ count: number | null; error: unknown }>): Promise<number | null> {
+  const r = await q;
+  return r.error ? null : (r.count ?? 0);
+}
+// All counts, or null if any query failed (then the cached figures stay).
+function allCounted(vals: (number | null)[]): number[] | null {
+  return vals.some((v) => v === null) ? null : (vals as number[]);
+}
+
+async function fetchMarketStats(uid: string) {
+  const vals = await Promise.all([
+    countOf(supabase.from('listings').select('id', HEAD)),
+    countOf(supabase.from('listings').select('id', HEAD).eq('status', 'Available')),
+    getSavedListingIds(uid).then((ids) => ids.length).catch(() => 0),
+  ]);
+  const n = allCounted(vals);
+  if (!n) return null;
+  const [total, active, saved] = n;
+  return { total, active, saved };
+}
+
+async function fetchLostStats(uid: string) {
+  const vals = await Promise.all([
+    countOf(supabase.from('lost_found_items').select('id', HEAD).eq('status', 'Open').eq('type', 'Lost').is('deleted_at', null)),
+    countOf(supabase.from('lost_found_items').select('id', HEAD).eq('status', 'Open').eq('type', 'Found').is('deleted_at', null)),
+    countOf(supabase.from('claims').select('id', HEAD).eq('claimant_id', uid)),
+  ]);
+  const n = allCounted(vals);
+  if (!n) return null;
+  const [lost, found, claims] = n;
+  return { lost, found, claims };
+}
+
+async function fetchJobStats(uid: string, today: string) {
+  const open = () => supabase.from('jobs').select('id', HEAD).gte('deadline', today).is('deleted_at', null);
+  const vals = await Promise.all([
+    countOf(open()),
+    countOf(open().eq('job_type', 'internship')),
+    countOf(supabase.from('job_applications').select('id', HEAD).eq('student_id', uid)),
+  ]);
+  const n = allCounted(vals);
+  if (!n) return null;
+  const [openCount, interns, applied] = n;
+  return { open: openCount, interns, applied };
+}
+
+async function fetchStudyStats(uid: string) {
+  const vals = await Promise.all([
+    countOf(supabase.from('study_materials').select('id', HEAD)),
+    countOf(supabase.from('study_question_bank').select('id', HEAD)),
+    countOf(supabase.from('study_bookmarks').select('item_id', HEAD).eq('user_id', uid)),
+  ]);
+  const n = allCounted(vals);
+  if (!n) return null;
+  const [notes, files, saved] = n;
+  return { notes, files, saved };
+}
+
+async function fetchEventStats(uid: string, today: string) {
+  const weekEnd = addDaysISO(today, 6);
+  const upcoming = () => supabase.from('events').select('id', HEAD).gte('date', today).is('deleted_at', null);
+  const vals = await Promise.all([
+    countOf(upcoming()),
+    countOf(upcoming().lte('date', weekEnd)),
+    countOf(
+      supabase.from('event_rsvps').select('event_id, events!inner(date)', HEAD)
+        .eq('user_id', uid).gte('events.date', today),
+    ),
+  ]);
+  const n = allCounted(vals);
+  if (!n) return null;
+  const [up, thisWeek, going] = n;
+  return { upcoming: up, thisWeek, going };
+}
+
+async function fetchClubStats(uid: string) {
+  const vals = await Promise.all([
+    countOf(supabase.from('clubs').select('id', HEAD).eq('is_active', true)),
+    countOf(supabase.from('club_members').select('id', HEAD).eq('user_id', uid)),
+    countOf(supabase.from('club_posts').select('id', HEAD)),
+  ]);
+  const n = allCounted(vals);
+  if (!n) return null;
+  const [total, joined, posts] = n;
+  return { total, joined, posts };
+}
+
+async function fetchFacultyStats() {
+  const vals = await Promise.all([
+    countOf(supabase.from('faculty').select('id', HEAD)),
+    countOf(supabase.from('faculty').select('id', HEAD).eq('is_accepting_research', true)),
+  ]);
+  const n = allCounted(vals);
+  if (!n) return null;
+  const [total, mentors] = n;
+  return { total, mentors };
+}
+
+// Calendar arithmetic on a YYYY-MM-DD Dhaka date, independent of device TZ.
+function addDaysISO(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
 
 const STORAGE_KEY = (uid?: string) => `@campusone_status_strips_${uid || 'guest'}`;
 
@@ -366,17 +474,17 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
           needed.has('bus') ? supabase.from('bus_routes').select('id, name, to_departures, from_departures').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
           needed.has('bus') ? supabase.from('saved_bus_routes').select('route_id').eq('user_id', user.id).limit(50) : Promise.resolve({ data: null, error: null }),
           needed.has('prayer') ? supabase.from('prayer_times').select('en, azan, key').order('sort').limit(20) : Promise.resolve({ data: null, error: null }),
-          needed.has('blood') ? supabase.from('blood_requests').select('id, urgency').is('fulfilled_at', null).gte('created_at', staleCutoff).limit(50) : Promise.resolve({ data: null, error: null }),
+          needed.has('blood') ? supabase.from('blood_requests').select('id, urgency').is('fulfilled_at', null).gte('created_at', staleCutoff).limit(500) : Promise.resolve({ data: null, error: null }),
           needed.has('blood') ? supabase.from('donors').select('*', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
-          needed.has('rides') ? supabase.from('rides').select('id, post_type, seats_total, seats_available').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
-          needed.has('market') ? supabase.from('listings').select('id, status').eq('status', 'Available').limit(50) : Promise.resolve({ data: null, error: null }),
-          needed.has('lostfound') ? supabase.from('lost_found_items').select('id, type, status').eq('status', 'Open').limit(50) : Promise.resolve({ data: null, error: null }),
-          needed.has('jobs') ? supabase.from('jobs').select('id, job_type, deadline').gte('deadline', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
-          needed.has('study') ? supabase.from('study_materials').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
-          needed.has('events') ? supabase.from('events').select('id, date').gte('date', todayISO).limit(50) : Promise.resolve({ data: null, error: null }),
-          needed.has('clubs') ? supabase.from('clubs').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+          needed.has('rides') ? supabase.from('rides').select('id, post_type, seats_total, seats_available').gte('date', todayISO).limit(500) : Promise.resolve({ data: null, error: null }),
+          needed.has('market') ? fetchMarketStats(user.id) : Promise.resolve(null),
+          needed.has('lostfound') ? fetchLostStats(user.id) : Promise.resolve(null),
+          needed.has('jobs') ? fetchJobStats(user.id, todayISO) : Promise.resolve(null),
+          needed.has('study') ? fetchStudyStats(user.id) : Promise.resolve(null),
+          needed.has('events') ? fetchEventStats(user.id, todayISO) : Promise.resolve(null),
+          needed.has('clubs') ? fetchClubStats(user.id) : Promise.resolve(null),
           needed.has('medical') ? supabase.from('doctors').select('id, is_on_leave').eq('active', true).limit(50) : Promise.resolve({ data: null, error: null }),
-          needed.has('faculty') ? supabase.from('faculty').select('id', { count: 'exact', head: true }) : Promise.resolve({ count: null, error: null }),
+          needed.has('faculty') ? fetchFacultyStats() : Promise.resolve(null),
         ]),
         5000
       );
@@ -415,56 +523,12 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
         nextRides = { offers, requests, seats };
       }
 
-      // Market stats
-      let nextMarket = cached?.marketStats ?? { total: 0, active: 0, saved: 0 };
-      if (marketRes.data) {
-        nextMarket = {
-          total: marketRes.data.length,
-          active: marketRes.data.filter((l: any) => l.status === 'Available').length,
-          saved: Math.min(marketRes.data.length, 3),
-        };
-      }
-
-      // Lost & Found stats
-      let nextLost = cached?.lostStats ?? { lost: 0, found: 0, claims: 0 };
-      if (lostRes.data) {
-        const lost = lostRes.data.filter((i: any) => i.type === 'Lost').length;
-        const found = lostRes.data.filter((i: any) => i.type === 'Found').length;
-        nextLost = { lost, found, claims: lostRes.data.length };
-      }
-
-      // Jobs stats
-      let nextJobs = cached?.jobStats ?? { open: 0, interns: 0, applied: 0 };
-      if (jobsRes.data) {
-        const open = jobsRes.data.length;
-        const interns = jobsRes.data.filter((j: any) => j.job_type === 'internship').length;
-        nextJobs = { open, interns, applied: 0 };
-      }
-
-      // Study Hub stats
-      const nextStudy = studyRes.count !== null && studyRes.count !== undefined
-        ? {
-            notes: studyRes.count,
-            files: Math.round(studyRes.count * 0.7),
-            saved: 4,
-          }
-        : (cached?.studyStats ?? { notes: 24, files: 17, saved: 4 });
-
-      // Events stats
-      let nextEvents = cached?.eventStats ?? { upcoming: 0, thisWeek: 0, going: 0 };
-      if (eventsRes.data) {
-        const upcoming = eventsRes.data.length;
-        nextEvents = { upcoming, thisWeek: Math.min(upcoming, 3), going: 1 };
-      }
-
-      // Clubs stats
-      const nextClubs = clubsRes.count !== null && clubsRes.count !== undefined
-        ? {
-            total: clubsRes.count,
-            joined: 2,
-            posts: 8,
-          }
-        : (cached?.clubStats ?? { total: 12, joined: 2, posts: 8 });
+      const nextMarket = marketRes ?? cached?.marketStats ?? { total: 0, active: 0, saved: 0 };
+      const nextLost = lostRes ?? cached?.lostStats ?? { lost: 0, found: 0, claims: 0 };
+      const nextJobs = jobsRes ?? cached?.jobStats ?? { open: 0, interns: 0, applied: 0 };
+      const nextStudy = studyRes ?? cached?.studyStats ?? { notes: 0, files: 0, saved: 0 };
+      const nextEvents = eventsRes ?? cached?.eventStats ?? { upcoming: 0, thisWeek: 0, going: 0 };
+      const nextClubs = clubsRes ?? cached?.clubStats ?? { total: 0, joined: 0, posts: 0 };
 
       // Medical stats
       let nextDoc = cached?.doctorStats ?? { onDuty: 0, total: 0 };
@@ -474,13 +538,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
         nextDoc = { onDuty, total };
       }
 
-      // Faculty stats
-      const nextFac = facRes.count !== null && facRes.count !== undefined
-        ? {
-            total: facRes.count,
-            mentors: 14,
-          }
-        : (cached?.facultyStats ?? { total: 42, mentors: 14 });
+      const nextFac = facRes ?? cached?.facultyStats ?? { total: 0, mentors: 0 };
 
       if (needed.has('reports')) setReports(nextReports);
       if (needed.has('bus')) {
@@ -520,11 +578,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
     }
   }, [user, selectedStrips]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
+  useFocusRefresh(loadData);
 
   useEffect(() => {
     if (refreshTrigger) {
@@ -919,7 +973,7 @@ export function HomeStatusStrips({ refreshTrigger }: { refreshTrigger?: number }
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
                 <Text style={[styles.metricVal, { color: C.text }]} numberOfLines={1}>{studyStats.files}</Text>
-                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Files</Text>
+                <Text style={[styles.metricSub, { color: C.textMuted }]} numberOfLines={1}>Q Bank</Text>
               </TouchableOpacity>
               <View style={[styles.verticalDivider, { borderRightColor: C.border }]} />
               <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('StudyHub')} style={styles.metricCol}>
