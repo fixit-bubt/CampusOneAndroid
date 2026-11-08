@@ -293,11 +293,15 @@ Deno.serve(async (req: Request) => {
     const rawNotices = JSON.parse(match[1]);
     const totalScanned = rawNotices.length;
 
-    // 4-month (120-day) active window cutoff
+    // 120-day active semester window. Skip notices BUBT has marked inactive (superseded).
     const fourMonthsAgo = Date.now() - (120 * 24 * 60 * 60 * 1000);
     const batch = deepCrawl
-      ? rawNotices.slice(0, 600)
-      : rawNotices.filter((n: any) => n.created_at && new Date(n.created_at).getTime() >= fourMonthsAgo);
+      ? rawNotices.slice(0, 600).filter((n: any) => n.status !== 'inactive')
+      : rawNotices.filter((n: any) =>
+          n.status !== 'inactive' &&
+          n.created_at &&
+          new Date(n.created_at).getTime() >= fourMonthsAgo
+        );
 
     // Collect all candidate codes
     const batchCodes = batch.map((n: any) => `BUBT-N-${n.id}`);

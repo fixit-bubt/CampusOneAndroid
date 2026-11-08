@@ -21,16 +21,17 @@ export async function runNoticesAdapter(
   const rawNotices = JSON.parse(match[1]);
   const totalScanned = rawNotices.length;
 
-  // Strict 4-Month (120-Day) Active Semester Window Cutoff for Announcements
+  // 120-day active semester window. Use continue (not break) since BUBT's
+  // array order is not guaranteed. Skip superseded notices (status=inactive).
   const fourMonthsAgo = Date.now() - (120 * 24 * 60 * 60 * 1000);
   const activeBatch: any[] = [];
 
   for (const n of rawNotices) {
     if (!n || !n.title) continue;
+    // Skip notices BUBT has explicitly marked as superseded/retired
+    if (n.status === 'inactive') continue;
     const createdAtMs = n.created_at ? new Date(n.created_at).getTime() : Date.now();
-    if (createdAtMs < fourMonthsAgo) {
-      break;
-    }
+    if (createdAtMs < fourMonthsAgo) continue;
     activeBatch.push(n);
   }
 

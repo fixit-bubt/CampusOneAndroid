@@ -4404,3 +4404,58 @@ The routine module is designed as an intuitive, step-based navigation wizard uti
 - New strip count queries and the inbox policy exercised against production with the staff test account.
 - Release APK built with Gradle, installed on `8734b5da`: Home, Explore, Events, Announcements, Club Detail (5 opens incl. cold start) and Bengali mode checked by screenshot / UI dump; logcat clean.
 - Commits on `main`: `a0eb371`, `8ec99a8`, `e197684`, `98e40b8`, `5bde77e`, `ac6d593`.
+
+### 125. BUBT Crawler Deep Audit & 6-Bug Fix (Nov 8, 2026)
+
+#### 125.1 Context
+
+A friend shared a physical BUBT notice (Supplementary Mid-Term revised to 16 Nov 2026, ref `BUBT-C/E-47130-11-26`) that never appeared as an in-app push notification. Full crawler audit performed; 6 bugs identified and fixed. The BUBT website and JSON payload were confirmed healthy throughout.
+
+#### 125.2 Bugs Fixed
+
+**Bug 1 — Two crawlers racing on the same `announcements` table (Critical)**
+- `auto-sync-bubt-notices` cron (calling `sync-notices`) was still alive alongside the newer `bubt-crawler-fast-cycle` (calling `bubt-crawler`). Both ran every 30 minutes against the same table with different schema fields (`sync-notices` doesn't write `content_hash`; `bubt-crawler` does), making delta detection unreliable.
+- **Fix:** Migration `20261108000000_fix_crawler_bugs.sql` definitively kills `auto-sync-bubt-notices`, `auto-sync-bubt-events`, and `auto-sync-bubt-faculty` legacy crons via `cron.unschedule()`.
+
+**Bug 2 — Push notification trigger used BUBT's publish date, not insertion time (Critical)**
+- `notify_new_announcement()` checked `new.created_at >= now() - interval '6 hours'`. This is BUBT's original publication timestamp. Any notice first synced more than 6 hours after BUBT posted it would silently suppress the push — even if it was brand new to our DB.
+- Also: the trigger fired on both INSERT and UPDATE, causing double-notifications on crawler refreshes.
+- **Fix (same migration):** Trigger now uses a 7-day BUBT age guard (`v_bubt_age_days > 7`) and suppresses all UPDATE operations (`if TG_OP = 'UPDATE' then return new`). `notify_new_event()` gets the same treatment. Exam Office (`EXAM`) and Registrar (`REG`) department codes now correctly classified as university-wide for push fan-out.
+
+**Bug 3 — `status: 'inactive'` BUBT notices not filtered (Medium)**
+- BUBT marks superseded notices as `status: 'inactive'` once a newer version replaces them. The crawler stored all of them anyway. Of 1533 total notices in the payload, only 4 are `active`; 191 within the 120-day window are `inactive`.
+- **Fix:** `adapters/notices.ts` and `sync-notices/index.ts` both now `continue` (skip) any notice where `n.status === 'inactive'`.
+
+**Bug 4 — `break` instead of `continue` in date-cutoff loop (Medium)**
+- `adapters/notices.ts` used `break` when encountering a notice older than 120 days, assuming the array is always sorted newest-first. If BUBT ever bulk-uploads historical data out of order, newer notices after an old one would be silently dropped.
+- **Fix:** `break` → `continue` in both `adapters/notices.ts`.
+
+**Bug 5 — Events card HTML splitter fragile (Medium)**
+- `adapters/events.ts` split the `/news` page on `rounded-xl overflow-hidden` Tailwind class. If BUBT changes their CSS, the splitter returns 0 cards and events sync stops entirely.
+- **Fix:** Added a full link-extraction fallback: `if (rawCards.length === 0)` fall back to `matchAll` on all `/news/` hrefs. Also extended `EXCLUDED_SLUGS` set to block `'search'` and `'tag'` paths.
+
+**Bug 6 — Events adapter capped at 10 articles (Low)**
+- `rawCards.slice(0, 10)` meant only 10 news articles were ever processed. BUBT's `/news` page shows 8, so this was often 8 real articles - fine for now but no headroom.
+- **Fix:** Increased to `slice(0, 20)`.
+
+**Bonus Bug — `crawler_audit_logs.feature` CHECK missing `'jobs'` (Critical if triggered)**
+- The `feature` column CHECK constraint allowed: `'all', 'notices', 'events', 'faculty', 'routines', 'calendar', 'bus'` — but `bubt-crawler/index.ts` can log `feature = 'jobs'` when called with `?feature=jobs`. This throws a constraint violation and crashes the jobs sync.
+- **Fix:** Migration `20261108010000_fix_jobs_feature_constraint.sql` drops and recreates the CHECK with `'jobs'` included.
+
+#### 125.3 Files Changed
+
+| File | Change |
+|------|--------|
+| `supabase/functions/bubt-crawler/adapters/notices.ts` | `break` → `continue`; skip `status=inactive` |
+| `supabase/functions/bubt-crawler/adapters/events.ts` | HTML fallback + `EXCLUDED_SLUGS` + 20-article cap |
+| `supabase/functions/sync-notices/index.ts` | Skip `status=inactive` in both normal and deep-crawl paths |
+| `supabase/migrations/20261108000000_fix_crawler_bugs.sql` | Kill old crons; fix both push triggers; widen `triggered_by` CHECK |
+| `supabase/migrations/20261108010000_fix_jobs_feature_constraint.sql` | Add `'jobs'` to `feature` CHECK constraint |
+
+#### 125.4 Crawler Architecture Reference (Ground Truth)
+
+- **Active cron jobs (pg_cron):** Only `bubt-crawler-fast-cycle` (every 30 min 24/7) and `bubt-crawler-faculty-daily` (03:00 AM Dhaka = 21:00 UTC daily). The old `auto-sync-*` crons are dead.
+- **Canonical function:** `bubt-crawler` (logs to `crawler_audit_logs`). `sync-notices` is legacy, kept for manual admin use only.
+- **Push trigger recency window:** 7 days from BUBT publish date. Bulk backfill imports are suppressed by `app.crawler_silent_mode = 'on'` session variable.
+- **BUBT notice payload structure:** `notices: [...], categories:` JSON embedded in page HTML. 1533 total notices as of Nov 2026; only `status=active` ones are synced.
+- **Storage base URLs:** `https://www.bubt.edu.bd/storage/` (new uploads) and `https://www.bubt.edu.bd/uploads/` (legacy documents).

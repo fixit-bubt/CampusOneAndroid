@@ -36,7 +36,8 @@ export async function runEventsAdapter(
     .select('id, name')
     .eq('is_active', true);
 
-  // 2. Parse card chunks directly from /news listing page
+  // 2. Parse card chunks directly from /news listing page.
+  // Fallback to link-only extraction if BUBT ever changes their Tailwind classes.
   const cardChunks = html.split(/(?=<div[^>]*class=["'][^"']*rounded-xl[^"']*overflow-hidden)/i);
   const rawCards: Array<{
     slug: string;
@@ -47,13 +48,14 @@ export async function runEventsAdapter(
   }> = [];
 
   const seenSlugs = new Set<string>();
+  const EXCLUDED_SLUGS = new Set(['all', 'category', 'search', 'tag']);
 
   for (const chunk of cardChunks) {
     const linkMatch = chunk.match(/href=["'](https?:\/\/www\.bubt\.edu\.bd\/news\/([a-zA-Z0-9-]+))["']/i);
     if (!linkMatch) continue;
     const url = linkMatch[1];
     const slug = linkMatch[2];
-    if (seenSlugs.has(slug) || slug === 'all' || slug === 'category') continue;
+    if (seenSlugs.has(slug) || EXCLUDED_SLUGS.has(slug)) continue;
     seenSlugs.add(slug);
 
     const imgMatch = chunk.match(/<img[^>]+src=["']([^"']*(?:jpg|jpeg|png|webp))["']/i);
@@ -74,7 +76,19 @@ export async function runEventsAdapter(
     });
   }
 
-  // Reverse rawCards so newest articles from BUBT news are prioritized at index 0
+  // Fallback: if card splitter found nothing (BUBT redesigned HTML), extract links directly
+  if (rawCards.length === 0) {
+    const allLinks = [...html.matchAll(/href=["'](https?:\/\/www\.bubt\.edu\.bd\/news\/([a-zA-Z0-9-]+))["']/gi)];
+    for (const m of allLinks) {
+      const url = m[1];
+      const slug = m[2];
+      if (seenSlugs.has(slug) || EXCLUDED_SLUGS.has(slug)) continue;
+      seenSlugs.add(slug);
+      rawCards.push({ slug, url, title: slug.replace(/-/g, ' '), thumbnail: null, snippet: '' });
+    }
+  }
+
+  // Reverse so newest articles from BUBT news are prioritized at index 0
   rawCards.reverse();
 
   // 3. Check existing events in DB to skip redundant network calls
@@ -98,7 +112,7 @@ export async function runEventsAdapter(
   const candidateItems: EventItem[] = [];
 
   const processedCards = await Promise.all(
-    rawCards.slice(0, 10).map(async (card) => {
+    rawCards.slice(0, 20).map(async (card) => {
       const slugHash = (await computeFingerprint(card.slug)).slice(0, 6);
       const cleanSlug = card.slug.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
       const code = `EVT-${cleanSlug}-${slugHash}`;
