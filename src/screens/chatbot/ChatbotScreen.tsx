@@ -133,7 +133,7 @@ export function ChatbotScreen({ navigation, route }: any) {
     }
     if (!body && !imageBase64) return; // image failed and there's no text either - nothing to send
 
-    const userMsg: Bubble = { id: `local-${seq.current++}`, role: 'user', text: body, imageUrl: imageUrl ?? image?.uri };
+    const userMsg: Bubble = { id: `local-${seq.current++}`, role: 'user', text: body || 'Photo attached', imageUrl: imageUrl ?? image?.uri };
     setMessages((prev) => [...prev, userMsg]);
     setSending(true);
     setWaitingFirstToken(true);
@@ -144,7 +144,7 @@ export function ChatbotScreen({ navigation, route }: any) {
       const res = await createConversation(user.id, body || 'Photo');
       if (res.ok) { convId = res.data; setConversationId(res.data); }
     }
-    if (convId) saveChatMessage(user.id, convId, 'user', body, imageUrl); // fire-and-forget - a failed save just means this turn won't persist, not worth blocking chat over
+    if (convId) saveChatMessage(user.id, convId, 'user', body || 'Photo attached', imageUrl); // fire-and-forget - a failed save just means this turn won't persist, not worth blocking chat over
 
     // Exclude past error bubbles - they're a client-side artifact, not something
     // the model actually said, and would confuse it if replayed as history.
@@ -155,7 +155,8 @@ export function ChatbotScreen({ navigation, route }: any) {
     let streamedText = '';
     let bubbleAdded = false;
 
-    await askChatbotStream(body, history, {
+    const promptText = body || (imageBase64 ? 'Please analyze this photo.' : '');
+    await askChatbotStream(promptText, history, {
       onChunk: (chunk) => {
         streamedText += chunk;
         setWaitingFirstToken(false);

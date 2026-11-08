@@ -199,6 +199,7 @@ export async function insertMessage(
 }
 
 export async function updateMessageBody(msgId: string, body: string): Promise<ServiceResult<Message>> {
+  if (msgId.startsWith('temp-')) return { ok: false, error: 'Cannot edit unsent message.' };
   const { data, error } = await supabase
     .from('messages').update({ body }).eq('id', msgId).select().single();
   if (error) return { ok: false, error: error.message };
@@ -206,6 +207,7 @@ export async function updateMessageBody(msgId: string, body: string): Promise<Se
 }
 
 export async function softDeleteMessage(msgId: string): Promise<ServiceResult<Message>> {
+  if (msgId.startsWith('temp-')) return { ok: false, error: 'Cannot delete unsent message.' };
   // The update guard stamps deleted_by/now() and scrubs the body server-side.
   const { data, error } = await supabase
     .from('messages').update({ deleted_at: new Date().toISOString() }).eq('id', msgId).select().single();

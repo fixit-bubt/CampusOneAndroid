@@ -8,6 +8,17 @@ interface CacheEntry<T> {
 
 const memoryCache = new Map<string, CacheEntry<any>>();
 const CACHE_PREFIX = '@c1_cache_';
+const MAX_MEMORY_CACHE_ENTRIES = 200;
+
+function setMemoryCache(key: string, entry: CacheEntry<any>): void {
+  if (memoryCache.has(key)) {
+    memoryCache.delete(key);
+  } else if (memoryCache.size >= MAX_MEMORY_CACHE_ENTRIES) {
+    const oldest = memoryCache.keys().next().value;
+    if (oldest !== undefined) memoryCache.delete(oldest);
+  }
+  memoryCache.set(key, entry);
+}
 
 export const CacheKeys = {
   // Static / Academic
@@ -70,8 +81,11 @@ export const CacheKeys = {
 
 export function getCacheSync<T>(key: string): T | null {
   const fullKey = `${CACHE_PREFIX}${key}`;
-  if (memoryCache.has(fullKey)) {
-    return memoryCache.get(fullKey)!.data as T;
+  const hit = memoryCache.get(fullKey);
+  if (hit) {
+    memoryCache.delete(fullKey);
+    memoryCache.set(fullKey, hit);
+    return hit.data as T;
   }
   return null;
 }
@@ -84,15 +98,18 @@ export function hasCacheSync(key: string): boolean {
 export async function getCache<T>(key: string): Promise<T | null> {
   const fullKey = `${CACHE_PREFIX}${key}`;
   
-  if (memoryCache.has(fullKey)) {
-    return memoryCache.get(fullKey)!.data as T;
+  const hit = memoryCache.get(fullKey);
+  if (hit) {
+    memoryCache.delete(fullKey);
+    memoryCache.set(fullKey, hit);
+    return hit.data as T;
   }
 
   try {
     const raw = await AsyncStorage.getItem(fullKey);
     if (!raw) return null;
     const entry: CacheEntry<T> = JSON.parse(raw);
-    memoryCache.set(fullKey, entry);
+    setMemoryCache(fullKey, entry);
     return entry.data;
   } catch {
     return null;
@@ -101,14 +118,17 @@ export async function getCache<T>(key: string): Promise<T | null> {
 
 export async function getCacheWithMeta<T>(key: string): Promise<CacheEntry<T> | null> {
   const fullKey = `${CACHE_PREFIX}${key}`;
-  if (memoryCache.has(fullKey)) {
-    return memoryCache.get(fullKey)!;
+  const hit = memoryCache.get(fullKey);
+  if (hit) {
+    memoryCache.delete(fullKey);
+    memoryCache.set(fullKey, hit);
+    return hit;
   }
   try {
     const raw = await AsyncStorage.getItem(fullKey);
     if (!raw) return null;
     const entry: CacheEntry<T> = JSON.parse(raw);
-    memoryCache.set(fullKey, entry);
+    setMemoryCache(fullKey, entry);
     return entry;
   } catch {
     return null;
@@ -149,7 +169,7 @@ export async function setCache<T>(key: string, data: T): Promise<void> {
     data,
     timestamp: Date.now(),
   };
-  memoryCache.set(fullKey, entry);
+  setMemoryCache(fullKey, entry);
   pendingWrites.set(fullKey, entry);
   if (!flushTimer) flushTimer = setTimeout(flushPendingWrites, FLUSH_DELAY_MS);
 }

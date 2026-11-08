@@ -8,7 +8,6 @@ import { useT } from '../../i18n';
 import { useToast } from '../../components/ui/Toast';
 import { SubBar } from '../../components/layout/TopBar';
 import { FontFamily, Layout } from '../../theme';
-import { smokeTestPdfLib } from '../../services/pdf/smokeTest';
 import { PrivacyNote } from './components';
 
 const TOOLS = [
@@ -29,17 +28,6 @@ export function PdfMakerScreen({ navigation }: any) {
     organize: { title: t.pdfmaker.tools.organizeTitle, blurb: t.pdfmaker.tools.organizeBlurb },
     compress: { title: t.pdfmaker.tools.compressTitle, blurb: t.pdfmaker.tools.compressBlurb },
   }[key]);
-
-  // Dev-only: proves pdf-lib still runs under Hermes after a dependency or
-  // engine change, without having to build a whole PDF by hand.
-  async function runSmokeTest() {
-    try {
-      const bytes = await smokeTestPdfLib();
-      toast({ type: 'success', title: t.pdfmaker.smokeOk(bytes) });
-    } catch (e: any) {
-      toast({ type: 'error', title: t.pdfmaker.smokeTest, message: String(e?.message ?? e) });
-    }
-  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: C.bg }]}>
@@ -71,24 +59,6 @@ export function PdfMakerScreen({ navigation }: any) {
             </TouchableOpacity>
           );
         })}
-
-        {__DEV__ ? (
-          <TouchableOpacity
-            style={[styles.card, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={runSmokeTest}
-            activeOpacity={0.75}
-          >
-            <View style={styles.tile}>
-              <Feather name="activity" size={32} color={C.text} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={[styles.cardTitle, { color: C.text, fontFamily: FontFamily.jakartaBold }]}>
-                {t.pdfmaker.smokeTest}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={C.textMuted} />
-          </TouchableOpacity>
-        ) : null}
 
         <PrivacyNote />
         <View style={{ height: 24 }} />

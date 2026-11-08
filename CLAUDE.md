@@ -4699,3 +4699,29 @@ A friend shared a physical BUBT notice (Supplementary Mid-Term revised to 16 Nov
 - **Push trigger recency window:** 7 days from BUBT publish date. Bulk backfill imports are suppressed by `app.crawler_silent_mode = 'on'` session variable.
 - **BUBT notice payload structure:** `notices: [...], categories:` JSON embedded in page HTML. 1533 total notices as of Nov 2026; only `status=active` ones are synced.
 - **Storage base URLs:** `https://www.bubt.edu.bd/storage/` (new uploads) and `https://www.bubt.edu.bd/uploads/` (legacy documents).
+
+---
+
+### 126. Ponytail Audit, Code Simplification & Performance Hardening (Nov 8, 2026)
+
+#### 126.1 Summary of Changes
+- **Dead Code Elimination (1,257 Lines Removed):**
+  - Deleted superseded Edge Functions: `supabase/functions/sync-events/` (375 lines), `sync-faculty/` (341 lines), and `sync-notices/` (486 lines). Unified `bubt-crawler` now handles all campus scraping cleanly; legacy crons were unscheduled in migration `20261108000000_fix_crawler_bugs.sql`.
+  - Deleted dev-only Hermes PDF smoke test `src/services/pdf/smokeTest.ts` (25 lines) and stripped dead `smokeTestPdfLib` button from `PdfMakerScreen.tsx`.
+- **In-Memory Cache Hardening (`cacheService.ts`):**
+  - Capped in-memory `memoryCache` with a 200-entry limit (`MAX_MEMORY_CACHE_ENTRIES = 200`) using LRU eviction on `Map` keys. Prevents monotonic heap memory growth across long multi-hour app sessions while retaining instant L1 synchronous cache access.
+- **Offline Messages Optimistic Guard (`messagesService.ts` & `messagesStore.tsx`):**
+  - Guarded `updateMessageBody` and `softDeleteMessage` against forwarding temporary client IDs (`temp-*`) to Supabase / PostgreSQL.
+  - In `messagesStore.tsx`, edits and deletions of pending/offline messages mutate local component state and update the local offline cache (`messages_bundle_${myId}`) directly without triggering failed network mutations.
+- **AI Chatbot Image Handling (`ChatbotScreen.tsx`):**
+  - Enabled photo-only prompt submissions without requiring accompanying text by defaulting prompt text to `'Please analyze this photo.'` and preserving bubble placeholder `'Photo attached'`.
+- **Rides Query Optimization & Capacity Hardening (`RideDetailScreen.tsx` & `20261108020000_rides_capacity_and_scoped_counts.sql`):**
+  - Scoped `ride_request_counts` RPC function to accept an optional `p_ride_id uuid default null` parameter. In `RideDetailScreen.tsx`, passing `{ p_ride_id: rideId }` replaces full-table aggregate scans across all rides with an index-filtered single ride lookup.
+  - Reinforced database-level seat capacity guard (`ride_capacity_guard`) with a `BEFORE INSERT` trigger on `public.ride_requests`.
+  - Updated Supabase TypeScript definitions (`src/types/supabase.ts`) with the new `p_ride_id` parameter signature.
+
+#### 126.2 Verification
+- `tsc --noEmit` passed with 0 errors.
+- Jest test suite: 17 suites, 138 tests passing.
+- Local Android release build compiled and verified on physical USB device (`8734b5da`).
+

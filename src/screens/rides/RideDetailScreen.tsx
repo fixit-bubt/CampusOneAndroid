@@ -113,7 +113,7 @@ export function RideDetailScreen({ route, navigation }: any) {
             .from('ride_requests')
             .select('requester_id')
             .eq('ride_id', rideId),
-          supabase.rpc('ride_request_counts'),
+          supabase.rpc('ride_request_counts', { p_ride_id: rideId }),
         ]),
         5000
       );

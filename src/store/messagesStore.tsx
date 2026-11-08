@@ -330,20 +330,44 @@ export function MessagesProvider({ children }: { children: React.ReactNode }) {
   const edit = useCallback(async (msgId: string, body: string): Promise<Result> => {
     const trimmed = body.trim();
     if (!trimmed) return { ok: false };
+    if (msgId.startsWith('temp-')) {
+      setMessages(prev => prev.map(m => (m.id === msgId ? { ...m, body: trimmed, editedAt: new Date().toISOString() } : m)));
+      if (myId) {
+        getCache<any>(`messages_bundle_${myId}`).then(cached => {
+          if (cached) {
+            const nextList = (cached.messages ?? []).map((m: any) => m.id === msgId ? { ...m, body: trimmed, editedAt: new Date().toISOString() } : m);
+            setCache(`messages_bundle_${myId}`, { ...cached, messages: nextList });
+          }
+        });
+      }
+      return { ok: true };
+    }
     setMessages(prev => prev.map(m => (m.id === msgId ? { ...m, body: trimmed, editedAt: new Date().toISOString() } : m)));
     const res = await updateMessageBody(msgId, trimmed);
     if (!res.ok) { reload(); return { ok: false, error: res.error }; }
     setMessages(prev => mergeMessages(prev, [res.data]));
     return { ok: true };
-  }, [reload]);
+  }, [reload, myId]);
 
   const remove = useCallback(async (msgId: string): Promise<Result> => {
+    if (msgId.startsWith('temp-')) {
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+      if (myId) {
+        getCache<any>(`messages_bundle_${myId}`).then(cached => {
+          if (cached) {
+            const nextList = (cached.messages ?? []).filter((m: any) => m.id !== msgId);
+            setCache(`messages_bundle_${myId}`, { ...cached, messages: nextList });
+          }
+        });
+      }
+      return { ok: true };
+    }
     setMessages(prev => prev.map(m => (m.id === msgId ? { ...m, deletedAt: new Date().toISOString(), body: '' } : m)));
     const res = await softDeleteMessage(msgId);
     if (!res.ok) { reload(); return { ok: false, error: res.error }; }
     setMessages(prev => mergeMessages(prev, [res.data]));
     return { ok: true };
-  }, [reload]);
+  }, [reload, myId]);
 
   const block = useCallback(async (id: string): Promise<Result> => {
     if (!myId) return { ok: false };
